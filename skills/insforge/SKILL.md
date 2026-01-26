@@ -32,6 +32,17 @@ metadata:
 - Managing auth settings, AI configurations, or deployments
 - Examples: Creating a `posts` table, enabling OAuth providers, deploying an edge function
 
+## Required: Project Credentials
+
+**Before any backend configuration, you must have:**
+
+| Credential | Example | Where to Find |
+|------------|---------|---------------|
+| Project URL | `https://abc123.us-east-1.insforge.app` | InsForge Dashboard → Project Settings |
+| API Key | `ik_xxxx...` | InsForge Dashboard → Project Settings |
+
+**If not provided, ask the user for these credentials first.** Without them, no backend API calls can be made.
+
 ## Typical Workflow
 
 1. **Backend Configuration** → Configure infrastructure via HTTP API
