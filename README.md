@@ -1,6 +1,6 @@
 # InsForge Agent Skills
 
-Agent Skills to help developers using AI agents build applications with [InsForge](https://insforge.com) Backend-as-a-Service.
+Agent Skills to help developers using AI agents build applications with [InsForge](https://insforge.dev) Backend-as-a-Service.
 
 ## Installation
 
