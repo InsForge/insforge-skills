@@ -6,6 +6,8 @@ description: |
   (2) Integrate InsForge SDK into frontend applications (database CRUD, auth flows, file uploads, AI operations, real-time messaging)
   (3) Deploy frontend applications to InsForge hosting
 
+  IMPORTANT: Before any backend work, you MUST have the user's Project URL and API Key. If not provided, ask the user first.
+
   Key distinction: Backend configuration uses HTTP API calls to the InsForge project URL. Client integration uses the @insforge/sdk in application code.
 license: MIT
 metadata:
@@ -15,7 +17,28 @@ metadata:
   date: January 2026
 ---
 
-# InsForge Developer Skill
+# InsForge Agent Skill
+
+## STOP: Check Credentials First
+
+**You MUST have these before making ANY backend API calls:**
+
+| Credential | Format | Required For |
+|------------|--------|--------------|
+| **Project URL** | `https://{project-id}.{region}.insforge.app` | All API calls |
+| **API Key** | `ik_xxxx...` | Authorization header |
+
+**Action:** If the user has not provided both credentials, **ASK NOW** before proceeding.
+
+```
+Do you have an InsForge project? I'll need:
+1. Project URL (e.g., https://abc123.us-east-1.insforge.app)
+2. API Key (starts with ik_)
+
+You can find these in InsForge Dashboard → Project Settings.
+```
+
+---
 
 ## When to Use Which Documentation
 
@@ -31,17 +54,6 @@ metadata:
 - Setting up real-time channels or database triggers
 - Managing auth settings, AI configurations, or deployments
 - Examples: Creating a `posts` table, enabling OAuth providers, deploying an edge function
-
-## Required: Project Credentials
-
-**Before any backend configuration, you must have:**
-
-| Credential | Example | Where to Find |
-|------------|---------|---------------|
-| Project URL | `https://abc123.us-east-1.insforge.app` | InsForge Dashboard → Project Settings |
-| API Key | `ik_xxxx...` | InsForge Dashboard → Project Settings |
-
-**If not provided, ask the user for these credentials first.** Without them, no backend API calls can be made.
 
 ## Typical Workflow
 
