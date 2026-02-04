@@ -112,6 +112,7 @@ const insforge = createClient({
 | **Functions** | [functions/sdk-integration.md](functions/sdk-integration.md) | [functions/backend-configuration.md](functions/backend-configuration.md) |
 | **AI** | [ai/sdk-integration.md](ai/sdk-integration.md) | [ai/backend-configuration.md](ai/backend-configuration.md) |
 | **Real-time** | [realtime/sdk-integration.md](realtime/sdk-integration.md) | [realtime/backend-configuration.md](realtime/backend-configuration.md) |
+| **Schedules** | — | [schedules/backend-configuration.md](schedules/backend-configuration.md) |
 | **Deployments** | — | [deployments/workflow.md](deployments/workflow.md) |
 | **Logs** | — | [logs/debugging.md](logs/debugging.md) |
 
@@ -125,6 +126,7 @@ const insforge = createClient({
 | **Functions** | Invoke functions | Deploy, update, delete functions |
 | **AI** | Chat, images, embeddings | Models, credits, usage stats |
 | **Real-time** | Connect, subscribe, publish events | Channel patterns, database triggers |
+| **Schedules** | — | Cron jobs, HTTP triggers, execution logs |
 | **Deployments** | — | Deploy frontend apps |
 | **Logs** | — | Fetch container logs for debugging |
 
@@ -154,6 +156,7 @@ All SDK methods return `{ data, error }`.
 | Deploy function | `POST /api/functions` |
 | Configure auth | `PUT /api/auth/config` |
 | Get metadata | `GET /api/metadata` |
+| Create schedule | `POST /api/schedules` |
 | Deploy frontend | `POST /api/deployments` |
 | Get logs | `GET /api/logs/{source}` |
 
