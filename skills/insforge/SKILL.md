@@ -12,23 +12,38 @@ description: |
 license: MIT
 metadata:
   author: insforge
-  version: "1.0.0"
+  version: "1.1.0"
   organization: InsForge
-  date: January 2026
+  date: February 2026
 ---
 
 # InsForge Agent Skill
 
-## STOP: Check Credentials First
+## Credential Detection (MCP Mode)
 
-**You MUST have these before making ANY backend API calls:**
+**When using MCP tools**, credentials are often pre-configured. Before asking the user:
+
+1. **Try calling MCP tools first**: Attempt `get-backend-metadata` or `get-anon-key`
+2. **If MCP succeeds**: Credentials are already configured, proceed with work
+3. **If MCP fails with auth error**: Then ask user for Project URL and API Key
+
+```
+Example: User says "deploy to insforge"
+✓ Try: get-backend-metadata via MCP
+✓ If success: Extract project URL from metadata, get anon key via get-anon-key
+✗ If fail: Ask user for credentials
+```
+
+## STOP: Check Credentials First (Manual Mode)
+
+**Only ask for credentials if MCP auto-detection fails.** You need:
 
 | Credential | Format | Required For |
 |------------|--------|--------------|
 | **Project URL** | `https://{project-id}.{region}.insforge.app` | All API calls |
 | **API Key** | `ik_xxxx...` | Authorization header |
 
-**Action:** If the user has not provided both credentials, **ASK NOW** before proceeding.
+**Action:** If MCP tools fail and user has not provided credentials, ask now:
 
 ```
 Do you have an InsForge project? I'll need:
@@ -160,9 +175,53 @@ All SDK methods return `{ data, error }`.
 | Deploy frontend | `POST /api/deployments` |
 | Get logs | `GET /api/logs/{source}` |
 
+## Deployment Best Practices
+
+### ALWAYS: Local Build First
+
+**Before deploying to InsForge, verify the build works locally.** Local builds are faster to debug and don't waste server resources on avoidable errors.
+
+```bash
+# 1. Install dependencies
+npm install
+
+# 2. Set up environment variables for your framework
+cp .env.example .env.local  # or create .env.production
+
+# 3. Run production build
+npm run build
+```
+
+**Common build-time issues to fix before deploying:**
+
+| Issue | Common Cause | General Solution |
+|-------|--------------|------------------|
+| Missing environment variables | Build-time env vars not set | Create `.env.production` with required variables |
+| Module resolution errors | Edge functions mixed with app code | Exclude edge function directories from TypeScript/compiler config |
+| Static export conflicts | Dynamic routes with static export | Use server-side rendering or configure static params |
+| Missing dependencies | Incomplete node_modules | Run `npm install` and verify package.json |
+
+### Framework-Specific Notes
+
+- **Environment Variable Prefix**: Use the correct prefix for your framework:
+  - Vite: `VITE_*`
+  - Next.js: `NEXT_PUBLIC_*`
+  - Create React App: `REACT_APP_*`
+  - Astro: `PUBLIC_*`
+
+- **Edge Functions**: If your project has Deno/edge functions in a separate directory (commonly `functions/`), exclude them from your frontend build to avoid module resolution errors.
+
+### Deployment Checklist
+
+- [ ] Local `npm run build` succeeds
+- [ ] All required environment variables configured for production
+- [ ] Edge function directories excluded from frontend build (if applicable)
+- [ ] Build output directory matches your framework's expected output
+
 ## Important Notes
 
 - **Database inserts require array format**: `insert([{...}])` not `insert({...})`
 - **Storage**: Save both `url` AND `key` to database for download/delete operations
 - **Functions invoke URL**: `/functions/{slug}` (without `/api` prefix)
 - **Use Tailwind CSS v3.4** (do not upgrade to v4)
+- **Always local build before deploy**: Prevents wasted build resources and faster debugging
