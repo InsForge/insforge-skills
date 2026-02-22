@@ -7,13 +7,13 @@ Agent Skills to help developers using AI agents build applications with [InsForg
 ### Using the skills registry
 
 ```bash
-npx skills add insforge/agent-skills
+npx skills add insforge/insforge-skills
 ```
 
 ### Claude Code
 
 ```bash
-/install-skills insforge/agent-skills
+/install-skills insforge/insforge-skills
 ```
 
 ## Available Skills
