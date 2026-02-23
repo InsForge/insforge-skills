@@ -35,6 +35,24 @@ Build full-stack applications with InsForge. This skill provides comprehensive g
 
 </details>
 
+<details>
+<summary><strong>insforge-cli</strong> - InsForge CLI Project Management</summary>
+
+Create and manage InsForge projects from the command line. This skill provides comprehensive guidance for:
+
+- **Authentication**: Login (OAuth/password), logout, session verification
+- **Project Management**: Create, link, and inspect projects
+- **Database**: Raw SQL execution, schema inspection, RLS, import/export
+- **Edge Functions**: Deploy, invoke, and view function source
+- **Storage**: Bucket and object management (upload, download, list)
+- **Deployments**: Frontend app deployment and status tracking
+- **Secrets**: Create, update, and manage project secrets
+- **CI/CD**: Non-interactive workflows using environment variables
+
+**Key distinction**: Use this skill for infrastructure management via `@insforge/cli`. For writing application code with the InsForge SDK, use the **insforge** skill instead.
+
+</details>
+
 ## Usage
 
 Once installed, AI agents can access InsForge-specific guidance when:
@@ -51,28 +69,38 @@ Each skill follows the [Agent Skills Open Standard](https://agentskills.io/):
 
 ```
 skills/
-└── insforge/
-    ├── SKILL.md              # Main skill manifest and overview
-    ├── database/
-    │   ├── sdk-integration.md
-    │   └── backend-configuration.md
-    ├── auth/
-    │   ├── sdk-integration.md
-    │   └── backend-configuration.md
-    ├── storage/
-    │   ├── sdk-integration.md
-    │   └── backend-configuration.md
-    ├── functions/
-    │   ├── sdk-integration.md
-    │   └── backend-configuration.md
-    ├── ai/
-    │   ├── sdk-integration.md
-    │   └── backend-configuration.md
-    ├── realtime/
-    │   ├── sdk-integration.md
-    │   └── backend-configuration.md
-    └── deployments/
-        └── workflow.md
+├── insforge/
+│   ├── SKILL.md              # Main skill manifest and overview
+│   ├── database/
+│   │   ├── sdk-integration.md
+│   │   └── backend-configuration.md
+│   ├── auth/
+│   │   ├── sdk-integration.md
+│   │   └── backend-configuration.md
+│   ├── storage/
+│   │   ├── sdk-integration.md
+│   │   └── backend-configuration.md
+│   ├── functions/
+│   │   ├── sdk-integration.md
+│   │   └── backend-configuration.md
+│   ├── ai/
+│   │   ├── sdk-integration.md
+│   │   └── backend-configuration.md
+│   ├── realtime/
+│   │   ├── sdk-integration.md
+│   │   └── backend-configuration.md
+│   └── deployments/
+│       └── workflow.md
+└── insforge-cli/
+    ├── SKILL.md              # CLI skill manifest and command reference
+    └── references/
+        ├── login.md
+        ├── create.md
+        ├── db-query.md
+        ├── db-export.md
+        ├── db-import.md
+        ├── functions-deploy.md
+        └── deployments-deploy.md
 ```
 
 ### Documentation Pattern
