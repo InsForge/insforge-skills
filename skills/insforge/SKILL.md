@@ -217,6 +217,8 @@ npm run build
 - [ ] All required environment variables configured for production
 - [ ] Edge function directories excluded from frontend build (if applicable)
 - [ ] Build output directory matches your framework's expected output
+- [ ] Deployment reaches `READY` and URL is validated
+- [ ] If deployment fails (`ERROR`), collect logs, fix root cause, and redeploy
 
 ## Important Notes
 
@@ -225,3 +227,4 @@ npm run build
 - **Functions invoke URL**: `/functions/{slug}` (without `/api` prefix)
 - **Use Tailwind CSS v3.4** (do not upgrade to v4)
 - **Always local build before deploy**: Prevents wasted build resources and faster debugging
+- **Deployment is not done after start**: Confirm `READY`, validate URL, and repair/redeploy on failure
