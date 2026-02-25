@@ -281,3 +281,4 @@ Before completing an RLS implementation:
 
 - [PostgreSQL RLS Documentation](https://www.postgresql.org/docs/current/ddl-rowsecurity.html)
 - [SECURITY DEFINER Functions](https://www.postgresql.org/docs/current/sql-createfunction.html)
+- [Postgres-rls Skill](https://playbooks.com/skills/troykelly/claude-skills/postgres-rls)
