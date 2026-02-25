@@ -118,14 +118,14 @@ const { data, count } = await insforge.database
 ## Best Practices
 
 1. **Generate TypeScript interfaces for every table schema**
-   - Use `GET /api/metadata/{tableName}` to get the table schema
+   - Use `insforge db tables` (CLI) to inspect the table schema
    - Create a corresponding TypeScript interface/type for type safety
    - This helps catch errors at compile time and improves developer experience
 
 ### Example: Generate Interface from Schema
 
 ```typescript
-// After checking table schema via GET /api/metadata/posts
+// After checking table schema via `insforge db tables`
 // Create a typed interface:
 
 interface Post {
@@ -148,7 +148,7 @@ const posts = data as Post[]
 ## Recommended Workflow
 
 ```
-1. Check table schema     → GET /api/metadata/{tableName}
+1. Check table schema     → insforge db tables
 2. Generate TypeScript interface for the table
 3. Cast query results to the interface for type safety
 4. Handle errors appropriately

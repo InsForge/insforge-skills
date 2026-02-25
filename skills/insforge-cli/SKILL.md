@@ -13,12 +13,6 @@ metadata:
 
 Command-line tool for managing InsForge Backend-as-a-Service projects.
 
-## Installation
-
-```bash
-npm install -g @insforge/cli
-```
-
 ## Critical: Session Start Checks
 
 ```bash
@@ -105,6 +99,26 @@ If no project linked: `insforge create` (new) or `insforge link` (existing)
 - `insforge secrets update <key> [--value] [--active] [--reserved] [--expires]` — update secret
 - `insforge secrets delete <key>` — **soft delete** (marks inactive; restore with `--active true`)
 
+### Schedules — `insforge schedules`
+- `insforge schedules list` — list all scheduled tasks (shows ID, name, cron, URL, method, active, next run)
+- `insforge schedules get <id>` — get schedule details
+- `insforge schedules create --name --cron --url --method [--headers <json>] [--body <json>]` — create a cron job (5-field cron format only)
+- `insforge schedules update <id> [--name] [--cron] [--url] [--method] [--headers] [--body] [--active]` — update schedule
+- `insforge schedules delete <id>` — delete schedule (with confirmation)
+- `insforge schedules logs <id> [--limit] [--offset]` — view execution logs
+
+### Logs — `insforge logs`
+- `insforge logs <source> [--limit <n>]` — fetch backend container logs (default: 20 entries)
+
+| Source | Description |
+|--------|-------------|
+| `insforge.logs` | Main backend logs |
+| `postgREST.logs` | PostgREST API layer logs |
+| `postgres.logs` | PostgreSQL database logs |
+| `function.logs` | Edge function execution logs |
+
+> Source names are case-insensitive: `postgrest.logs` works the same as `postgREST.logs`.
+
 ### Documentation — `insforge docs`
 - `insforge docs` — list all topics
 - `insforge docs instructions` — setup guide
@@ -121,6 +135,8 @@ If no project linked: `insforge create` (new) or `insforge link` (existing)
 **Storage delete-bucket is hard**: deletes the bucket and every object inside it permanently.
 
 **db rpc uses GET or POST**: no `--data` → GET; with `--data` → POST.
+
+**Schedules use 5-field cron only**: `minute hour day month day-of-week`. 6-field (with seconds) is NOT supported. Headers can reference secrets with `${{secrets.KEY_NAME}}`.
 
 ---
 
@@ -165,6 +181,30 @@ insforge deployments deploy ./dist --env '{"VITE_API_URL": "https://my-app.us-ea
 ```bash
 insforge db export --output backup.sql
 insforge db import backup.sql
+```
+
+### Schedule a cron job
+
+```bash
+# Create a schedule that calls a function every 5 minutes
+insforge schedules create \
+  --name "Cleanup Expired" \
+  --cron "*/5 * * * *" \
+  --url "https://my-app.us-east.insforge.app/functions/cleanup" \
+  --method POST \
+  --headers '{"Authorization": "Bearer ${{secrets.API_TOKEN}}"}'
+
+# Check execution history
+insforge schedules logs <id>
+```
+
+### Debug with logs
+
+```bash
+insforge logs function.logs          # function execution issues
+insforge logs postgres.logs          # database query problems
+insforge logs insforge.logs          # API / auth errors
+insforge logs postgrest.logs --limit 50
 ```
 
 ### Non-interactive CI/CD
