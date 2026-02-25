@@ -135,7 +135,7 @@ const insforge = createClient({
 
 | Module | sdk-integration.md | backend-configuration.md |
 |--------|-------------------|-------------------------|
-| **Database** | CRUD operations, filters, pagination | Create tables, RLS policies, triggers, indexes |
+| **Database** | CRUD operations, filters, pagination | Create tables, RLS policies, triggers, indexes. See also [database/postgres-rls.md](database/postgres-rls.md) for RLS best practices |
 | **Auth** | Sign up/in, OAuth, sessions, profiles | Auth config, user management, anon tokens |
 | **Storage** | Upload, download, delete files | Create/manage buckets |
 | **Functions** | Invoke functions | Deploy, update, delete functions |
@@ -144,6 +144,12 @@ const insforge = createClient({
 | **Schedules** | — | Cron jobs, HTTP triggers, execution logs |
 | **Deployments** | — | Deploy frontend apps |
 | **Logs** | — | Fetch container logs for debugging |
+
+### Guides
+
+| Guide | When to Use |
+|-------|-------------|
+| [database/postgres-rls.md](database/postgres-rls.md) | Writing or reviewing RLS policies — covers infinite recursion prevention, `SECURITY DEFINER` patterns, performance tips, and common InsForge RLS patterns |
 
 ## SDK Quick Reference
 
