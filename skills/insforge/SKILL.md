@@ -64,8 +64,6 @@ These modules still require HTTP API calls because the CLI does not yet support 
 |--------|----------------------|
 | **Auth** | [auth/backend-configuration.md](auth/backend-configuration.md) |
 | **AI** | [ai/backend-configuration.md](ai/backend-configuration.md) |
-| **Schedules** | [schedules/backend-configuration.md](schedules/backend-configuration.md) |
-| **Logs** | [logs/debugging.md](logs/debugging.md) |
 
 ## SDK Quick Reference
 
