@@ -160,7 +160,7 @@ CREATE TRIGGER posts_updated_at
 
 Import CSV or JSON files directly into a table. No CLI equivalent yet — use the HTTP API.
 
-```
+```http
 POST /api/database/advance/bulk-upsert
 Authorization: Bearer {admin-token-or-api-key}
 Content-Type: multipart/form-data

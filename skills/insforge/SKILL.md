@@ -184,7 +184,7 @@ WITH CHECK (
 
 #### Recommended Workflow
 
-```
+```text
 1. Create channel patterns   → INSERT INTO realtime.channels
 2. Ensure enabled = true     → Set enabled to true
 3. Create triggers if needed → Auto-publish on database changes

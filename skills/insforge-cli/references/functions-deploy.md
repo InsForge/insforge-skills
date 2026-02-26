@@ -75,6 +75,11 @@ export default async function(request) {
 ```javascript
 import { createClient } from 'npm:@insforge/sdk'
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
 export default async function(req) {
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: corsHeaders })
