@@ -169,12 +169,39 @@ insforge functions invoke my-handler --data '{"action": "test"}'
 
 ### Deploy frontend
 
+**Always verify the local build succeeds before deploying.** Local builds are faster to debug and don't waste server resources.
+
 ```bash
+# 1. Build locally first
 npm run build
+
+# 2. Deploy
 insforge deployments deploy ./dist --env '{"VITE_API_URL": "https://my-app.us-east.insforge.app"}'
 ```
 
-> Always build locally first. Env var prefix depends on framework: `VITE_*`, `NEXT_PUBLIC_*`, `REACT_APP_*`.
+**Environment variable prefix by framework:**
+
+| Framework | Prefix | Example |
+|-----------|--------|---------|
+| Vite | `VITE_` | `VITE_INSFORGE_URL` |
+| Next.js | `NEXT_PUBLIC_` | `NEXT_PUBLIC_INSFORGE_URL` |
+| Create React App | `REACT_APP_` | `REACT_APP_INSFORGE_URL` |
+| Astro | `PUBLIC_` | `PUBLIC_INSFORGE_URL` |
+
+**Common build errors:**
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| Missing env var | Build-time env vars not set | Create `.env.production` with correct prefix |
+| Module resolution | Edge functions mixed with app code | Exclude `functions/` dir from TypeScript/bundler config |
+| Static export conflict | Dynamic routes with static export | Use SSR or configure static params |
+| Missing dependency | Incomplete node_modules | Run `npm install` and verify package.json |
+
+**Pre-deploy checklist:**
+- [ ] `npm run build` succeeds locally
+- [ ] All required env vars configured with correct framework prefix
+- [ ] Edge function directories excluded from frontend build (if applicable)
+- [ ] Build output directory matches framework's expected output (`dist/`, `build/`, `.next/`, etc.)
 
 ### Backup and restore database
 
