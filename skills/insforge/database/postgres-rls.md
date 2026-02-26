@@ -30,7 +30,8 @@ CREATE TABLE posts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- 2. Enable RLS
@@ -49,6 +50,12 @@ CREATE POLICY "owners can update" ON posts
 
 CREATE POLICY "owners can delete" ON posts
   FOR DELETE USING (user_id = auth.uid());
+
+-- 4. Auto-update updated_at
+CREATE TRIGGER posts_updated_at
+  BEFORE UPDATE ON posts
+  FOR EACH ROW
+  EXECUTE FUNCTION system.update_updated_at();
 ```
 
 ---

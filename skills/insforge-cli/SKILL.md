@@ -28,7 +28,6 @@ If no project linked: `insforge create` (new) or `insforge link` (existing)
 | Flag | Description |
 |------|-------------|
 | `--json` | Structured JSON output (for scripts and agents) |
-| `--project-id <id>` | Override linked project ID |
 | `-y, --yes` | Skip confirmation prompts |
 
 ## Exit Codes
@@ -124,6 +123,8 @@ If no project linked: `insforge create` (new) or `insforge link` (existing)
 - `insforge docs instructions` — setup guide
 - `insforge docs <feature> <language>` — feature docs (`db / storage / functions / auth / ai / realtime` × `typescript / swift / kotlin / rest-api`)
 
+> For writing application code with the InsForge SDK, use the insforge (SDK) skill instead, and use the `insforge docs <feature> <language>` to get specific SDK documentation.
+
 ---
 
 ## Non-Obvious Behaviors
@@ -169,12 +170,32 @@ insforge functions invoke my-handler --data '{"action": "test"}'
 
 ### Deploy frontend
 
+**Always verify the local build succeeds before deploying.** Local builds are faster to debug and don't waste server resources.
+
 ```bash
+# 1. Build locally first
 npm run build
+
+# 2. Deploy
 insforge deployments deploy ./dist --env '{"VITE_API_URL": "https://my-app.us-east.insforge.app"}'
 ```
 
-> Always build locally first. Env var prefix depends on framework: `VITE_*`, `NEXT_PUBLIC_*`, `REACT_APP_*`.
+**Environment variable prefix by framework:**
+
+| Framework | Prefix | Example |
+|-----------|--------|---------|
+| Vite | `VITE_` | `VITE_INSFORGE_URL` |
+| Next.js | `NEXT_PUBLIC_` | `NEXT_PUBLIC_INSFORGE_URL` |
+| Create React App | `REACT_APP_` | `REACT_APP_INSFORGE_URL` |
+| Astro | `PUBLIC_` | `PUBLIC_INSFORGE_URL` |
+| SvelteKit | `PUBLIC_` | `PUBLIC_INSFORGE_URL` |
+
+**Pre-deploy checklist:**
+- [ ] `npm run build` succeeds locally
+- [ ] All required env vars configured with correct framework prefix
+- [ ] Edge function directories excluded from frontend build (if applicable)
+- [ ] Never include `node_modules`, `.git`, `.env`, `.insforge`, or build output in the zip
+- [ ] Build output directory matches framework's expected output (`dist/`, `build/`, `.next/`, etc.)
 
 ### Backup and restore database
 
@@ -198,6 +219,82 @@ insforge schedules create \
 insforge schedules logs <id>
 ```
 
+#### Cron Expression Format
+
+InsForge uses **5-field cron expressions** (pg_cron format). 6-field expressions with seconds are NOT supported.
+
+```
+┌─────────────── minute (0-59)
+│ ┌───────────── hour (0-23)
+│ │ ┌─────────── day of month (1-31)
+│ │ │ ┌───────── month (1-12)
+│ │ │ │ ┌─────── day of week (0-6, Sunday=0)
+│ │ │ │ │
+* * * * *
+```
+
+| Expression | Description |
+|------------|-------------|
+| `* * * * *` | Every minute |
+| `*/5 * * * *` | Every 5 minutes |
+| `0 * * * *` | Every hour (at minute 0) |
+| `0 9 * * *` | Daily at 9:00 AM |
+| `0 9 * * 1` | Every Monday at 9:00 AM |
+| `0 0 1 * *` | First day of every month at midnight |
+| `30 14 * * 1-5` | Weekdays at 2:30 PM |
+
+#### Secret References in Headers
+
+Headers can reference secrets stored in InsForge using the syntax `${{secrets.KEY_NAME}}`.
+
+```json
+{
+  "headers": {
+    "Authorization": "Bearer ${{secrets.API_TOKEN}}",
+    "X-API-Key": "${{secrets.EXTERNAL_API_KEY}}"
+  }
+}
+```
+
+Secrets are resolved at schedule creation/update time. If a referenced secret doesn't exist, the operation fails with a 404 error.
+
+#### Best Practices
+
+1. **Use 5-field cron expressions only**
+   - pg_cron does not support seconds (6-field format)
+   - Example: `*/5 * * * *` for every 5 minutes
+
+2. **Store sensitive values as secrets**
+   - Use `${{secrets.KEY_NAME}}` in headers for API keys and tokens
+   - Create secrets first via the secrets API before referencing them
+
+3. **Target InsForge functions for serverless tasks**
+   - Use the function URL format: `https://your-project.region.insforge.app/functions/{slug}`
+   - Ensure the target function exists and has `status: "active"`
+
+4. **Monitor execution logs**
+   - Check logs regularly to ensure schedules are running successfully
+   - Look for non-200 status codes and failed executions
+
+#### Common Mistakes
+
+| Mistake | Solution |
+|---------|----------|
+| Using 6-field cron (with seconds) | Use 5-field format only: `minute hour day month day-of-week` |
+| Referencing non-existent secret | Create the secret first via secrets API |
+| Targeting non-existent function | Verify function exists and is `active` before scheduling |
+| Schedule not running | Check `isActive` is `true` and cron expression is valid |
+
+#### Recommended Workflow
+
+```
+1. Create secrets if needed     -> `insforge secrets add KEY VALUE`
+2. Create/verify target function -> `insforge functions list`
+3. Create schedule              -> `insforge schedules create`
+4. Verify schedule is active    -> `insforge schedules get <id>`
+5. Monitor execution logs       -> `insforge schedules logs <id>`
+```
+
 ### Debug with logs
 
 ```bash
@@ -206,6 +303,26 @@ insforge logs postgres.logs          # database query problems
 insforge logs insforge.logs          # API / auth errors
 insforge logs postgrest.logs --limit 50
 ```
+
+#### Best Practices
+
+1. **Start with function.logs for function issues**
+   - Check execution errors, timeouts, and runtime exceptions
+
+2. **Use postgres.logs for query problems**
+   - Debug slow queries, constraint violations, connection issues
+
+3. **Check insforge.logs for API errors**
+   - Authentication failures, request validation, general backend errors
+
+#### Common Debugging Scenarios
+
+| Problem | Check |
+|---------|-------|
+| Function not working | `function.logs` |
+| Database query failing | `postgres.logs`, `postgREST.logs` |
+| Auth issues | `insforge.logs` |
+| API returning 500 errors | `insforge.logs`, `postgREST.logs` |
 
 ### Non-interactive CI/CD
 
@@ -232,3 +349,6 @@ After `create` or `link`, `.insforge/project.json` is created:
 ```
 
 `oss_host` is the base URL for all SDK and API operations. `api_key` is the admin key for backend API calls.
+
+> **Never commit this file to version control or share it publicly**.
+> Do not edit this file manually. Use `insforge link` to switch projects.
