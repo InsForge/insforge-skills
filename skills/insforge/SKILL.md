@@ -4,14 +4,14 @@ description: Integrate InsForge SDK (@insforge/sdk) into frontend applications f
 license: MIT
 metadata:
   author: insforge
-  version: "2.0.0"
+  version: "1.1.0"
   organization: InsForge
   date: February 2026
 ---
 
 # InsForge SDK Skill
 
-This skill covers **client-side SDK integration** using `@insforge/sdk`. For backend infrastructure operations (creating tables, deploying functions, managing storage buckets, deployments, secrets, etc.), use the **insforge-cli** skill.
+This skill covers **client-side SDK integration** using `@insforge/sdk`. For backend infrastructure operations (creating tables, inspecting schema, deploying functions, secrets, managing storage buckets, website deployments, cron job and schedules, logs, etc.), use the **insforge-cli** skill.
 
 ## Quick Setup
 
