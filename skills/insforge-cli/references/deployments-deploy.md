@@ -144,7 +144,7 @@ For React, Vue, etc. single-page apps, add `vercel.json` to project root:
 ## Best Practices
 
 1. **Exclude unnecessary files from zip**
-   - Never include `node_modules`, `.git`, `.env`, or build output
+   - Never include `node_modules`, `.git`, `.env`, `.insforge`, or build output
    - Large assets should go to InsForge Storage, not the deployment
 
 2. **Pass sensitive values via envVars, not in code**
