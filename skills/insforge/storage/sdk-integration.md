@@ -85,7 +85,7 @@ await insforge.database
 ## Best Practices
 
 1. **Verify bucket exists before uploading**
-   - Check available buckets via `GET /api/storage/buckets` (see [backend-configuration.md](backend-configuration.md))
+   - Check available buckets via CLI: `insforge storage buckets`
    - If no buckets exist, create one first via admin API
 
 2. **Always store both URL and key**
@@ -103,7 +103,7 @@ await insforge.database
 ## Recommended Workflow
 
 ```
-1. Check available buckets → GET /api/storage/buckets (admin API)
+1. Check available buckets → insforge storage buckets
 2. If no bucket exists     → Create one first
 3. Upload file             → Save both url and key to database
 4. Display file            → Use url

@@ -27,3 +27,6 @@ npm-debug.log*
 # Temporary files
 tmp/
 temp/
+
+# Override global gitignore to allow .claude
+!.claude
