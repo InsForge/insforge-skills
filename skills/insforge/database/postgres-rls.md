@@ -6,8 +6,6 @@ Row Level Security (RLS) provides defense-in-depth for data isolation. When impl
 
 **Core principle:** RLS is your last line of defense, not your only one. Get it wrong and you have a data breach.
 
-**Announce at start:** "I'm applying postgres-rls to verify Row Level Security implementation."
-
 ---
 
 ## InsForge RLS Basics

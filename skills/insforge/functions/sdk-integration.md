@@ -45,7 +45,7 @@ const { data, error } = await insforge.functions.invoke('api-endpoint', {
 ## Best Practices
 
 1. **Verify function exists and is active before invoking**
-   - Check available functions via `GET /api/functions` (see [backend-configuration.md](backend-configuration.md))
+   - Check available functions via CLI: `insforge functions list`
    - If no functions exist, create one first via admin API
    - Ensure function `status` is `"active"` (not `"draft"`)
 
@@ -64,7 +64,7 @@ const { data, error } = await insforge.functions.invoke('api-endpoint', {
 ## Recommended Workflow
 
 ```
-1. Check available functions → GET /api/functions (admin API)
+1. Check available functions → insforge functions list
 2. If no function exists     → Create one first with status: "active"
 3. Invoke function           → Use function slug
 4. Handle response           → Check for errors

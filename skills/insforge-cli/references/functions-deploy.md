@@ -30,7 +30,7 @@ insforge/functions/{slug}/index.ts
 2. If exists: updates (PUT)
 3. If new: creates (POST)
 
-## CLI Examples
+## Usage Examples
 
 ```bash
 # Deploy from default path (insforge/functions/my-handler/index.ts)
@@ -147,6 +147,15 @@ export default async function(req: Request): Promise<Response> {
 | `active` | Deployed and invokable |
 | `error` | Deployment error |
 
+## Best Practices
+
+1. **Always handle CORS** — include preflight `OPTIONS` handler and CORS headers in every response
+2. **Store credentials as secrets** — use `insforge secrets add` for API keys, base URLs, etc.
+3. **Check available functions first** before invoking from frontend
+   - Call `insforge functions list` to see existing functions
+   - Verify the target function exists and has `status: "active"`
+4. **Always return a `Response`** — the runtime expects a `Response` object
+
 ## Common Mistakes
 
 | Mistake | Solution |
@@ -156,21 +165,12 @@ export default async function(req: Request): Promise<Response> {
 | Missing CORS headers | Always handle `OPTIONS` preflight and include CORS headers in responses |
 | Forgetting to check auth | For authenticated functions, always verify `getCurrentUser()` before proceeding |
 
-## Best Practices
-
-1. **Always handle CORS** — include preflight `OPTIONS` handler and CORS headers in every response
-2. **Store credentials as secrets** — use `insforge secrets set` for API keys, base URLs, etc.
-3. **Check available functions first** before invoking from frontend
-   - Call `insforge functions list` to see existing functions
-   - Verify the target function exists and has `status: "active"`
-4. **Always return a `Response`** — the runtime expects a `Response` object
-
 ## Recommended Workflow
 
 ```
 1. Write function code            → insforge/functions/{slug}/index.ts
 2. Deploy                         → insforge functions deploy {slug}
 3. Check status                   → insforge functions list
-4. Ensure secrets are set         → insforge secrets set INSFORGE_BASE_URL https://...
+4. Ensure secrets are set         → insforge secrets add INSFORGE_BASE_URL https://...
 5. Invoke from frontend           → insforge.functions.invoke('{slug}', { body: {...} })
 ```

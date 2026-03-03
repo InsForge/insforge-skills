@@ -100,8 +100,10 @@ const response = await insforge.ai.images.generate({
 
 // Upload to storage
 const base64 = response.data[0].b64_json
-const buffer = Buffer.from(base64, 'base64')
-const blob = new Blob([buffer], { type: 'image/png' })
+const binary = atob(base64)
+const bytes = new Uint8Array(binary.length)
+for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+const blob = new Blob([bytes], { type: 'image/png' })
 
 const { data } = await insforge.storage.from('ai-images').uploadAuto(blob)
 ```
@@ -111,7 +113,7 @@ const { data } = await insforge.storage.from('ai-images').uploadAuto(blob)
 ## Best Practices
 
 1. **Always verify model availability first**
-   - Before implementing AI features, check `GET /api/ai/configurations` (see [backend-configuration.md](backend-configuration.md))
+   - Before implementing AI features, check AI configurations via [backend-configuration.md](backend-configuration.md)
    - Only use model IDs that are configured and enabled for the project
 
 2. **Use exact model IDs from configurations**
@@ -131,7 +133,7 @@ const { data } = await insforge.storage.from('ai-images').uploadAuto(blob)
 
 | Mistake | Solution |
 |---------|----------|
-| ❌ Using unconfigured model IDs | ✅ Check configurations first via admin API |
+| ❌ Using unconfigured model IDs | ✅ Check configurations first via backend-configuration.md |
 | ❌ Hardcoding model IDs without verification | ✅ Verify model exists in project's AI configurations |
 | ❌ Ignoring errors | ✅ Always handle `error` in response |
 | ❌ Storing base64 image data in database | ✅ Upload to storage, save URL/key to database |
@@ -148,7 +150,7 @@ If AI requests fail with model-related errors:
 ## Recommended Workflow
 
 ```
-1. Check available models    → GET /api/ai/configurations (admin API)
+1. Check available models    → See backend-configuration.md
 2. Confirm model is enabled  → Look for modelId in response
 3. Implement SDK calls       → Use exact modelId from configurations
 4. Handle errors             → Show user-friendly messages

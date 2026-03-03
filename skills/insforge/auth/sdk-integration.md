@@ -192,7 +192,7 @@ await insforge.auth.resetPassword({
 ## Best Practices
 
 1. **Always check auth config first** before implementing
-   - Call `GET /api/auth/public-config` (see [backend-configuration.md](backend-configuration.md))
+   - Check auth configuration via [backend-configuration.md](backend-configuration.md)
    - This tells you what features to implement
 
 2. **The sign-up page must handle the full registration flow**
@@ -267,7 +267,7 @@ if (enabledProviders.includes('github')) {
 ## Recommended Workflow
 
 ```
-1. Get auth config           → GET /api/auth/public-config
+1. Get auth config           → See backend-configuration.md
 2. Check what's enabled      → Email verification? Which OAuth providers?
 3. Build appropriate UI      → Code input vs magic link, OAuth buttons
 4. Implement sign-up         → Handle requireEmailVerification response

@@ -122,7 +122,7 @@ await insforge.realtime.publish(`order:${orderId}`, 'viewed', {
 ## Best Practices
 
 1. **Ensure channel pattern exists before subscribing**
-   - Channel patterns must be created in `realtime.channels` table (see [backend-configuration.md](backend-configuration.md))
+   - Channel patterns must be created in `realtime.channels` table via SQL: `INSERT INTO realtime.channels (pattern, description, enabled) VALUES (...)`
    - If no channel pattern exists, create one first via admin API
 
 2. **Handle connection events**
@@ -145,7 +145,7 @@ await insforge.realtime.publish(`order:${orderId}`, 'viewed', {
 ## Recommended Workflow
 
 ```
-1. Create channel patterns   → Via admin API (backend-configuration.md)
+1. Create channel patterns   → INSERT INTO realtime.channels via SQL
 2. Connect to realtime       → await insforge.realtime.connect()
 3. Subscribe to channel      → await insforge.realtime.subscribe('channel')
 4. Listen for events         → insforge.realtime.on('event', handler)

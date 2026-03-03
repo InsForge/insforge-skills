@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebSearch",
+      "Bash(wc:*)",
+      "Bash(open:*)",
+      "Bash(claude:*)",
+      "Bash(python:*)",
+      "Bash(/usr/local/bin/python3.14:*)",
+      "Bash(/usr/local/Cellar/python@3.14/3.14.0/bin/python3.14:*)",
+      "Bash(pip install:*)",
+      "Bash(python3:*)",
+      "Bash(/tmp/skill-creator-venv/bin/python3.14:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}
