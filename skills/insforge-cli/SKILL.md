@@ -65,6 +65,7 @@ If no project linked: `insforge create` (new) or `insforge link` (existing)
 - `insforge link` — link directory to existing project
 - `insforge current` — show current user + linked project
 - `insforge list` — list all orgs and projects
+- `insforge metadata` — show backend metadata (auth config, database tables, storage buckets, edge functions, AI models, realtime channels). Use `--json` for structured output. **Run this first** to discover what's configured before building features.
 
 ### Database — `insforge db`
 - `insforge db query <sql>` — execute raw SQL. See [references/db-query.md](references/db-query.md)
