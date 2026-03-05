@@ -82,7 +82,7 @@ const { data, error } = await insforge.auth.signInWithPassword({
 
 if (error) {
   console.error('Sign in failed:', error.message)
-  if (error.status === 403) {
+  if (error.statusCode === 403) {
     console.error('Email not verified. Redirect to verification page.')
   }
 } else {
@@ -150,7 +150,7 @@ const { data, error } = await insforge.auth.verifyEmail({
 })
 
 if (error) {
-  if (error.status === 400) {
+  if (error.statusCode === 400) {
     console.error('Invalid or expired code')
   }
 } else {
@@ -192,7 +192,7 @@ await insforge.auth.resetPassword({
 ## Best Practices
 
 1. **Always check auth config first** before implementing
-   - Check auth configuration via [backend-configuration.md](backend-configuration.md)
+   - Run `insforge metadata --json` to get auth config, or see [backend-configuration.md](backend-configuration.md)
    - This tells you what features to implement
 
 2. **The sign-up page must handle the full registration flow**

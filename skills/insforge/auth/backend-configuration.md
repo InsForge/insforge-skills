@@ -11,8 +11,14 @@ Authorization: Bearer {admin-token-or-api-key}
 
 ## Get Public Auth Configuration
 
-Check current auth settings and enabled OAuth providers before implementing authentication flows. This is a **public endpoint** (no auth required).
+Check current auth settings and enabled OAuth providers before implementing authentication flows.
 
+**Preferred**: Use the CLI to get all backend metadata (includes auth config):
+```bash
+insforge metadata --json
+```
+
+Alternatively, this is a **public endpoint** (no auth required):
 ```
 GET /api/auth/public-config
 ```
