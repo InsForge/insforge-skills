@@ -16,6 +16,14 @@ Command-line tool for managing InsForge Backend-as-a-Service projects.
 
 ## Critical: Session Start Checks
 
+**First**, ensure the CLI is installed. Run `insforge whoami` — if the command is not found, install it:
+
+```bash
+npm install -g @insforge/cli
+```
+
+**Then** verify authentication and project:
+
 ```bash
 insforge whoami    # verify authentication
 insforge current   # verify linked project
