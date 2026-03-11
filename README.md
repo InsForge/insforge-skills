@@ -110,6 +110,11 @@ skills/
 
 ## Contributing
 
+To create or improve skills, first install the skill-creator tool:
+```bash
+npx skills add anthropics/skills -s skill-creator
+```
+
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on adding or improving skills.
 
 ## License
