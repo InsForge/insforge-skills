@@ -217,6 +217,7 @@ All SDK methods return `{ data, error }`.
 ## Important Notes
 
 - **Database inserts require array format**: `insert([{...}])` not `insert({...})`
+- **Next.js / SSR auth**: Use `createClient({ isServerMode: true })`, keep tokens in httpOnly cookies, and perform auth flows on the server. See [auth/sdk-integration.md](auth/sdk-integration.md)
 - **Storage**: Save both `url` AND `key` to database for download/delete operations
 - **Functions invoke URL**: `/functions/{slug}` (without `/api` prefix)
 - **Use Tailwind CSS v3.4** (do not upgrade to v4)
