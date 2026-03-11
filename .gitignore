@@ -28,5 +28,6 @@ npm-debug.log*
 tmp/
 temp/
 
-# Override global gitignore to allow .claude
-!.claude
+# claude skills for skill-creator
+.claude/skills/
+
