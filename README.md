@@ -111,7 +111,7 @@ skills/
 ## Contributing
 
 To create or improve skills, first install the skill-creator tool:
-```
+```bash
 npx skills add anthropics/skills -s skill-creator
 ```
 
