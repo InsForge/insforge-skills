@@ -91,3 +91,13 @@ export async function getCurrentUser() {
 - In the OAuth callback route, exchange the code on the server, then set auth cookies on the response
 - Keep a dedicated refresh route or middleware path that reads the refresh token cookie, calls `refreshSession`, and rewrites both cookies
 - Validate post-auth redirects and only allow safe internal paths
+
+## Common Mistakes
+
+| Mistake | Solution |
+|---------|----------|
+| Creating the SDK client in client components for SSR auth flows | Create the client in server actions, route handlers, loaders, or API routes with `isServerMode: true` |
+| Storing tokens in client-readable storage | Keep `accessToken` and `refreshToken` in httpOnly cookies |
+| Calling authenticated server-side APIs without the current access token | Pass the token with `createClient({ edgeFunctionToken: accessToken })` |
+| Handling the OAuth code exchange in the browser | Exchange the OAuth code on the server, then set cookies on the response |
+| Redirecting to arbitrary external URLs after sign-in or refresh | Validate redirects and only allow safe internal paths |
