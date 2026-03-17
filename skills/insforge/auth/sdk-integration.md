@@ -13,6 +13,10 @@ const insforge = createClient({
 })
 ```
 
+## SSR / Server-Rendered Apps
+
+For Next.js, Remix, SvelteKit, Nuxt server routes, or any other SSR setup, use server mode and server-managed cookies. See [ssr-integration.md](ssr-integration.md) for the full pattern and minimal examples.
+
 ## Sign Up (Complete Flow)
 
 Registration requires email verification. Complete flow:
@@ -184,6 +188,7 @@ await insforge.auth.resetPassword({
 ## Important Notes
 
 - **Web vs Mobile**: Web uses httpOnly cookies + CSRF; mobile/desktop returns refreshToken in response
+- **SSR apps should use server mode**: For Next.js and similar SSR frameworks, create the SDK client on the server with `isServerMode: true` and manage cookies yourself. See [ssr-integration.md](ssr-integration.md)
 - All methods return `{ data, error }` — always check for errors
 - OAuth uses PKCE flow for security
 
@@ -219,6 +224,12 @@ await insforge.auth.resetPassword({
    }
    ```
 
+5. **Use server mode for SSR auth**
+   - For Next.js or other SSR frameworks, perform auth mutations on the server
+   - Keep tokens in httpOnly cookies instead of exposing them to client components
+   - Pass the access token into `createClient({ edgeFunctionToken })` for authenticated server-side requests
+   - Use [ssr-integration.md](ssr-integration.md) as the reference implementation
+
 ## Common Mistakes
 
 | Mistake | Solution |
@@ -229,6 +240,7 @@ await insforge.auth.resetPassword({
 | Calling `signInWithPassword` after `verifyEmail` | `verifyEmail()` auto-saves the session — no separate sign-in call needed |
 | Implementing OAuth without checking config | Only show buttons for providers in `oAuthProviders` array |
 | Hardcoding OAuth providers | Dynamically show based on `oAuthProviders` array |
+| Using the browser SDK pattern inside SSR auth routes | In SSR frameworks, create a server-mode client and manage httpOnly cookies on the server |
 
 ## Conditional Implementation Guide
 
