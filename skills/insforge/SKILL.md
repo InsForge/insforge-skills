@@ -222,3 +222,5 @@ All SDK methods return `{ data, error }`.
 - **Functions invoke URL**: `/functions/{slug}` (without `/api` prefix)
 - **Use Tailwind CSS v3.4** (do not upgrade to v4)
 - **Always local build before deploy**: Prevents wasted build resources and faster debugging
+- **Deprecated packages**: `@insforge/react`, `@insforge/nextjs`, and `@insforge/react-router` are **deprecated**. Do NOT install or use them. Use `@insforge/sdk` directly for all features including authentication.
+- **Deployment**: Include a `vercel.json` in the project root for SPA routing (React, React Router apps). The `download-template` tool includes this automatically.

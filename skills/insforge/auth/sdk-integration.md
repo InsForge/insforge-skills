@@ -2,6 +2,8 @@
 
 User authentication, registration, and session management via `insforge.auth`.
 
+> **⚠️ Deprecated Packages**: The packages `@insforge/react`, `@insforge/nextjs`, and `@insforge/react-router` are **deprecated** and should NOT be used. Use `@insforge/sdk` directly for all authentication flows. Build your own auth UI components using the SDK methods documented below.
+
 ## Setup
 
 ```javascript

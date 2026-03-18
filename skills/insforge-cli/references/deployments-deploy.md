@@ -128,7 +128,7 @@ Wait 30 seconds to 1 minute, then check status with `insforge deployments status
 
 ## SPA Routing
 
-For React, Vue, etc. single-page apps, add `vercel.json` to project root:
+For React single-page apps, ensure a `vercel.json` exists in the project root:
 
 ```json
 {
