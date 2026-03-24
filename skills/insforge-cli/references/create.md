@@ -1,11 +1,11 @@
-# insforge create
+# npx @insforge/cli create
 
 Create a new InsForge project.
 
 ## Syntax
 
 ```bash
-insforge create [options]
+npx @insforge/cli create [options]
 ```
 
 ## Options
@@ -26,7 +26,7 @@ Without flags, the command prompts for organization, project name, region, and t
 Provide all required flags for CI/CD or agent use:
 
 ```bash
-insforge create --name my-app --org-id org_123 --region us-east --template react -y
+npx @insforge/cli create --name my-app --org-id org_123 --region us-east --template react -y
 ```
 
 ## What It Does
@@ -46,17 +46,17 @@ Project details: ID, name, appkey, region, and OSS host URL.
 
 ```bash
 # Interactive — prompts for everything
-insforge create
+npx @insforge/cli create
 
 # Non-interactive with all options
-insforge create --name blog-app --org-id org_abc --region us-east --template react -y
+npx @insforge/cli create --name blog-app --org-id org_abc --region us-east --template react -y
 
 # Create with empty template (no frontend scaffolding)
-insforge create --name api-only --org-id org_abc --region eu-central --template empty
+npx @insforge/cli create --name api-only --org-id org_abc --region eu-central --template empty
 ```
 
 ## Notes
 
-- Requires authentication (`insforge login` first).
+- Requires authentication (`npx @insforge/cli login` first).
 - Creates `.insforge/project.json` which links the directory to the project.
 - Agent skills are auto-installed into `.agents/skills/insforge/`.

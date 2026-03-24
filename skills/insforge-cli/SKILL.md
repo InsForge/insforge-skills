@@ -14,23 +14,25 @@ metadata:
 
 Command-line tool for managing InsForge Backend-as-a-Service projects.
 
-## Critical: Session Start Checks
+## Critical: Always Use npx (No Global Install)
 
-**First**, ensure the CLI is installed. Run `insforge whoami` — if the command is not found, install it:
-
-```bash
-npm install -g @insforge/cli
-```
-
-**Then** verify authentication and project:
+**NEVER** install the CLI globally (`npm install -g @insforge/cli`). **Always** run commands via `npx`:
 
 ```bash
-insforge whoami    # verify authentication
-insforge current   # verify linked project
+npx @insforge/cli <command>
 ```
 
-If not authenticated: `insforge login`
-If no project linked: `insforge create` (new) or `insforge link` (existing)
+This ensures the latest version is always used without global install issues (permissions, PATH, node version mismatches).
+
+**Session start** — verify authentication and project:
+
+```bash
+npx @insforge/cli whoami    # verify authentication
+npx @insforge/cli current   # verify linked project
+```
+
+If not authenticated: `npx @insforge/cli login`
+If no project linked: `npx @insforge/cli create` (new) or `npx @insforge/cli link` (existing)
 
 ## Global Options
 
@@ -38,6 +40,8 @@ If no project linked: `insforge create` (new) or `insforge link` (existing)
 |------|-------------|
 | `--json` | Structured JSON output (for scripts and agents) |
 | `-y, --yes` | Skip confirmation prompts |
+
+> All examples below use `npx @insforge/cli`. **Never** call `insforge` directly.
 
 ## Exit Codes
 
@@ -64,61 +68,61 @@ If no project linked: `insforge create` (new) or `insforge link` (existing)
 ## Commands
 
 ### Authentication
-- `insforge login` — OAuth (browser) or `--email` for password login. See [references/login.md](references/login.md)
-- `insforge logout` — clear stored credentials
-- `insforge whoami` — show current user
+- `npx @insforge/cli login` — OAuth (browser) or `--email` for password login. See [references/login.md](references/login.md)
+- `npx @insforge/cli logout` — clear stored credentials
+- `npx @insforge/cli whoami` — show current user
 
 ### Project Management
-- `insforge create` — create new project. See [references/create.md](references/create.md)
-- `insforge link` — link directory to existing project
-- `insforge current` — show current user + linked project
-- `insforge list` — list all orgs and projects
-- `insforge metadata` — show backend metadata (auth config, database tables, storage buckets, edge functions, AI models, realtime channels). Use `--json` for structured output. **Run this first** to discover what's configured before building features.
+- `npx @insforge/cli create` — create new project. See [references/create.md](references/create.md)
+- `npx @insforge/cli link` — link directory to existing project
+- `npx @insforge/cli current` — show current user + linked project
+- `npx @insforge/cli list` — list all orgs and projects
+- `npx @insforge/cli metadata` — show backend metadata (auth config, database tables, storage buckets, edge functions, AI models, realtime channels). Use `--json` for structured output. **Run this first** to discover what's configured before building features.
 
-### Database — `insforge db`
-- `insforge db query <sql>` — execute raw SQL. See [references/db-query.md](references/db-query.md)
-- `insforge db tables / indexes / policies / triggers / functions` — inspect schema
-- `insforge db rpc <fn> [--data <json>]` — call database function (GET if no data, POST if data)
-- `insforge db export` — export schema/data. See [references/db-export.md](references/db-export.md)
-- `insforge db import <file>` — import from SQL file. See [references/db-import.md](references/db-import.md)
+### Database — `npx @insforge/cli db`
+- `npx @insforge/cli db query <sql>` — execute raw SQL. See [references/db-query.md](references/db-query.md)
+- `npx @insforge/cli db tables / indexes / policies / triggers / functions` — inspect schema
+- `npx @insforge/cli db rpc <fn> [--data <json>]` — call database function (GET if no data, POST if data)
+- `npx @insforge/cli db export` — export schema/data. See [references/db-export.md](references/db-export.md)
+- `npx @insforge/cli db import <file>` — import from SQL file. See [references/db-import.md](references/db-import.md)
 
-### Edge Functions — `insforge functions`
-- `insforge functions list` — list deployed functions
-- `insforge functions code <slug>` — view function source
-- `insforge functions deploy <slug>` — deploy or update. See [references/functions-deploy.md](references/functions-deploy.md)
-- `insforge functions invoke <slug> [--data <json>] [--method GET|POST]` — invoke function
+### Edge Functions — `npx @insforge/cli functions`
+- `npx @insforge/cli functions list` — list deployed functions
+- `npx @insforge/cli functions code <slug>` — view function source
+- `npx @insforge/cli functions deploy <slug>` — deploy or update. See [references/functions-deploy.md](references/functions-deploy.md)
+- `npx @insforge/cli functions invoke <slug> [--data <json>] [--method GET|POST]` — invoke function
 
-### Storage — `insforge storage`
-- `insforge storage buckets` — list buckets
-- `insforge storage create-bucket <name> [--private]` — create bucket (default: public)
-- `insforge storage delete-bucket <name>` — delete bucket and **all its objects** (destructive)
-- `insforge storage list-objects <bucket> [--prefix] [--search] [--limit] [--sort]` — list objects
-- `insforge storage upload <file> --bucket <name> [--key <objectKey>]` — upload file
-- `insforge storage download <objectKey> --bucket <name> [--output <path>]` — download file
+### Storage — `npx @insforge/cli storage`
+- `npx @insforge/cli storage buckets` — list buckets
+- `npx @insforge/cli storage create-bucket <name> [--private]` — create bucket (default: public)
+- `npx @insforge/cli storage delete-bucket <name>` — delete bucket and **all its objects** (destructive)
+- `npx @insforge/cli storage list-objects <bucket> [--prefix] [--search] [--limit] [--sort]` — list objects
+- `npx @insforge/cli storage upload <file> --bucket <name> [--key <objectKey>]` — upload file
+- `npx @insforge/cli storage download <objectKey> --bucket <name> [--output <path>]` — download file
 
-### Deployments — `insforge deployments`
-- `insforge deployments deploy [dir]` — deploy frontend app. See [references/deployments-deploy.md](references/deployments-deploy.md)
-- `insforge deployments list` — list deployments
-- `insforge deployments status <id> [--sync]` — get deployment status (--sync fetches from Vercel)
-- `insforge deployments cancel <id>` — cancel running deployment
+### Deployments — `npx @insforge/cli deployments`
+- `npx @insforge/cli deployments deploy [dir]` — deploy frontend app. See [references/deployments-deploy.md](references/deployments-deploy.md)
+- `npx @insforge/cli deployments list` — list deployments
+- `npx @insforge/cli deployments status <id> [--sync]` — get deployment status (--sync fetches from Vercel)
+- `npx @insforge/cli deployments cancel <id>` — cancel running deployment
 
-### Secrets — `insforge secrets`
-- `insforge secrets list [--all]` — list secrets (values hidden; `--all` includes deleted)
-- `insforge secrets get <key>` — get decrypted value
-- `insforge secrets add <key> <value> [--reserved] [--expires <ISO date>]` — create secret
-- `insforge secrets update <key> [--value] [--active] [--reserved] [--expires]` — update secret
-- `insforge secrets delete <key>` — **soft delete** (marks inactive; restore with `--active true`)
+### Secrets — `npx @insforge/cli secrets`
+- `npx @insforge/cli secrets list [--all]` — list secrets (values hidden; `--all` includes deleted)
+- `npx @insforge/cli secrets get <key>` — get decrypted value
+- `npx @insforge/cli secrets add <key> <value> [--reserved] [--expires <ISO date>]` — create secret
+- `npx @insforge/cli secrets update <key> [--value] [--active] [--reserved] [--expires]` — update secret
+- `npx @insforge/cli secrets delete <key>` — **soft delete** (marks inactive; restore with `--active true`)
 
-### Schedules — `insforge schedules`
-- `insforge schedules list` — list all scheduled tasks (shows ID, name, cron, URL, method, active, next run)
-- `insforge schedules get <id>` — get schedule details
-- `insforge schedules create --name --cron --url --method [--headers <json>] [--body <json>]` — create a cron job (5-field cron format only)
-- `insforge schedules update <id> [--name] [--cron] [--url] [--method] [--headers] [--body] [--active]` — update schedule
-- `insforge schedules delete <id>` — delete schedule (with confirmation)
-- `insforge schedules logs <id> [--limit] [--offset]` — view execution logs
+### Schedules — `npx @insforge/cli schedules`
+- `npx @insforge/cli schedules list` — list all scheduled tasks (shows ID, name, cron, URL, method, active, next run)
+- `npx @insforge/cli schedules get <id>` — get schedule details
+- `npx @insforge/cli schedules create --name --cron --url --method [--headers <json>] [--body <json>]` — create a cron job (5-field cron format only)
+- `npx @insforge/cli schedules update <id> [--name] [--cron] [--url] [--method] [--headers] [--body] [--active]` — update schedule
+- `npx @insforge/cli schedules delete <id>` — delete schedule (with confirmation)
+- `npx @insforge/cli schedules logs <id> [--limit] [--offset]` — view execution logs
 
-### Logs — `insforge logs`
-- `insforge logs <source> [--limit <n>]` — fetch backend container logs (default: 20 entries)
+### Logs — `npx @insforge/cli logs`
+- `npx @insforge/cli logs <source> [--limit <n>]` — fetch backend container logs (default: 20 entries)
 
 | Source | Description |
 |--------|-------------|
@@ -129,12 +133,12 @@ If no project linked: `insforge create` (new) or `insforge link` (existing)
 
 > Source names are case-insensitive: `postgrest.logs` works the same as `postgREST.logs`.
 
-### Documentation — `insforge docs`
-- `insforge docs` — list all topics
-- `insforge docs instructions` — setup guide
-- `insforge docs <feature> <language>` — feature docs (`db / storage / functions / auth / ai / realtime` × `typescript / swift / kotlin / rest-api`)
+### Documentation — `npx @insforge/cli docs`
+- `npx @insforge/cli docs` — list all topics
+- `npx @insforge/cli docs instructions` — setup guide
+- `npx @insforge/cli docs <feature> <language>` — feature docs (`db / storage / functions / auth / ai / realtime` × `typescript / swift / kotlin / rest-api`)
 
-> For writing application code with the InsForge SDK, use the insforge (SDK) skill instead, and use the `insforge docs <feature> <language>` to get specific SDK documentation.
+> For writing application code with the InsForge SDK, use the insforge (SDK) skill instead, and use the `npx @insforge/cli docs <feature> <language>` to get specific SDK documentation.
 
 ---
 
@@ -142,7 +146,7 @@ If no project linked: `insforge create` (new) or `insforge link` (existing)
 
 **Functions invoke URL**: invoked at `{oss_host}/functions/{slug}` — NOT `/api/functions/{slug}`. Exits with code 1 on HTTP 400+.
 
-**Secrets delete is soft**: marks the secret inactive, not destroyed. Restore with `insforge secrets update KEY --active true`. Use `--all` with `secrets list` to see inactive ones.
+**Secrets delete is soft**: marks the secret inactive, not destroyed. Restore with `npx @insforge/cli secrets update KEY --active true`. Use `--all` with `secrets list` to see inactive ones.
 
 **Storage delete-bucket is hard**: deletes the bucket and every object inside it permanently.
 
@@ -157,16 +161,16 @@ If no project linked: `insforge create` (new) or `insforge link` (existing)
 ### Set up database schema
 
 ```bash
-insforge db query "CREATE TABLE posts (
+npx @insforge/cli db query "CREATE TABLE posts (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   title TEXT NOT NULL,
   content TEXT,
   author_id UUID REFERENCES auth.users(id),
   created_at TIMESTAMPTZ DEFAULT now()
 )"
-insforge db query "ALTER TABLE posts ENABLE ROW LEVEL SECURITY"
-insforge db query "CREATE POLICY \"public_read\" ON posts FOR SELECT USING (true)"
-insforge db query "CREATE POLICY \"owner_write\" ON posts FOR INSERT WITH CHECK (auth.uid() = author_id)"
+npx @insforge/cli db query "ALTER TABLE posts ENABLE ROW LEVEL SECURITY"
+npx @insforge/cli db query "CREATE POLICY \"public_read\" ON posts FOR SELECT USING (true)"
+npx @insforge/cli db query "CREATE POLICY \"owner_write\" ON posts FOR INSERT WITH CHECK (auth.uid() = author_id)"
 ```
 
 > FK to users: always `auth.users(id)`. RLS current user: `auth.uid()`.
@@ -175,8 +179,8 @@ insforge db query "CREATE POLICY \"owner_write\" ON posts FOR INSERT WITH CHECK 
 
 ```bash
 # Default source path: insforge/functions/{slug}/index.ts
-insforge functions deploy my-handler
-insforge functions invoke my-handler --data '{"action": "test"}'
+npx @insforge/cli functions deploy my-handler
+npx @insforge/cli functions invoke my-handler --data '{"action": "test"}'
 ```
 
 ### Deploy frontend
@@ -188,7 +192,7 @@ insforge functions invoke my-handler --data '{"action": "test"}'
 npm run build
 
 # 2. Deploy
-insforge deployments deploy ./dist --env '{"VITE_API_URL": "https://my-app.us-east.insforge.app"}'
+npx @insforge/cli deployments deploy ./dist --env '{"VITE_API_URL": "https://my-app.us-east.insforge.app"}'
 ```
 
 **Environment variable prefix by framework:**
@@ -211,15 +215,15 @@ insforge deployments deploy ./dist --env '{"VITE_API_URL": "https://my-app.us-ea
 ### Backup and restore database
 
 ```bash
-insforge db export --output backup.sql
-insforge db import backup.sql
+npx @insforge/cli db export --output backup.sql
+npx @insforge/cli db import backup.sql
 ```
 
 ### Schedule a cron job
 
 ```bash
 # Create a schedule that calls a function every 5 minutes
-insforge schedules create \
+npx @insforge/cli schedules create \
   --name "Cleanup Expired" \
   --cron "*/5 * * * *" \
   --url "https://my-app.us-east.insforge.app/functions/cleanup" \
@@ -227,7 +231,7 @@ insforge schedules create \
   --headers '{"Authorization": "Bearer ${{secrets.API_TOKEN}}"}'
 
 # Check execution history
-insforge schedules logs <id>
+npx @insforge/cli schedules logs <id>
 ```
 
 #### Cron Expression Format
@@ -299,20 +303,20 @@ Secrets are resolved at schedule creation/update time. If a referenced secret do
 #### Recommended Workflow
 
 ```
-1. Create secrets if needed     -> `insforge secrets add KEY VALUE`
-2. Create/verify target function -> `insforge functions list`
-3. Create schedule              -> `insforge schedules create`
-4. Verify schedule is active    -> `insforge schedules get <id>`
-5. Monitor execution logs       -> `insforge schedules logs <id>`
+1. Create secrets if needed     -> `npx @insforge/cli secrets add KEY VALUE`
+2. Create/verify target function -> `npx @insforge/cli functions list`
+3. Create schedule              -> `npx @insforge/cli schedules create`
+4. Verify schedule is active    -> `npx @insforge/cli schedules get <id>`
+5. Monitor execution logs       -> `npx @insforge/cli schedules logs <id>`
 ```
 
 ### Debug with logs
 
 ```bash
-insforge logs function.logs          # function execution issues
-insforge logs postgres.logs          # database query problems
-insforge logs insforge.logs          # API / auth errors
-insforge logs postgrest.logs --limit 50
+npx @insforge/cli logs function.logs          # function execution issues
+npx @insforge/cli logs postgres.logs          # database query problems
+npx @insforge/cli logs insforge.logs          # API / auth errors
+npx @insforge/cli logs postgrest.logs --limit 50
 ```
 
 #### Best Practices
@@ -338,9 +342,9 @@ insforge logs postgrest.logs --limit 50
 ### Non-interactive CI/CD
 
 ```bash
-INSFORGE_EMAIL=$EMAIL INSFORGE_PASSWORD=$PASSWORD insforge login --email -y
-insforge link --project-id $PROJECT_ID --org-id $ORG_ID -y
-insforge db query "SELECT count(*) FROM users" --json
+INSFORGE_EMAIL=$EMAIL INSFORGE_PASSWORD=$PASSWORD npx @insforge/cli login --email -y
+npx @insforge/cli link --project-id $PROJECT_ID --org-id $ORG_ID -y
+npx @insforge/cli db query "SELECT count(*) FROM users" --json
 ```
 
 ---
@@ -362,4 +366,4 @@ After `create` or `link`, `.insforge/project.json` is created:
 `oss_host` is the base URL for all SDK and API operations. `api_key` is the admin key for backend API calls.
 
 > **Never commit this file to version control or share it publicly**.
-> Do not edit this file manually. Use `insforge link` to switch projects.
+> Do not edit this file manually. Use `npx @insforge/cli link` to switch projects.

@@ -1,11 +1,11 @@
-# insforge deployments deploy
+# npx @insforge/cli deployments deploy
 
 Deploy a frontend project to InsForge hosting (via Vercel).
 
 ## Syntax
 
 ```bash
-insforge deployments deploy [directory] [options]
+npx @insforge/cli deployments deploy [directory] [options]
 ```
 
 ## Options
@@ -38,16 +38,16 @@ The following are automatically excluded from the zip:
 
 ```bash
 # Deploy current directory
-insforge deployments deploy
+npx @insforge/cli deployments deploy
 
 # Deploy a specific directory
-insforge deployments deploy ./dist
+npx @insforge/cli deployments deploy ./dist
 
 # Deploy with environment variables
-insforge deployments deploy . --env '{"VITE_API_URL": "https://my-app.us-east.insforge.app", "VITE_ANON_KEY": "ik_xxx"}'
+npx @insforge/cli deployments deploy . --env '{"VITE_API_URL": "https://my-app.us-east.insforge.app", "VITE_ANON_KEY": "ik_xxx"}'
 
 # JSON output
-insforge deployments deploy --json
+npx @insforge/cli deployments deploy --json
 ```
 
 ## Typical Workflow
@@ -107,12 +107,12 @@ If your project has edge functions in a separate directory (commonly `functions/
 
 ```bash
 # 4. Deploy
-insforge deployments deploy ./dist --env '{"VITE_API_URL": "https://my-app.us-east.insforge.app"}'
+npx @insforge/cli deployments deploy ./dist --env '{"VITE_API_URL": "https://my-app.us-east.insforge.app"}'
 ```
 
 ### Check Deployment Status
 
-Wait 30 seconds to 1 minute, then check status with `insforge deployments status <id>`.
+Wait 30 seconds to 1 minute, then check status with `npx @insforge/cli deployments status <id>`.
 
 #### Status Values
 

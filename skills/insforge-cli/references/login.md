@@ -1,11 +1,11 @@
-# insforge login
+# npx @insforge/cli login
 
 Authenticate with the InsForge platform.
 
 ## Syntax
 
 ```bash
-insforge login [options]
+npx @insforge/cli login [options]
 ```
 
 ## Options
@@ -22,7 +22,7 @@ insforge login [options]
 Opens your browser for OAuth 2.0 authentication with PKCE:
 
 ```bash
-insforge login
+npx @insforge/cli login
 ```
 
 The CLI starts a local callback server, opens the browser, and waits up to 5 minutes for you to authorize.
@@ -30,13 +30,13 @@ The CLI starts a local callback server, opens the browser, and waits up to 5 min
 ### Email/Password
 
 ```bash
-insforge login --email
+npx @insforge/cli login --email
 ```
 
 Prompts for email and password interactively. For non-interactive use (CI/CD), set environment variables:
 
 ```bash
-INSFORGE_EMAIL=user@example.com INSFORGE_PASSWORD=secret insforge login --email
+INSFORGE_EMAIL=user@example.com INSFORGE_PASSWORD=secret npx @insforge/cli login --email
 ```
 
 ## Credential Storage
@@ -51,11 +51,11 @@ Tokens refresh automatically on 401 responses.
 
 ```bash
 # Interactive OAuth login (recommended)
-insforge login
+npx @insforge/cli login
 
 # Email/password login
-insforge login --email
+npx @insforge/cli login --email
 
 # CI/CD non-interactive login
-INSFORGE_EMAIL=$EMAIL INSFORGE_PASSWORD=$PASSWORD insforge login --email --json
+INSFORGE_EMAIL=$EMAIL INSFORGE_PASSWORD=$PASSWORD npx @insforge/cli login --email --json
 ```
