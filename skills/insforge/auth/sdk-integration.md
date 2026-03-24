@@ -21,13 +21,13 @@ For Next.js, Remix, SvelteKit, Nuxt server routes, or any other SSR setup, use s
 
 ## Sign Up (Complete Flow)
 
-Registration requires email verification. Complete flow:
+Registration may require email verification. The recommended and default flow is code-based verification. If your backend is configured for link-based verification, the app should handle that as a secondary variant.
 
 1. **Sign up** — Create the user account
 2. **Verification email sent** — User receives a 6-digit OTP code
-3. **Verify OTP** — User enters the code on the same page, `verifyEmail()` verifies and automatically signs the user in
+3. **Verify email** — Your app calls `verifyEmail()` with the code and the user is signed in automatically
 
-> **Important**: The sign-up page **must** include a verification code input step. After calling `signUp()`, if `requireEmailVerification` is true, show a 6-digit code input on the **same page** — do NOT navigate to the dashboard or any other page. After `verifyEmail()` succeeds, the session is automatically saved and the user is signed in — no separate `signInWithPassword()` call is needed.
+> **Important**: Code-based verification should be your default implementation. Keep the user on the same page, show a 6-digit code input, and call `verifyEmail()` after sign-up. If your backend is configured for `"link"` instead, pass `verifyEmailUrl` to `signUp()` so the email link opens your app's verify-email page, and have that page call `verifyEmail()` with the `token` from the URL. Successful `verifyEmail()` automatically saves the session.
 
 ```javascript
 try {
@@ -41,11 +41,7 @@ try {
   if (error) throw error
 
   if (data?.requireEmailVerification) {
-    // Step 2: User receives email with 6-digit OTP code
-    // IMPORTANT: Show a code input form on the SAME page.
-    // Do NOT navigate away.
-
-    // Step 3: After user enters the code, verify it
+    // Step 2: Recommended/default flow: show a 6-digit code input on the SAME page
     const { data: verifyData, error: verifyError } = await insforge.auth.verifyEmail({
       email: 'user@example.com',
       otp: '123456' // code entered by user
@@ -67,12 +63,12 @@ try {
 }
 ```
 
-### Resend Verification Code
+### Resend Verification Email
 
 ```javascript
 try {
   await insforge.auth.resendVerificationEmail({ email: 'user@example.com' })
-  console.log('Verification code resent.')
+  console.log('Verification email resent.')
 } catch (error) {
   console.error('Failed to resend:', error.message)
 }
@@ -172,7 +168,10 @@ await insforge.auth.resendVerificationEmail({ email: 'user@example.com' })
 
 ```javascript
 // Step 1: Send reset email
-await insforge.auth.sendResetPasswordEmail({ email: 'user@example.com' })
+await insforge.auth.sendResetPasswordEmail({
+  email: 'user@example.com',
+  resetPasswordUrl: 'http://localhost:3000/reset-password'
+})
 
 // Step 2: Code method — exchange code for token
 const { data } = await insforge.auth.exchangeResetPasswordToken({
@@ -203,11 +202,11 @@ await insforge.auth.resetPassword({
    - This tells you what features to implement
 
 2. **The sign-up page must handle the full registration flow**
-   - After calling `signUp()`, if `requireEmailVerification` is true, switch the UI to show a 6-digit code input on the **same page**
-   - Do NOT navigate to the dashboard, home page, or any other page
-   - The user enters the OTP code from their email, then call `verifyEmail()`
+   - After calling `signUp()`, if `requireEmailVerification` is true, default to the code-based flow first
+   - For `"code"`, switch the UI to show a 6-digit code input on the **same page**
+   - For `"link"`, pass `verifyEmailUrl` to `signUp()` and show a "check your email" state
+   - Do NOT navigate to the app until `verifyEmail()` succeeds
    - `verifyEmail()` automatically saves the session — the user is signed in after verification
-   - Only after successful verification should you navigate to the app
 
 3. **Only implement OAuth for configured providers**
    - Check `oAuthProviders` array in config
@@ -220,7 +219,8 @@ await insforge.auth.resetPassword({
    if (error) {
      // Show error message to user
    } else if (data?.requireEmailVerification) {
-     // Switch UI to show 6-digit code input — do NOT navigate away
+     // Usually: switch UI to show 6-digit code input — do NOT navigate away
+     // If verifyEmailMethod === "link", show a "check your email" state instead
    } else if (data?.accessToken) {
      // No verification needed — user is signed in, navigate to app
    }
@@ -236,9 +236,10 @@ await insforge.auth.resetPassword({
 
 | Mistake | Solution |
 |---------|----------|
-| Navigating to dashboard/home after sign-up when verification is required | Stay on the sign-up page and show a 6-digit code input for OTP verification |
+| Navigating to dashboard/home after sign-up when verification is required | Stay in the verification flow and branch on `verifyEmailMethod` instead of navigating to the app |
 | Skipping email verification flow entirely | Check `requireEmailVerification` in sign-up response and implement the verification step |
-| Building link-based UI when code is configured | Check `verifyEmailMethod` to build correct UI |
+| Forgetting `verifyEmailUrl` or `resetPasswordUrl` for link flows | When the backend config uses `"link"`, pass your app page URL in the request so the email opens your app |
+| Building link-based UI when code is configured | Check `verifyEmailMethod` to build the correct UI |
 | Calling `signInWithPassword` after `verifyEmail` | `verifyEmail()` auto-saves the session — no separate sign-in call needed |
 | Implementing OAuth without checking config | Only show buttons for providers in `oAuthProviders` array |
 | Hardcoding OAuth providers | Dynamically show based on `oAuthProviders` array |
@@ -257,8 +258,10 @@ if (data?.requireEmailVerification) {
   //   On success, user is automatically signed in — navigate to the app
 
   // If verifyEmailMethod === "link":
+  //   Pass verifyEmailUrl to signUp() / resendVerificationEmail()
   //   Show "Check your email and click the verification link" message
-  //   User clicks link in email, which redirects back to your app with a token
+  //   Your app's verify-email page reads token from the URL and calls:
+  const { data: verifyData, error } = await insforge.auth.verifyEmail({ otp: tokenFromUrl })
 }
 ```
 
@@ -297,10 +300,10 @@ Based on auth config, implement:
 - [ ] Sign up form with password (respecting `passwordMinLength`)
 - [ ] Email verification step on the sign-up page (if `requireEmailVerification` is true)
   - [ ] 6-digit code input (if `verifyEmailMethod` is "code")
-  - [ ] "Check your email" message (if `verifyEmailMethod` is "link")
+  - [ ] "Check your email" state plus app verify page using `verifyEmailUrl` (if `verifyEmailMethod` is "link")
 - [ ] Sign in form
 - [ ] OAuth buttons (only for enabled providers)
 - [ ] Password reset flow
   - [ ] Code input (if `resetPasswordMethod` is "code")
-  - [ ] Magic link handling (if `resetPasswordMethod` is "link")
+  - [ ] App reset page using `resetPasswordUrl` (if `resetPasswordMethod` is "link")
 - [ ] Sign out

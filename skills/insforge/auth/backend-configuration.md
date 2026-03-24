@@ -39,9 +39,13 @@ Response example:
 | Field | Description |
 |-------|-------------|
 | `requireEmailVerification` | If `true`, users must verify email before accessing the app |
-| `verifyEmailMethod` | `"code"` = user enters 6-digit code; `"link"` = user clicks magic link |
-| `resetPasswordMethod` | `"code"` = user enters code; `"link"` = user clicks reset link |
+| `verifyEmailMethod` | `"code"` = user enters a 6-digit code; `"link"` = backend emails a link to your app's verify-email page |
+| `resetPasswordMethod` | `"code"` = user enters a code; `"link"` = backend emails a link to your app's reset-password page |
 | `oAuthProviders` | Array of enabled OAuth provider names (only enabled providers are listed) |
+
+When either method is `link`, the app page URL is provided per request with the SDK:
+- `verifyEmailUrl` for sign-up and resend-verification
+- `resetPasswordUrl` for password reset emails
 
 ## Update Auth Configuration
 
@@ -131,7 +135,7 @@ Response:
 
 3. **Understand verification methods** before building UI
    - `"code"` method requires a code input form
-   - `"link"` method requires handling magic link redirects
+   - `"link"` method requires app-owned pages that receive the emailed `token` and call the relevant SDK method
 
 ## Common Mistakes
 
