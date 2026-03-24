@@ -1,11 +1,11 @@
-# insforge db export
+# npx @insforge/cli db export
 
 Export database schema and/or data.
 
 ## Syntax
 
 ```bash
-insforge db export [options]
+npx @insforge/cli db export [options]
 ```
 
 ## Options
@@ -25,17 +25,17 @@ insforge db export [options]
 
 ```bash
 # Full export to file
-insforge db export --output backup.sql
+npx @insforge/cli db export --output backup.sql
 
 # Schema only
-insforge db export --no-data --output schema.sql
+npx @insforge/cli db export --no-data --output schema.sql
 
 # Specific tables with functions
-insforge db export --tables users,posts --include-functions --output partial.sql
+npx @insforge/cli db export --tables users,posts --include-functions --output partial.sql
 
 # JSON format
-insforge db export --format json --output backup.json
+npx @insforge/cli db export --format json --output backup.json
 
 # Limited rows for development
-insforge db export --row-limit 100 --output dev-data.sql
+npx @insforge/cli db export --row-limit 100 --output dev-data.sql
 ```

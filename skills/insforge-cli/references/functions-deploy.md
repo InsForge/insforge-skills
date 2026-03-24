@@ -1,11 +1,11 @@
-# insforge functions deploy
+# npx @insforge/cli functions deploy
 
 Deploy (create or update) an edge function.
 
 ## Syntax
 
 ```bash
-insforge functions deploy <slug> [options]
+npx @insforge/cli functions deploy <slug> [options]
 ```
 
 ## Options
@@ -34,13 +34,13 @@ insforge/functions/{slug}/index.ts
 
 ```bash
 # Deploy from default path (insforge/functions/my-handler/index.ts)
-insforge functions deploy my-handler
+npx @insforge/cli functions deploy my-handler
 
 # Deploy from custom file
-insforge functions deploy cleanup-expired --file ./handler.ts --name "Cleanup Expired" --description "Removes expired records"
+npx @insforge/cli functions deploy cleanup-expired --file ./handler.ts --name "Cleanup Expired" --description "Removes expired records"
 
 # Update an existing function
-insforge functions deploy payment-webhook --file ./webhooks/payment.ts
+npx @insforge/cli functions deploy payment-webhook --file ./webhooks/payment.ts
 ```
 
 ## Output
@@ -150,9 +150,9 @@ export default async function(req: Request): Promise<Response> {
 ## Best Practices
 
 1. **Always handle CORS** — include preflight `OPTIONS` handler and CORS headers in every response
-2. **Store credentials as secrets** — use `insforge secrets add` for API keys, base URLs, etc.
+2. **Store credentials as secrets** — use `npx @insforge/cli secrets add` for API keys, base URLs, etc.
 3. **Check available functions first** before invoking from frontend
-   - Call `insforge functions list` to see existing functions
+   - Call `npx @insforge/cli functions list` to see existing functions
    - Verify the target function exists and has `status: "active"`
 4. **Always return a `Response`** — the runtime expects a `Response` object
 
@@ -160,7 +160,7 @@ export default async function(req: Request): Promise<Response> {
 
 | Mistake | Solution |
 |---------|----------|
-| Invoking non-existent function | Check functions first with `insforge functions list`, create if needed |
+| Invoking non-existent function | Check functions first with `npx @insforge/cli functions list`, create if needed |
 | Invoking draft function | Ensure function `status` is `"active"` |
 | Missing CORS headers | Always handle `OPTIONS` preflight and include CORS headers in responses |
 | Forgetting to check auth | For authenticated functions, always verify `getCurrentUser()` before proceeding |
@@ -169,8 +169,8 @@ export default async function(req: Request): Promise<Response> {
 
 ```
 1. Write function code            → insforge/functions/{slug}/index.ts
-2. Deploy                         → insforge functions deploy {slug}
-3. Check status                   → insforge functions list
-4. Ensure secrets are set         → insforge secrets add INSFORGE_BASE_URL https://...
+2. Deploy                         → npx @insforge/cli functions deploy {slug}
+3. Check status                   → npx @insforge/cli functions list
+4. Ensure secrets are set         → npx @insforge/cli secrets add INSFORGE_BASE_URL https://...
 5. Invoke from frontend           → insforge.functions.invoke('{slug}', { body: {...} })
 ```
