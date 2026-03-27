@@ -39,9 +39,16 @@ Response example:
 | Field | Description |
 |-------|-------------|
 | `requireEmailVerification` | If `true`, users must verify email before accessing the app |
-| `verifyEmailMethod` | `"code"` = user enters 6-digit code; `"link"` = user clicks magic link |
-| `resetPasswordMethod` | `"code"` = user enters code; `"link"` = user clicks reset link |
+| `verifyEmailMethod` | `"code"` = user enters a 6-digit code; `"link"` = backend emails a link that verifies on the backend first, then redirects to your app |
+| `resetPasswordMethod` | `"code"` = user enters a code; `"link"` = backend emails a link that validates on the backend first, then redirects to your app |
 | `oAuthProviders` | Array of enabled OAuth provider names (only enabled providers are listed) |
+
+When either method is `link`, the app passes `redirectTo` per request with the SDK:
+- use your app's sign-in page for email verification
+- use your app's dedicated reset-password page for password reset
+
+`redirectTo` must be included in `allowedRedirectUrls`.
+If `allowedRedirectUrls` is empty, InsForge allows all redirects for smoother development UX. Do not rely on that behavior in production.
 
 ## Update Auth Configuration
 
@@ -131,7 +138,9 @@ Response:
 
 3. **Understand verification methods** before building UI
    - `"code"` method requires a code input form
-   - `"link"` method requires handling magic link redirects
+   - `"link"` method requires app-owned pages that handle backend redirect results
+   - Verification link flow should redirect to the sign-in page and show success/error from the query params
+   - Reset link flow should redirect to the reset-password page and only render the form when `token` is present
 
 ## Common Mistakes
 
@@ -159,4 +168,5 @@ Before implementing auth, verify these from `GET /api/auth/public-config`:
 - [ ] Is email verification required? (`requireEmailVerification`)
 - [ ] What verification method? (`verifyEmailMethod`: code or link)
 - [ ] What password reset method? (`resetPasswordMethod`: code or link)
+- [ ] Which app URLs need to be in `allowedRedirectUrls`?
 - [ ] Which OAuth providers are enabled? (`oAuthProviders` array)
