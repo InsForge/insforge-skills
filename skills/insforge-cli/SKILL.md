@@ -1,11 +1,11 @@
 ---
 name: insforge-cli
 description: >-
-  Use this skill whenever the user needs backend infrastructure management — creating database tables, running SQL, deploying serverless functions, managing storage buckets, deploying frontend apps, adding secrets, setting up cron jobs, or checking logs — especially if the project uses InsForge. Trigger on any of these contexts: creating or altering database tables/schemas, writing RLS policies via SQL, deploying or invoking edge functions, creating storage buckets, deploying frontends to hosting, managing secrets/env vars, setting up scheduled tasks/cron, viewing backend logs, or exporting/importing database backups. If the user asks for these operations generically (e.g., "create a users table", "deploy my app", "set up a cron job") and you're unsure whether they use InsForge, consult this skill and ask. For writing frontend application code with the InsForge SDK (@insforge/sdk), use the insforge skill instead.
+  Use this skill whenever the user needs backend infrastructure management — creating database tables, running SQL, deploying serverless functions, managing storage buckets, deploying frontend apps, adding secrets, setting up cron jobs, checking logs, or running backend diagnostics — especially if the project uses InsForge. Trigger on any of these contexts: creating or altering database tables/schemas, writing RLS policies via SQL, deploying or invoking edge functions, creating storage buckets, deploying frontends to hosting, managing secrets/env vars, setting up scheduled tasks/cron, viewing backend logs, diagnosing backend health or performance issues, or exporting/importing database backups. If the user asks for these operations generically (e.g., "create a users table", "deploy my app", "set up a cron job", "check backend health") and you're unsure whether they use InsForge, consult this skill and ask. For writing frontend application code with the InsForge SDK (@insforge/sdk), use the insforge skill instead.
 license: Apache-2.0
 metadata:
   author: insforge
-  version: "1.0.0"
+  version: "1.1.0"
   organization: InsForge
   date: February 2026
 ---
@@ -91,6 +91,7 @@ If no project linked: `npx @insforge/cli create` (new) or `npx @insforge/cli lin
 - `npx @insforge/cli functions code <slug>` — view function source
 - `npx @insforge/cli functions deploy <slug>` — deploy or update. See [references/functions-deploy.md](references/functions-deploy.md)
 - `npx @insforge/cli functions invoke <slug> [--data <json>] [--method GET|POST]` — invoke function
+- `npx @insforge/cli functions delete <slug>` — delete an edge function (with confirmation)
 
 ### Storage — `npx @insforge/cli storage`
 - `npx @insforge/cli storage buckets` — list buckets
@@ -120,6 +121,16 @@ If no project linked: `npx @insforge/cli create` (new) or `npx @insforge/cli lin
 - `npx @insforge/cli schedules update <id> [--name] [--cron] [--url] [--method] [--headers] [--body] [--active]` — update schedule
 - `npx @insforge/cli schedules delete <id>` — delete schedule (with confirmation)
 - `npx @insforge/cli schedules logs <id> [--limit] [--offset]` — view execution logs
+
+### Diagnostics — `npx @insforge/cli diagnose`
+
+Run with no subcommand for a full health report across all checks.
+
+- `npx @insforge/cli diagnose` — full health report (runs all diagnostics)
+- `npx @insforge/cli diagnose metrics [--range 1h|6h|24h|7d] [--metrics <list>]` — EC2 instance metrics (CPU, memory, disk, network). Default range: `1h`
+- `npx @insforge/cli diagnose advisor [--severity critical|warning|info] [--category security|performance|health] [--limit <n>]` — latest advisor scan results and issues. Default limit: 50
+- `npx @insforge/cli diagnose db [--check <checks>]` — database health checks. Checks: `connections`, `slow-queries`, `bloat`, `size`, `index-usage`, `locks`, `cache-hit` (default: `all`)
+- `npx @insforge/cli diagnose logs [--source <name>] [--limit <n>]` — aggregate error-level logs from all backend sources. Default limit: 100
 
 ### Logs — `npx @insforge/cli logs`
 - `npx @insforge/cli logs <source> [--limit <n>]` — fetch backend container logs (default: 20 entries)
@@ -310,6 +321,19 @@ Secrets are resolved at schedule creation/update time. If a referenced secret do
 5. Monitor execution logs       -> `npx @insforge/cli schedules logs <id>`
 ```
 
+### Diagnose backend health
+
+```bash
+# Full health report (all checks)
+npx @insforge/cli diagnose
+
+# Check specific areas
+npx @insforge/cli diagnose metrics --range 24h          # CPU/memory/disk over last 24h
+npx @insforge/cli diagnose advisor --severity critical   # critical issues only
+npx @insforge/cli diagnose db --check bloat,slow-queries # specific DB checks
+npx @insforge/cli diagnose logs                          # aggregate errors from all sources
+```
+
 ### Debug with logs
 
 ```bash
@@ -338,6 +362,9 @@ npx @insforge/cli logs postgrest.logs --limit 50
 | Database query failing | `postgres.logs`, `postgREST.logs` |
 | Auth issues | `insforge.logs` |
 | API returning 500 errors | `insforge.logs`, `postgREST.logs` |
+| General health / performance | `diagnose` (full report) or `diagnose metrics` |
+| Database bloat / slow queries | `diagnose db` |
+| Security / config issues | `diagnose advisor --category security` |
 
 ### Non-interactive CI/CD
 
