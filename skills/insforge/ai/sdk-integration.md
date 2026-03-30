@@ -29,9 +29,11 @@ const insforge = createClient({
 })
 ```
 
-## Chat Completions
+## Usage Examples
 
-### Basic Usage
+### Chat Completions
+
+#### Basic Usage
 
 ```javascript
 // Use the exact model_id from: npx @insforge/cli metadata --json
@@ -45,7 +47,7 @@ const completion = await insforge.ai.chat.completions.create({
 console.log(completion.choices[0].message.content)
 ```
 
-### With Parameters
+#### With Parameters
 
 ```javascript
 const completion = await insforge.ai.chat.completions.create({
@@ -59,7 +61,7 @@ const completion = await insforge.ai.chat.completions.create({
 })
 ```
 
-### With Images
+#### With Images
 
 ```javascript
 // Verify model supports image input_modality via metadata before using
@@ -75,7 +77,7 @@ const completion = await insforge.ai.chat.completions.create({
 })
 ```
 
-### With File Parsing and Web Search
+#### With File Parsing and Web Search
 
 ```javascript
 const completion = await insforge.ai.chat.completions.create({
@@ -92,7 +94,7 @@ const completion = await insforge.ai.chat.completions.create({
 })
 ```
 
-## Embeddings
+### Embeddings
 
 ```javascript
 // Use embedding model_id from metadata (e.g., 'openai/text-embedding-3-small')
@@ -109,7 +111,7 @@ await insforge.database.from('documents').insert([{
 }])
 ```
 
-## Image Generation
+### Image Generation
 
 ```javascript
 // Use image generation model_id from metadata — must have 'image' in output_modality
@@ -170,7 +172,7 @@ If AI requests fail with model-related errors:
 
 ## Recommended Workflow
 
-```
+```text
 1. Discover available models → npx @insforge/cli metadata --json
                                OR: npx @insforge/cli db query "SELECT model_id, provider, input_modality, output_modality FROM ai.configs WHERE is_active = true"
 2. Confirm model is active   → Use only model_id values from the response

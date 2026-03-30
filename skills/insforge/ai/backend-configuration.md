@@ -2,6 +2,17 @@
 
 Check which AI models are configured for a project.
 
+## Setup
+
+Ensure you're authenticated and linked to a project:
+
+```bash
+npx @insforge/cli whoami      # verify authentication
+npx @insforge/cli current     # verify linked project
+```
+
+If not set up, run `npx @insforge/cli login` and `npx @insforge/cli link`.
+
 ## Discovering Available Models
 
 ### Option 1 — CLI (recommended)
@@ -11,6 +22,8 @@ npx @insforge/cli metadata --json
 ```
 
 The `ai.configurations` section lists all models with `modelId` and `enabled` status.
+
+> **Note:** CLI metadata uses camelCase (`modelId`, `enabled`) while the database uses snake_case (`model_id`, `is_active`). They refer to the same fields.
 
 ### Option 2 — Raw SQL
 
@@ -33,10 +46,43 @@ npx @insforge/cli db query "SELECT model_id, provider, is_active, input_modality
 
 ### Option 3 — HTTP endpoint (requires admin auth)
 
-```
+```http
 GET /api/ai/configurations
 Authorization: Bearer {admin-token}
 ```
+
+## Usage Examples
+
+### Query models via CLI and use in SDK
+
+```bash
+# 1. Get available models
+npx @insforge/cli metadata --json
+# Response includes: ai.configurations[].modelId
+
+# 2. Use the returned modelId in your SDK code
+# e.g., if metadata returns modelId: "anthropic/claude-sonnet-4.5"
+```
+
+```javascript
+const completion = await insforge.ai.chat.completions.create({
+  model: 'anthropic/claude-sonnet-4.5', // exact modelId from metadata
+  messages: [{ role: 'user', content: 'Hello' }]
+})
+```
+
+### Query models via raw SQL
+
+```bash
+npx @insforge/cli db query "SELECT model_id FROM ai.configs WHERE is_active = true"
+# Use the returned model_id values in SDK calls
+```
+
+## Best Practices
+
+1. **Always check available models first** before implementing AI features
+2. **Use exact `model_id`** from the query response — do not shorten or guess
+3. Each project has its own configured models — do not assume availability
 
 ## Common Mistakes
 
@@ -57,7 +103,7 @@ If the query returns no results:
 
 ## Recommended Workflow
 
-```
+```text
 1. Check available models    → npx @insforge/cli metadata --json
                                OR query ai.configs table
 2. If empty or missing model → Instruct user to configure on Dashboard
