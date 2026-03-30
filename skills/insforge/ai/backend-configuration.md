@@ -38,11 +38,14 @@ GET /api/ai/configurations
 Authorization: Bearer {admin-token}
 ```
 
-## Best Practices
+## Common Mistakes
 
-1. **Always check available models first** before implementing AI features
-2. **Use exact `model_id`** from the query response — do not shorten or guess
-3. Each project has its own configured models — do not assume availability
+| Mistake | Solution |
+|---------|----------|
+| Hardcoding model IDs (e.g., `claude-haiku`) | Query `ai.configs` or CLI metadata first, use exact `model_id` |
+| Using shortened model names | Use the full `model_id` value (e.g., `anthropic/claude-sonnet-4.5`) |
+| Assuming all models are available | Each project has its own configured models — always check |
+| Calling AI features with no models configured | Check first, instruct user to configure on Dashboard if empty |
 
 ## When No Models Are Configured
 
