@@ -1,83 +1,62 @@
 # AI Backend Configuration
 
-HTTP endpoints to check AI configurations. Requires admin authentication.
+Check which AI models are configured for a project.
 
-## Authentication
+## Discovering Available Models
 
-All admin endpoints require:
+### Option 1 — CLI (recommended)
+
+```bash
+npx @insforge/cli metadata --json
 ```
-Authorization: Bearer {admin-token-or-api-key}
+
+The `ai.configurations` section lists all models with `modelId` and `enabled` status.
+
+### Option 2 — Raw SQL
+
+Query the `ai.configs` table directly:
+
+```bash
+npx @insforge/cli db query "SELECT model_id, provider, is_active, input_modality, output_modality FROM ai.configs WHERE is_active = true"
 ```
 
-## List AI Configurations
+**Table: `ai.configs`**
 
-Check which AI models are available for this project.
+| Column | Type | Description |
+|--------|------|-------------|
+| `model_id` | VARCHAR(255) | Unique model identifier (use this in SDK calls) |
+| `provider` | VARCHAR(255) | AI provider (e.g., `openai`, `anthropic`, `google`) |
+| `is_active` | BOOLEAN | Whether the model is enabled |
+| `input_modality` | TEXT[] | Supported input types: `text`, `image`, `audio`, `video`, `file` |
+| `output_modality` | TEXT[] | Supported output types: `text`, `image`, `audio`, `video`, `file` |
+| `system_prompt` | TEXT | Optional default system prompt |
+
+### Option 3 — HTTP endpoint (requires admin auth)
 
 ```
 GET /api/ai/configurations
 Authorization: Bearer {admin-token}
 ```
 
-Response example:
-```json
-{
-  "configurations": [
-    {
-      "id": "config-uuid",
-      "name": "Claude Haiku",
-      "modelId": "anthropic/claude-3.5-haiku",
-      "enabled": true
-    },
-    {
-      "id": "config-uuid-2",
-      "name": "GPT-4",
-      "modelId": "openai/gpt-4",
-      "enabled": true
-    }
-  ]
-}
-```
-
-## Quick Reference
-
-| Task | Endpoint |
-|------|----------|
-| List AI configs | `GET /api/ai/configurations` |
-
----
-
 ## Best Practices
 
-1. **Always check available configurations first** before implementing AI features
-   - Call `GET /api/ai/configurations` to see which models are enabled
-   - Only use model IDs that appear in the configurations list
+1. **Always check available models first** before implementing AI features
+2. **Use exact `model_id`** from the query response — do not shorten or guess
+3. Each project has its own configured models — do not assume availability
 
-2. **Verify the exact model ID** from the configurations response
-   - Model IDs must match exactly (e.g., `anthropic/claude-3.5-haiku`, not `claude-haiku`)
+## When No Models Are Configured
 
-## Common Mistakes
+If the query returns no results:
 
-| Mistake | Solution |
-|---------|----------|
-| Using a model ID that isn't configured | Check configurations first, use only enabled models |
-| Guessing model IDs | Always verify against `GET /api/ai/configurations` |
-| Assuming all models are available | Each project has its own configured models |
-
-## When No Configurations Exist
-
-If `GET /api/ai/configurations` returns an empty list or the requested model is not configured:
-
-1. **Do not attempt to use AI features** - they will fail
-2. **Instruct the user** to configure AI models on the InsForge Dashboard:
-   - Go to the InsForge Dashboard → AI Settings
-   - Add and enable the desired AI model configurations
-   - Save changes
-3. **After configuration**, verify by calling `GET /api/ai/configurations` again
+1. **Do not attempt to use AI features** — they will fail
+2. **Instruct the user** to configure AI models on the InsForge Dashboard → AI Settings
+3. **After configuration**, verify by querying again
 
 ## Recommended Workflow
 
 ```
-1. Check configurations     → GET /api/ai/configurations
+1. Check available models    → npx @insforge/cli metadata --json
+                               OR query ai.configs table
 2. If empty or missing model → Instruct user to configure on Dashboard
-3. If model exists          → Proceed with SDK integration
+3. If model exists           → Use exact model_id in SDK calls
 ```
