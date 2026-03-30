@@ -2,6 +2,22 @@
 
 Use InsForge SDK to access AI capabilities (chat, images, embeddings) in your frontend application.
 
+## 🚨 Discover Available Models First
+
+**Do not hardcode model IDs.** Each project has its own configured models. Check what's available before writing AI code:
+
+```bash
+# Option 1: CLI metadata
+npx @insforge/cli metadata --json
+
+# Option 2: Query ai.configs table directly
+npx @insforge/cli db query "SELECT model_id, provider, is_active, input_modality, output_modality FROM ai.configs WHERE is_active = true"
+```
+
+Use the exact `model_id` from the response in SDK calls. If no models are configured, instruct the user to add them via InsForge Dashboard → AI Settings.
+
+---
+
 ## Setup
 
 ```javascript
@@ -18,8 +34,10 @@ const insforge = createClient({
 ### Basic Usage
 
 ```javascript
+// Use the exact model_id from: npx @insforge/cli metadata --json
+// or: npx @insforge/cli db query "SELECT model_id FROM ai.configs WHERE is_active = true"
 const completion = await insforge.ai.chat.completions.create({
-  model: 'anthropic/claude-3.5-haiku',
+  model: MODEL_ID, // e.g., 'anthropic/claude-sonnet-4.5' — from metadata, NOT hardcoded
   messages: [
     { role: 'user', content: 'What is the capital of France?' }
   ]
@@ -31,7 +49,7 @@ console.log(completion.choices[0].message.content)
 
 ```javascript
 const completion = await insforge.ai.chat.completions.create({
-  model: 'openai/gpt-4',
+  model: MODEL_ID, // from metadata or ai.configs query
   messages: [
     { role: 'system', content: 'You are a helpful assistant.' },
     { role: 'user', content: 'Explain quantum computing.' }
@@ -44,8 +62,9 @@ const completion = await insforge.ai.chat.completions.create({
 ### With Images
 
 ```javascript
+// Verify model supports image input_modality via metadata before using
 const completion = await insforge.ai.chat.completions.create({
-  model: 'anthropic/claude-3.5-haiku',
+  model: MODEL_ID, // must have 'image' in input_modality
   messages: [{
     role: 'user',
     content: [
@@ -60,7 +79,7 @@ const completion = await insforge.ai.chat.completions.create({
 
 ```javascript
 const completion = await insforge.ai.chat.completions.create({
-  model: 'anthropic/claude-sonnet-4.5',
+  model: MODEL_ID, // from metadata or ai.configs query
   messages: [{
     role: 'user',
     content: [
@@ -76,8 +95,9 @@ const completion = await insforge.ai.chat.completions.create({
 ## Embeddings
 
 ```javascript
+// Use embedding model_id from metadata (e.g., 'openai/text-embedding-3-small')
 const response = await insforge.ai.embeddings.create({
-  model: 'openai/text-embedding-3-small',
+  model: EMBEDDING_MODEL_ID, // from metadata or ai.configs query
   input: 'Hello world'
 })
 console.log(response.data[0].embedding) // number[]
@@ -92,8 +112,9 @@ await insforge.database.from('documents').insert([{
 ## Image Generation
 
 ```javascript
+// Use image generation model_id from metadata — must have 'image' in output_modality
 const response = await insforge.ai.images.generate({
-  model: 'google/gemini-3-pro-image-preview',
+  model: IMAGE_MODEL_ID, // from metadata or ai.configs query
   prompt: 'A mountain landscape at sunset',
   size: '1024x1024'
 })
@@ -112,13 +133,13 @@ const { data } = await insforge.storage.from('ai-images').uploadAuto(blob)
 
 ## Best Practices
 
-1. **Always verify model availability first**
-   - Before implementing AI features, check AI configurations via [backend-configuration.md](backend-configuration.md)
-   - Only use model IDs that are configured and enabled for the project
+1. **Always discover models first**
+   - Run `npx @insforge/cli metadata --json` or query `ai.configs` table before writing AI code
+   - Only use `model_id` values that exist and are active
 
 2. **Use exact model IDs from configurations**
-   - Model IDs must match exactly what's in the configurations
-   - Example: `anthropic/claude-3.5-haiku` not `claude-haiku` or `claude-3.5-haiku`
+   - Model IDs must match exactly what's in `ai.configs`
+   - Example: `anthropic/claude-sonnet-4.5` not `claude-sonnet` or `sonnet-4.5`
 
 3. **Handle errors gracefully**
    - Always check for errors in the response
@@ -133,8 +154,8 @@ const { data } = await insforge.storage.from('ai-images').uploadAuto(blob)
 
 | Mistake | Solution |
 |---------|----------|
-| ❌ Using unconfigured model IDs | ✅ Check configurations first via backend-configuration.md |
-| ❌ Hardcoding model IDs without verification | ✅ Verify model exists in project's AI configurations |
+| ❌ Using unconfigured model IDs | ✅ Check `ai.configs` table or CLI metadata first |
+| ❌ Hardcoding model IDs without verification | ✅ Query available models, use exact `model_id` from response |
 | ❌ Ignoring errors | ✅ Always handle `error` in response |
 | ❌ Storing base64 image data in database | ✅ Upload to storage, save URL/key to database |
 
@@ -150,8 +171,9 @@ If AI requests fail with model-related errors:
 ## Recommended Workflow
 
 ```
-1. Check available models    → See backend-configuration.md
-2. Confirm model is enabled  → Look for modelId in response
-3. Implement SDK calls       → Use exact modelId from configurations
+1. Discover available models → npx @insforge/cli metadata --json
+                               OR: npx @insforge/cli db query "SELECT model_id, provider, input_modality, output_modality FROM ai.configs WHERE is_active = true"
+2. Confirm model is active   → Use only model_id values from the response
+3. Implement SDK calls       → Use exact model_id string in SDK calls
 4. Handle errors             → Show user-friendly messages
 ```
