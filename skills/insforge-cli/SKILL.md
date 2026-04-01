@@ -106,6 +106,9 @@ If no project linked: `npx @insforge/cli create` (new) or `npx @insforge/cli lin
 - `npx @insforge/cli deployments list` — list deployments
 - `npx @insforge/cli deployments status <id> [--sync]` — get deployment status (--sync fetches from Vercel)
 - `npx @insforge/cli deployments cancel <id>` — cancel running deployment
+- `npx @insforge/cli deployments env list` — list all deployment environment variables
+- `npx @insforge/cli deployments env set <key> <value>` — create or update a deployment environment variable
+- `npx @insforge/cli deployments env delete <id>` — delete a deployment environment variable by ID
 
 ### Secrets — `npx @insforge/cli secrets`
 - `npx @insforge/cli secrets list [--all]` — list secrets (values hidden; `--all` includes deleted)
@@ -141,6 +144,7 @@ Run with no subcommand for a full health report across all checks.
 | `postgREST.logs` | PostgREST API layer logs |
 | `postgres.logs` | PostgreSQL database logs |
 | `function.logs` | Edge function execution logs |
+| `function-deploy.logs` | Edge function deployment logs |
 
 > Source names are case-insensitive: `postgrest.logs` works the same as `postgREST.logs`.
 
