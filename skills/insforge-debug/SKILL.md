@@ -31,7 +31,7 @@ Match the symptom to a scenario, then follow that scenario's steps.
 | Symptom | Scenario |
 |---------|----------|
 | SDK returns `{ data: null, error: {...} }` | [#1 SDK Error](#scenario-1-sdk-returns-error-object) |
-| HTTP 400 / 401 / 403 / 404 / 500 | [#2 HTTP Status Code](#scenario-2-http-status-code-anomaly) |
+| HTTP 400 / 401 / 403 / 404 / 429 / 500 | [#2 HTTP Status Code](#scenario-2-http-status-code-anomaly) |
 | Function throws or times out | [#3 Edge Function Failure](#scenario-3-edge-function-execution-failuretimeout) |
 | Query slow or hangs | [#4 Database Slow](#scenario-4-database-query-slow-or-unresponsive) |
 | Login fails / token expired / RLS denied | [#5 Auth Failure](#scenario-5-authenticationauthorization-failure) |
@@ -75,7 +75,7 @@ npx @insforge/cli diagnose db --check connections,locks,slow-queries
 
 ## Scenario 2: HTTP Status Code Anomaly
 
-**Symptoms**: API calls return 400, 401, 403, 404, or 500.
+**Symptoms**: API calls return 400, 401, 403, 404, 429, or 500.
 
 **Steps**:
 
