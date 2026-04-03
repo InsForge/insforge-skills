@@ -88,7 +88,7 @@ npx @insforge/cli diagnose db --check connections,locks,slow-queries
 | 401 | Auth token missing or expired | `npx @insforge/cli logs insforge.logs --limit 50` |
 | 403 | RLS policy or permission denied | `npx @insforge/cli logs insforge.logs --limit 50` |
 | 404 | Endpoint or resource doesn't exist | `npx @insforge/cli metadata --json` |
-| 429 | Too many requests | `npx @insforge/cli logs insforge.logs --limit 50` |
+| 429 | Rate limit hit — **no backend logs recorded** | See 429 note below |
 | 500 | Server-side error | `npx @insforge/cli diagnose logs` |
 
 3. For 500 errors, also check aggregate error logs across all sources:
@@ -97,7 +97,15 @@ npx @insforge/cli diagnose db --check connections,locks,slow-queries
 npx @insforge/cli diagnose logs
 ```
 
-**Information gathered**: Status code context, relevant log entries, request/response details from logs.
+4. **429 Rate Limit**: The backend does not log 429 responses and does not return `Retry-After` or `X-RateLimit-*` headers. Checking logs will not help. Instead:
+   - Review client code for high-frequency request patterns: loops without throttling, missing debounce, retry without exponential backoff, or parallel calls that could be batched.
+   - Check overall backend load to see if the system is under heavy traffic:
+     ```bash
+     npx @insforge/cli diagnose metrics --range 1h
+     ```
+   - A 429 status confirms the request was rate-limited. The fix is always on the client side: reduce request frequency, add backoff/debounce, or batch operations.
+
+**Information gathered**: Status code context, relevant log entries, request/response details from logs. For 429: client-side request patterns and backend load metrics.
 
 ---
 
