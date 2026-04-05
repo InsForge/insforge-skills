@@ -24,7 +24,7 @@ WorkOS AuthKit handles authentication via middleware. On the server, `withAuth()
 
 ## Recommended Workflow
 
-```
+```text
 1. Create WorkOS application       → WorkOS Dashboard (manual)
 2. Configure JWT template          → WorkOS Dashboard (manual)
 3. Create/link InsForge project    → npx @insforge/cli create or link

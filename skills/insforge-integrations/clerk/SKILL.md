@@ -23,7 +23,7 @@ Clerk signs tokens with InsForge's JWT secret directly via a **JWT Template** �
 
 ## Recommended Workflow
 
-```
+```text
 1. Create Clerk application        → Clerk Dashboard (manual)
 2. Create/link InsForge project    → npx @insforge/cli create or link
 3. Create JWT template in Clerk    → Clerk Dashboard (manual)

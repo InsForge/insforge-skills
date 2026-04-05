@@ -23,7 +23,7 @@ Auth0 signs an InsForge-compatible JWT inside a **Post Login Action**, embeds it
 
 ## Recommended Workflow
 
-```
+```text
 1. Create Auth0 application       → Auth0 Dashboard (manual)
 2. Create/link InsForge project   → npx @insforge/cli create or link
 3. Create Post Login Action       → Auth0 Dashboard (manual, paste code below)
@@ -91,7 +91,7 @@ beforeSessionSaved: async (session, idToken) => {
     const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString());
     const insforgeToken = payload["https://insforge.dev/insforge_token"];
     if (insforgeToken) {
-      session.user["https://insforge.dev/insforge_token"] = insforgeToken;
+      (session.user ??= {})["https://insforge.dev/insforge_token"] = insforgeToken;
     }
   }
   return session;

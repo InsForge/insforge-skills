@@ -25,7 +25,7 @@ Stytch handles authentication via email magic links on the client side. On the s
 
 ## Recommended Workflow
 
-```
+```text
 1. Configure Stytch project        → Stytch Dashboard (manual)
 2. Create/link InsForge project    → npx @insforge/cli create or link
 3. Install deps + configure env    → npm install, .env.local
@@ -142,7 +142,7 @@ export default function Authenticate() {
 - Read `stytch_session` from cookies via `next/headers`
 - Validate the session via `stytchClient.sessions.authenticate({ session_token })`
 - Sign a JWT with `jsonwebtoken` using `INSFORGE_JWT_SECRET`
-- Required claims: `userId` (from `session.user_id`), `role: "authenticated"`, `aud: "insforge-api"`
+- Required claims: `sub` (from `session.user_id`), `role: "authenticated"`, `aud: "insforge-api"`
 - Pass the signed token as `edgeFunctionToken` to `createClient`
 
 ```typescript
@@ -169,7 +169,7 @@ export async function createInsForgeClient() {
 
   const insforgeToken = jwt.sign(
     {
-      userId: session.user_id,
+      sub: session.user_id,
       role: 'authenticated',
       aud: 'insforge-api',
       exp: Math.floor(Date.now() / 1000) + 60 * 60,

@@ -24,7 +24,7 @@ Kinde **does not support custom JWT signing keys**, so you sign a separate JWT s
 
 ## Recommended Workflow
 
-```
+```text
 1. Create Kinde application        → Kinde Dashboard (manual)
 2. Create/link InsForge project    → npx @insforge/cli create or link
 3. Install deps + configure env    → npm install, .env.local
