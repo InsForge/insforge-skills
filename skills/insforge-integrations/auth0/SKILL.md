@@ -184,6 +184,7 @@ $$;
 | `AUTH0_CLIENT_SECRET` | Auth0 Dashboard |
 | `NEXT_PUBLIC_INSFORGE_URL` | InsForge Dashboard |
 | `NEXT_PUBLIC_INSFORGE_ANON_KEY` | InsForge Dashboard |
+| `INSFORGE_JWT_SECRET` | InsForge CLI (`npx @insforge/cli secrets get JWT_SECRET`) |
 
 ## Common Mistakes
 
