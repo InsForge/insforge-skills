@@ -50,7 +50,8 @@ WorkOS AuthKit handles authentication via middleware. On the server, `withAuth()
 
 ### InsForge Project
 - Create via `npx @insforge/cli create` or link via `npx @insforge/cli link --project-id <id>`
-- Note down **URL**, **Anon Key**, **JWT Secret** from InsForge dashboard
+- Get the JWT secret via CLI: `npx @insforge/cli secrets get JWT_SECRET`
+- Note down **URL** and **Anon Key** from InsForge, then export the CLI value as `INSFORGE_JWT_SECRET`
 
 ## App structure
 
