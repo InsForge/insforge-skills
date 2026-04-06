@@ -53,6 +53,38 @@ Create and manage InsForge projects from the command line. This skill provides c
 
 </details>
 
+<details>
+<summary><strong>insforge-debug</strong> - InsForge Debugging & Diagnostics</summary>
+
+Diagnose errors, bugs, and performance issues in InsForge projects. This skill guides diagnostic command execution for:
+
+- **SDK Errors**: Frontend SDK error objects and unexpected behavior
+- **HTTP Errors**: 4xx/5xx responses from InsForge backend
+- **Edge Functions**: Failures, timeouts, and deploy errors
+- **Database**: Slow queries and performance degradation
+- **Auth**: Authentication and authorization failures
+- **Real-time**: Channel connection and subscription issues
+- **Deployments**: Frontend (Vercel) and edge function deploy failures
+
+**Key distinction**: This skill guides diagnostic command execution to locate problems — it does not provide fix suggestions.
+
+</details>
+
+<details>
+<summary><strong>insforge-integrations</strong> - Third-Party Auth Provider Integrations</summary>
+
+Integrate third-party authentication providers with InsForge for Row Level Security (RLS). Each integration covers JWT configuration, token signing, and InsForge client setup:
+
+- **Auth0**: Post Login Action, Auth0 v4 SDK, custom claim embedding
+- **Clerk**: JWT Template config, client-side `getToken()` flow
+- **Kinde**: Server-side JWT signing (no custom signing key support)
+- **Stytch**: Magic link flow, server-side session validation
+- **WorkOS**: AuthKit middleware, server-side JWT signing
+
+**Key distinction**: Use these guides when connecting an external auth provider to InsForge. For InsForge's built-in authentication, use the **insforge** skill instead.
+
+</details>
+
 ## Usage
 
 Once installed, AI agents can access InsForge-specific guidance when:
@@ -91,16 +123,29 @@ skills/
 │   │   └── backend-configuration.md
 │   └── deployments/
 │       └── workflow.md
-└── insforge-cli/
-    ├── SKILL.md              # CLI skill manifest and command reference
-    └── references/
-        ├── login.md
-        ├── create.md
-        ├── db-query.md
-        ├── db-export.md
-        ├── db-import.md
-        ├── functions-deploy.md
-        └── deployments-deploy.md
+├── insforge-cli/
+│   ├── SKILL.md              # CLI skill manifest and command reference
+│   └── references/
+│       ├── login.md
+│       ├── create.md
+│       ├── db-query.md
+│       ├── db-export.md
+│       ├── db-import.md
+│       ├── functions-deploy.md
+│       └── deployments-deploy.md
+├── insforge-debug/
+│   └── SKILL.md              # Debug & diagnostics skill
+└── insforge-integrations/
+    ├── auth0/
+    │   └── SKILL.md          # Auth0 integration guide
+    ├── clerk/
+    │   └── SKILL.md          # Clerk integration guide
+    ├── kinde/
+    │   └── SKILL.md          # Kinde integration guide
+    ├── stytch/
+    │   └── SKILL.md          # Stytch integration guide
+    └── workos/
+        └── SKILL.md          # WorkOS integration guide
 ```
 
 ### Documentation Pattern
