@@ -52,7 +52,8 @@ Auth0 signs an InsForge-compatible JWT inside a **Post Login Action**, embeds it
 
 ### InsForge Project
 - Create via `npx @insforge/cli create` or link via `npx @insforge/cli link --project-id <id>`
-- Note down **URL**, **Anon Key**, **JWT Secret** from InsForge dashboard
+- Get the JWT secret via CLI: `npx @insforge/cli secrets get JWT_SECRET`
+- Note down **URL** and **Anon Key** from InsForge, then store the CLI value in Auth0 as `INSFORGE_JWT_SECRET`
 
 ## Auth0 Post Login Action
 
@@ -183,6 +184,7 @@ $$;
 | `AUTH0_CLIENT_SECRET` | Auth0 Dashboard |
 | `NEXT_PUBLIC_INSFORGE_URL` | InsForge Dashboard |
 | `NEXT_PUBLIC_INSFORGE_ANON_KEY` | InsForge Dashboard |
+| `INSFORGE_JWT_SECRET` | InsForge CLI (`npx @insforge/cli secrets get JWT_SECRET`) |
 
 ## Common Mistakes
 
