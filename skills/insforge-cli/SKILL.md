@@ -113,8 +113,8 @@ If no project linked: `npx @insforge/cli create` (new) or `npx @insforge/cli lin
 ### Compute Services — `npx @insforge/cli compute`
 - `npx @insforge/cli compute list` — list all compute services (name, status, image, CPU, memory, endpoint)
 - `npx @insforge/cli compute get <id>` — get service details
-- `npx @insforge/cli compute create --name <name> --image <image> [--port 8080] [--cpu shared-1x] [--memory 512] [--region iad] [--env '{"KEY":"val"}']` — create and deploy a Docker container
-- `npx @insforge/cli compute deploy [directory] --name <name> [--port] [--cpu] [--memory] [--region] [--env]` — build a Dockerfile and deploy via `flyctl deploy`
+- `npx @insforge/cli compute create --name <name> --image <image> [--port 8080] [--cpu shared-1x] [--memory 512] [--region iad] [--env '{"KEY":"val"}']` — create and deploy a Docker container. See [references/compute-create.md](references/compute-create.md)
+- `npx @insforge/cli compute deploy [directory] --name <name> [--port] [--cpu] [--memory] [--region] [--env]` — build a Dockerfile and deploy via `flyctl deploy`. See [references/compute-deploy.md](references/compute-deploy.md)
 - `npx @insforge/cli compute update <id> [--image] [--port] [--cpu] [--memory] [--region]` — update service config
 - `npx @insforge/cli compute stop <id>` — stop a running service
 - `npx @insforge/cli compute start <id>` — start a stopped service
