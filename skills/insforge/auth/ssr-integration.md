@@ -85,19 +85,131 @@ export async function getCurrentUser() {
 }
 ```
 
-## OAuth Callback / Refresh Best Practices
+## OAuth in Next.js (Full Server-Side Flow)
 
-- Save the PKCE code verifier in an httpOnly cookie before redirecting to the provider
-- In the OAuth callback route, exchange the code on the server, then set auth cookies on the response
-- Keep a dedicated refresh route or middleware path that reads the refresh token cookie, calls `refreshSession`, and rewrites both cookies
-- Validate post-auth redirects and only allow safe internal paths
+The browser SDK auto-detects `insforge_code` and exchanges it automatically. That doesn't work in SSR because `sessionStorage` is unavailable and `detectAuthCallback()` skips in server mode. Handle the full flow server-side instead.
+
+### Step 1: Initiate OAuth (Server Action)
+
+```typescript
+'use server'
+
+import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
+import { createInsForgeServerClient } from '@/lib/insforge-server'
+
+export async function initiateOAuth(provider: string) {
+  const insforge = createInsForgeServerClient()
+
+  const { data, error } = await insforge.auth.signInWithOAuth({
+    provider,
+    redirectTo: new URL('/api/auth/callback', process.env.NEXT_PUBLIC_APP_URL).toString(),
+    skipBrowserRedirect: true
+  })
+
+  if (error || !data.url) throw new Error(error?.message ?? 'OAuth init failed')
+
+  // Store PKCE verifier in httpOnly cookie (sessionStorage unavailable on server)
+  const cookieStore = await cookies()
+  cookieStore.set('insforge_code_verifier', data.codeVerifier!, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 600
+  })
+
+  redirect(data.url)
+}
+```
+
+> **`redirectTo` must be your app URL** (`NEXT_PUBLIC_APP_URL`), not the InsForge backend URL (`NEXT_PUBLIC_INSFORGE_URL`). The backend appends `?insforge_code=<code>` and redirects here. If it points to the backend, you get `Cannot GET /auth/callback`.
+
+### Step 2: Handle Callback (API Route)
+
+```typescript
+// app/api/auth/callback/route.ts
+import { cookies } from 'next/headers'
+import { NextRequest, NextResponse } from 'next/server'
+import { createInsForgeServerClient } from '@/lib/insforge-server'
+
+export async function GET(request: NextRequest) {
+  const params = request.nextUrl.searchParams
+  const code = params.get('insforge_code')
+  const error = params.get('error')
+
+  if (error || !code) {
+    return NextResponse.redirect(new URL(`/login?error=${error ?? 'oauth_failed'}`, request.url))
+  }
+
+  const cookieStore = await cookies()
+  const codeVerifier = cookieStore.get('insforge_code_verifier')?.value
+
+  if (!codeVerifier) {
+    return NextResponse.redirect(new URL('/login?error=missing_verifier', request.url))
+  }
+
+  const insforge = createInsForgeServerClient()
+  const { data, error: exchangeError } = await insforge.auth.exchangeOAuthCode(code, codeVerifier)
+
+  if (exchangeError || !data) {
+    return NextResponse.redirect(new URL(`/login?error=${exchangeError?.message ?? 'exchange_failed'}`, request.url))
+  }
+
+  // Save tokens in httpOnly cookies
+  cookieStore.set('insforge_access_token', data.accessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 60 * 15
+  })
+  if (data.refreshToken) {
+    cookieStore.set('insforge_refresh_token', data.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7
+    })
+  }
+
+  // Clean up PKCE cookie
+  cookieStore.delete('insforge_code_verifier')
+
+  return NextResponse.redirect(new URL('/dashboard', request.url))
+}
+```
+
+### Step 3: Login Page (Client Component)
+
+```tsx
+'use client'
+
+import { initiateOAuth } from './actions'
+
+export default function LoginPage() {
+  return (
+    <form action={() => initiateOAuth('google')}>
+      <button type="submit">Sign in with Google</button>
+    </form>
+  )
+}
+```
+
+### Refresh Best Practices
+
+- Keep a dedicated refresh route or middleware that reads the refresh token cookie, calls `refreshSession({ refreshToken })`, and rewrites both cookies
+- Validate post-auth redirects — only allow safe internal paths
 
 ## Common Mistakes
 
 | Mistake | Solution |
 |---------|----------|
-| Creating the SDK client in client components for SSR auth flows | Create the client in server actions, route handlers, loaders, or API routes with `isServerMode: true` |
+| Using `NEXT_PUBLIC_INSFORGE_URL` as `redirectTo` | Use `NEXT_PUBLIC_APP_URL` — `redirectTo` is your app, not the backend |
+| Expecting browser auto-detection in SSR | SDK skips `detectAuthCallback()` in server mode — exchange manually |
+| Forgetting to store `codeVerifier` before redirect | Store in httpOnly cookie — `sessionStorage` is unavailable on the server |
+| Creating SDK client in client components for auth flows | Use `isServerMode: true` in server actions and API routes |
 | Storing tokens in client-readable storage | Keep `accessToken` and `refreshToken` in httpOnly cookies |
-| Calling authenticated server-side APIs without the current access token | Pass the token with `createClient({ edgeFunctionToken: accessToken })` |
-| Handling the OAuth code exchange in the browser | Exchange the OAuth code on the server, then set cookies on the response |
-| Redirecting to arbitrary external URLs after sign-in or refresh | Validate redirects and only allow safe internal paths |
+| Handling the OAuth code exchange in the browser | Exchange on the server, then set cookies on the response |
+| Redirecting to arbitrary external URLs after sign-in | Validate redirects and only allow safe internal paths |
