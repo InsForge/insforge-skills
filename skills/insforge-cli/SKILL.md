@@ -110,6 +110,20 @@ If no project linked: `npx @insforge/cli create` (new) or `npx @insforge/cli lin
 - `npx @insforge/cli deployments env set <key> <value>` — create or update a deployment environment variable
 - `npx @insforge/cli deployments env delete <id>` — delete a deployment environment variable by ID
 
+### Compute Services — `npx @insforge/cli compute`
+
+> **Availability:** Compute requires the backend to have Fly.io configured. If not enabled, the API returns `COMPUTE_SERVICE_NOT_CONFIGURED` with setup instructions in `nextActions`. Follow those instructions.
+
+- `npx @insforge/cli compute list` — list all compute services (name, status, image, CPU, memory, endpoint)
+- `npx @insforge/cli compute get <id>` — get service details
+- `npx @insforge/cli compute create --name <name> --image <image> [--port 8080] [--cpu shared-1x] [--memory 512] [--region iad] [--env '{"KEY":"val"}']` — create and deploy a Docker container. See [references/compute-create.md](references/compute-create.md)
+- `npx @insforge/cli compute deploy [directory] --name <name> [--port] [--cpu] [--memory] [--region] [--env]` — build a Dockerfile and deploy via `flyctl deploy`. See [references/compute-deploy.md](references/compute-deploy.md)
+- `npx @insforge/cli compute update <id> [--image] [--port] [--cpu] [--memory] [--region]` — update service config
+- `npx @insforge/cli compute stop <id>` — stop a running service
+- `npx @insforge/cli compute start <id>` — start a stopped service
+- `npx @insforge/cli compute logs <id> [--limit 50]` — view machine event logs
+- `npx @insforge/cli compute delete <id>` — delete service and destroy Fly.io resources
+
 ### Secrets — `npx @insforge/cli secrets`
 - `npx @insforge/cli secrets list [--all]` — list secrets (values hidden; `--all` includes deleted)
 - `npx @insforge/cli secrets get <key>` — get decrypted value
@@ -166,6 +180,10 @@ Run with no subcommand for a full health report across all checks.
 **Storage delete-bucket is hard**: deletes the bucket and every object inside it permanently.
 
 **db rpc uses GET or POST**: no `--data` → GET; with `--data` → POST.
+
+**Compute deploy requires flyctl**: The `compute deploy` command shells out to `flyctl deploy --remote-only`. Install flyctl first (`brew install flyctl`) and set `FLY_API_TOKEN`. The `compute create` command does NOT require flyctl — it uses the Fly Machines API directly via the backend.
+
+**Compute endpoints use .fly.dev**: Services get a public URL at `https://{name}-{projectId}.fly.dev`. Custom domains require DNS configuration.
 
 **Schedules use 5-field cron only**: `minute hour day month day-of-week`. 6-field (with seconds) is NOT supported. Headers can reference secrets with `${{secrets.KEY_NAME}}`.
 
@@ -226,6 +244,38 @@ npx @insforge/cli deployments deploy ./dist --env '{"VITE_API_URL": "https://my-
 - [ ] Edge function directories excluded from frontend build (if applicable)
 - [ ] Never include `node_modules`, `.git`, `.env`, `.insforge`, or build output in the zip
 - [ ] Build output directory matches framework's expected output (`dist/`, `build/`, `.next/`, etc.)
+
+### Deploy a Docker container (compute service)
+
+Two paths: pre-built image or build from Dockerfile.
+
+**Pre-built image (e.g. nginx, Redis, custom registry):**
+```bash
+npx @insforge/cli compute create --name my-api --image nginx:alpine --port 80 --region iad
+npx @insforge/cli compute list
+# Service is running with a public https://{name}-{project}.fly.dev endpoint
+```
+
+**Build from Dockerfile:**
+```bash
+# Requires: flyctl installed + FLY_API_TOKEN set
+npx @insforge/cli compute deploy ./my-app --name my-api --port 8000
+# Builds remotely on Fly, deploys the image, syncs state back to InsForge
+```
+
+**Lifecycle management:**
+```bash
+npx @insforge/cli compute stop <id>       # stop the machine
+npx @insforge/cli compute start <id>      # restart it
+npx @insforge/cli compute logs <id>       # check machine events
+npx @insforge/cli compute delete <id>     # destroy everything
+```
+
+**CPU tiers:** `shared-1x` (default), `shared-2x`, `performance-1x`, `performance-2x`, `performance-4x`
+**Memory options:** 256, 512 (default), 1024, 2048, 4096, 8192 MB
+**Regions:** `iad` (default), `sin`, `lax`, `lhr`, `nrt`, `ams`, `syd`
+
+> The `deploy` command requires `flyctl` CLI and `FLY_API_TOKEN` env var. It backs up any existing `fly.toml`, generates one for the deploy, then restores the original.
 
 ### Backup and restore database
 
@@ -369,6 +419,8 @@ npx @insforge/cli logs postgrest.logs --limit 50
 | General health / performance | `diagnose` (full report) or `diagnose metrics` |
 | Database bloat / slow queries | `diagnose db` |
 | Security / config issues | `diagnose advisor --category security` |
+| Compute service not starting | `compute logs <id>`, check Fly machine events |
+| Compute deploy failed | Check `FLY_API_TOKEN` is set, `flyctl` installed |
 
 ### Non-interactive CI/CD
 
