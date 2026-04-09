@@ -4,12 +4,14 @@ Use InsForge SDK to invoke serverless functions from your frontend application.
 
 ## Setup
 
+First, ensure your `.env` file is configured with your InsForge URL and anon key (see the main [SKILL.md](../SKILL.md) for framework-specific variable names and how to get your anon key).
+
 ```javascript
 import { createClient } from '@insforge/sdk'
 
 const insforge = createClient({
-  baseUrl: 'https://your-project.region.insforge.app',
-  anonKey: 'your-anon-key'
+  baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL,       // adjust prefix for your framework
+  anonKey: process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY   // adjust prefix for your framework
 })
 ```
 
