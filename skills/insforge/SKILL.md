@@ -16,16 +16,52 @@ This skill covers **client-side SDK integration** using `@insforge/sdk`. For bac
 
 ## Quick Setup
 
+### 1. Install the SDK
+
 ```bash
 npm install @insforge/sdk@latest
 ```
 
+### 2. Set up environment variables
+
+Before using the SDK, create a `.env` file (or `.env.local` for Next.js) in your project root with your InsForge URL and anon key:
+
+**Getting your anon key:** Use the `get-anon-key` MCP tool with your project's API key. The API key can be found in your `.insforge/project.json` after running `npx @insforge/cli link` or `npx @insforge/cli create`. You can also find these values in the InsForge Dashboard under Project Settings.
+
+Use the correct environment variable prefix and access pattern for your framework:
+
+| Framework | `.env` file | Variables | Access Pattern |
+|-----------|-------------|-----------|----------------|
+| **Next.js** | `.env.local` | `NEXT_PUBLIC_INSFORGE_URL`, `NEXT_PUBLIC_INSFORGE_ANON_KEY` | `process.env.NEXT_PUBLIC_*` |
+| **Vite** (React, Vue, Svelte) | `.env` | `VITE_INSFORGE_URL`, `VITE_INSFORGE_ANON_KEY` | `import.meta.env.VITE_*` |
+| **Astro** | `.env` | `PUBLIC_INSFORGE_URL`, `PUBLIC_INSFORGE_ANON_KEY` | `import.meta.env.PUBLIC_*` |
+| **SvelteKit** | `.env` | `PUBLIC_INSFORGE_URL`, `PUBLIC_INSFORGE_ANON_KEY` | `import { env } from '$env/dynamic/public'` |
+| **Create React App** | `.env` | `REACT_APP_INSFORGE_URL`, `REACT_APP_INSFORGE_ANON_KEY` | `process.env.REACT_APP_*` |
+| **Node.js / Server** | `.env` | `INSFORGE_URL`, `INSFORGE_ANON_KEY` | `process.env.*` |
+
+Example `.env.local` for Next.js:
+```bash
+NEXT_PUBLIC_INSFORGE_URL=https://your-appkey.us-east.insforge.app
+NEXT_PUBLIC_INSFORGE_ANON_KEY=eyJhbGciOiJIUzI1NiIs...
+```
+
+> **Important:** Never commit `.env` files to version control. Add `.env`, `.env.local`, and `.env*.local` to your `.gitignore` (keep `.env.example` for documenting required variables).
+
+### 3. Initialize the client
+
 ```javascript
 import { createClient } from '@insforge/sdk'
 
+// Next.js / CRA: use process.env
 const insforge = createClient({
-  baseUrl: 'https://your-project.region.insforge.app',
-  anonKey: 'your-anon-key'
+  baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL,
+  anonKey: process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY
+})
+
+// Vite / Astro: use import.meta.env
+const insforge = createClient({
+  baseUrl: import.meta.env.VITE_INSFORGE_URL,
+  anonKey: import.meta.env.VITE_INSFORGE_ANON_KEY
 })
 ```
 
