@@ -220,12 +220,41 @@ npx @insforge/cli functions invoke my-handler --data '{"action": "test"}'
 
 **Always verify the local build succeeds before deploying.** Local builds are faster to debug and don't waste server resources.
 
+**Environment variables are required.** Frontend apps need env vars (API URL, anon key) to connect to InsForge at runtime. Deploying without them produces a broken app. Before deploying, you must ensure env vars are set using one of these two approaches:
+
+**Option A — Persistent env vars (recommended):** Set once, applied to every future deployment automatically. Best for projects that will be redeployed.
+
+```bash
+# Check what's already set
+npx @insforge/cli deployments env list
+
+# Set the vars your app needs (use the correct framework prefix)
+npx @insforge/cli deployments env set VITE_INSFORGE_URL https://my-app.us-east.insforge.app
+npx @insforge/cli deployments env set VITE_INSFORGE_ANON_KEY ik_xxx
+
+# Deploy — persistent env vars are applied automatically
+npx @insforge/cli deployments deploy ./dist
+```
+
+**Option B — Inline `--env` flag:** Pass env vars as JSON directly on the deploy command. Useful for one-off deploys or overriding persistent vars.
+
+```bash
+npx @insforge/cli deployments deploy ./dist --env '{"VITE_INSFORGE_URL": "https://my-app.us-east.insforge.app", "VITE_INSFORGE_ANON_KEY": "ik_xxx"}'
+```
+
+**Full workflow:**
+
 ```bash
 # 1. Build locally first
 npm run build
 
-# 2. Deploy
-npx @insforge/cli deployments deploy ./dist --env '{"VITE_API_URL": "https://my-app.us-east.insforge.app"}'
+# 2. Ensure env vars are set (check existing, add missing)
+npx @insforge/cli deployments env list
+npx @insforge/cli deployments env set VITE_INSFORGE_URL https://my-app.us-east.insforge.app
+npx @insforge/cli deployments env set VITE_INSFORGE_ANON_KEY ik_xxx
+
+# 3. Deploy
+npx @insforge/cli deployments deploy ./dist
 ```
 
 **Environment variable prefix by framework:**
@@ -240,7 +269,8 @@ npx @insforge/cli deployments deploy ./dist --env '{"VITE_API_URL": "https://my-
 
 **Pre-deploy checklist:**
 - [ ] `npm run build` succeeds locally
-- [ ] All required env vars configured with correct framework prefix
+- [ ] Env vars are set — run `deployments env list` to verify, or pass `--env` on the deploy command
+- [ ] All env vars use the correct framework prefix
 - [ ] Edge function directories excluded from frontend build (if applicable)
 - [ ] Never include `node_modules`, `.git`, `.env`, `.insforge`, or build output in the zip
 - [ ] Build output directory matches framework's expected output (`dist/`, `build/`, `.next/`, etc.)

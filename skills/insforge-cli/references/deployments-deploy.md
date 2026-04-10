@@ -34,16 +34,39 @@ The following are automatically excluded from the zip:
 - `node_modules/`, `.git/`, `.next/`, `dist/`, `build/`
 - `.env*`, `.DS_Store`, `.insforge/`, `*.log`
 
+## Environment Variables Are Required
+
+Frontend apps need env vars (API URL, anon key, etc.) to connect to InsForge. Deploying without them produces a broken app. There are two ways to provide them:
+
+**Option A — Persistent env vars (recommended for repeated deploys):**
+
+```bash
+# Check what's already configured
+npx @insforge/cli deployments env list
+
+# Set env vars — these persist across all future deployments
+npx @insforge/cli deployments env set VITE_INSFORGE_URL https://my-app.us-east.insforge.app
+npx @insforge/cli deployments env set VITE_INSFORGE_ANON_KEY ik_xxx
+
+# Deploy without --env — persistent vars are applied automatically
+npx @insforge/cli deployments deploy ./dist
+```
+
+**Option B — Inline `--env` flag (one-off or override):**
+
+```bash
+npx @insforge/cli deployments deploy . --env '{"VITE_INSFORGE_URL": "https://my-app.us-east.insforge.app", "VITE_INSFORGE_ANON_KEY": "ik_xxx"}'
+```
+
+Before deploying, always confirm env vars are in place: either check `deployments env list` shows the required vars, or pass `--env` on the command.
+
 ## Examples
 
 ```bash
-# Deploy current directory
-npx @insforge/cli deployments deploy
-
-# Deploy a specific directory
+# Deploy with persistent env vars already set
 npx @insforge/cli deployments deploy ./dist
 
-# Deploy with environment variables
+# Deploy with inline env vars
 npx @insforge/cli deployments deploy . --env '{"VITE_API_URL": "https://my-app.us-east.insforge.app", "VITE_ANON_KEY": "ik_xxx"}'
 
 # JSON output
@@ -106,9 +129,16 @@ If your project has edge functions in a separate directory (commonly `functions/
 ### Start to Deploy
 
 ```bash
-# 4. Deploy
-npx @insforge/cli deployments deploy ./dist --env '{"VITE_API_URL": "https://my-app.us-east.insforge.app"}'
+# 4. Ensure env vars are set (check existing, add any missing)
+npx @insforge/cli deployments env list
+npx @insforge/cli deployments env set VITE_INSFORGE_URL https://my-app.us-east.insforge.app
+npx @insforge/cli deployments env set VITE_INSFORGE_ANON_KEY ik_xxx
+
+# 5. Deploy (persistent env vars are applied automatically)
+npx @insforge/cli deployments deploy ./dist
 ```
+
+Alternatively, pass env vars inline: `npx @insforge/cli deployments deploy ./dist --env '{"VITE_INSFORGE_URL": "...", "VITE_INSFORGE_ANON_KEY": "..."}'`
 
 ### Check Deployment Status
 
@@ -147,8 +177,9 @@ For React single-page apps, ensure a `vercel.json` exists in the project root:
    - Never include `node_modules`, `.git`, `.env`, `.insforge`, or build output
    - Large assets should go to InsForge Storage, not the deployment
 
-2. **Pass sensitive values via envVars, not in code**
-   - API keys, secrets should be in `envVars` array
+2. **Always set env vars before deploying**
+   - Use `deployments env set` for persistent vars, or `--env` for one-off deploys
+   - Run `deployments env list` to verify vars are in place before deploying
    - Never commit `.env` files to source or include in zip
    - Use the correct env var prefix for your framework: `VITE_*`, `NEXT_PUBLIC_*`, `REACT_APP_*`, etc.
 
@@ -163,7 +194,8 @@ For React single-page apps, ensure a `vercel.json` exists in the project root:
 | Mistake | Solution |
 |---------|----------|
 | Including node_modules in zip | Exclude it - will be installed during build |
-| Including .env files | Pass via `envVars` parameter instead |
-| Missing VITE_* env vars | Add all required build-time variables to `envVars` |
+| Including .env files | Use `deployments env set` or `--env` flag instead |
+| Deploying without env vars | Run `deployments env list` first — if empty, set vars with `deployments env set` or `--env` |
+| Missing VITE_* env vars | Add all required build-time variables with correct framework prefix |
 | Checking status too early | Wait 30sec-1min before checking status |
 | Missing vercel.json for SPA | Add rewrites config for client-side routing |
