@@ -1,16 +1,3 @@
----
-name: insforge-auth-stytch
-description: >-
-  Use this skill when setting up Stytch passwordless authentication with
-  InsForge, or when the user asks to integrate Stytch with InsForge for RLS.
-  Covers magic link flow, server-side session validation, and JWT signing.
-license: Apache-2.0
-metadata:
-  author: insforge
-  version: "1.0.0"
-  organization: InsForge
-  date: April 2026
----
 
 # InsForge + Stytch Integration Guide
 
