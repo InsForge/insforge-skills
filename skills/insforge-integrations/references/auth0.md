@@ -1,16 +1,3 @@
----
-name: insforge-auth-auth0
-description: >-
-  Use this skill when setting up Auth0 authentication with InsForge, or when
-  the user asks to integrate Auth0 with InsForge for RLS. Covers the Auth0
-  Post Login Action, Auth0 v4 SDK gotchas, and InsForge client setup.
-license: Apache-2.0
-metadata:
-  author: insforge
-  version: "1.0.0"
-  organization: InsForge
-  date: April 2026
----
 
 # InsForge + Auth0 Integration Guide
 

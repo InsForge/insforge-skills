@@ -1,16 +1,3 @@
----
-name: insforge-auth-workos
-description: >-
-  Use this skill when setting up WorkOS AuthKit authentication with InsForge,
-  or when the user asks to integrate WorkOS with InsForge for RLS. Covers
-  AuthKit middleware, server-side JWT signing, and Next.js 16 gotchas.
-license: Apache-2.0
-metadata:
-  author: insforge
-  version: "1.0.0"
-  organization: InsForge
-  date: April 2026
----
 
 # InsForge + WorkOS Integration Guide
 

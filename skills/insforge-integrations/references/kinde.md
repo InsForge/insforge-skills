@@ -1,16 +1,3 @@
----
-name: insforge-auth-kinde
-description: >-
-  Use this skill when setting up Kinde authentication with InsForge, or when
-  the user asks to integrate Kinde with InsForge for RLS. Covers server-side
-  JWT signing pattern since Kinde doesn't support custom signing keys.
-license: Apache-2.0
-metadata:
-  author: insforge
-  version: "1.0.0"
-  organization: InsForge
-  date: April 2026
----
 
 # InsForge + Kinde Integration Guide
 

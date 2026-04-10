@@ -1,16 +1,3 @@
----
-name: insforge-auth-clerk
-description: >-
-  Use this skill when setting up Clerk authentication with InsForge, or when
-  the user asks to integrate Clerk with InsForge for RLS. Covers JWT template
-  config, client-side token flow, and React/Next.js differences.
-license: Apache-2.0
-metadata:
-  author: insforge
-  version: "1.0.0"
-  organization: InsForge
-  date: April 2026
----
 
 # InsForge + Clerk Integration Guide
 
