@@ -24,9 +24,21 @@ npm install @insforge/sdk@latest
 
 ### 2. Set up environment variables
 
-Before using the SDK, create a `.env` file (or `.env.local` for Next.js) in your project root with your InsForge URL and anon key:
+Before using the SDK, create a `.env` file (or `.env.local` for Next.js) in your project root with your InsForge URL and anon key.
 
-**Getting your anon key:** Use the `get-anon-key` MCP tool with your project's API key. The API key can be found in your `.insforge/project.json` after running `npx @insforge/cli link` or `npx @insforge/cli create`. You can also find these values in the InsForge Dashboard under Project Settings.
+#### How to get your URL and anon key
+
+1. **Ensure the project is linked.** Check for `.insforge/project.json` in the project root.
+   - If it doesn't exist, run `npx @insforge/cli link` (existing project) or `npx @insforge/cli create` (new project) to generate it.
+
+2. **Get the anon key** via the CLI:
+   ```bash
+   npx @insforge/cli secrets get ANON_KEY
+   ```
+
+3. **Get the URL** from the `oss_host` field in `.insforge/project.json` (e.g., `https://myapp.us-east.insforge.app`).
+
+4. **Write both values** to the `.env` file using the correct framework prefix (see table below).
 
 Use the correct environment variable prefix and access pattern for your framework:
 

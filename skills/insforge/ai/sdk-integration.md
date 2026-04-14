@@ -20,7 +20,7 @@ Use the exact `model_id` from the response in SDK calls. If no models are config
 
 ## Setup
 
-First, ensure your `.env` file is configured with your InsForge URL and anon key (see the main [SKILL.md](../SKILL.md) for framework-specific variable names and how to get your anon key).
+First, ensure your `.env` file is configured with your InsForge URL and anon key. Get the anon key with `npx @insforge/cli secrets get ANON_KEY`. See the main [SKILL.md](../SKILL.md) for framework-specific variable names and full setup steps.
 
 ```javascript
 import { createClient } from '@insforge/sdk'
