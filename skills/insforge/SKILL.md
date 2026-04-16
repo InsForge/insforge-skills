@@ -1,7 +1,7 @@
 ---
 name: insforge
 description: >-
-  Use this skill whenever writing frontend code that talks to a backend for database queries, authentication, file uploads, AI features, real-time messaging, or edge function calls — especially if the project uses InsForge or @insforge/sdk. Trigger on any of these contexts: querying/inserting/updating/deleting database rows from frontend code, adding login/signup/OAuth/password-reset flows, uploading or downloading files to storage, invoking serverless functions, calling AI chat completions or image generation, subscribing to real-time WebSocket channels, or writing RLS policies. If the user asks for these features generically (e.g., "add auth to my React app", "fetch data from my database", "upload files") and you're unsure whether they use InsForge, consult this skill and ask. For backend infrastructure (creating tables via SQL, deploying functions, CLI commands), use insforge-cli instead.
+  Use this skill whenever writing frontend code that talks to a backend for database queries, authentication, file uploads, AI model gateway (multimodal chat completions, image generation, embeddings), real-time messaging, or edge function calls — especially if the project uses InsForge or @insforge/sdk. Trigger on: CRUD operations, auth flows, file storage, serverless functions, AI chat completions with text and/or image input, image generation, embeddings, real-time channels, or RLS policies. For backend infrastructure (creating tables via SQL, deploying functions, CLI commands), use insforge-cli instead.
 license: MIT
 metadata:
   author: insforge
@@ -85,7 +85,7 @@ const insforge = createClient({
 | **Auth** | [auth/sdk-integration.md](auth/sdk-integration.md) |
 | **Storage** | [storage/sdk-integration.md](storage/sdk-integration.md) |
 | **Functions** | [functions/sdk-integration.md](functions/sdk-integration.md) |
-| **AI** | [ai/sdk-integration.md](ai/sdk-integration.md) |
+| **AI / Model Gateway** | [ai/sdk-integration.md](ai/sdk-integration.md) |
 | **Real-time** | [realtime/sdk-integration.md](realtime/sdk-integration.md) |
 
 ### What Each Module Covers
@@ -96,7 +96,7 @@ const insforge = createClient({
 | **Auth** | Sign up/in, OAuth, sessions, profiles, password reset |
 | **Storage** | Upload, download, delete files |
 | **Functions** | Invoke edge functions |
-| **AI** | Chat completions, image generation, embeddings |
+| **AI / Model Gateway** | Chat completions (supports multimodal input: text + images together), image generation, embeddings |
 | **Real-time** | Connect, subscribe, publish events |
 
 ### Guides
@@ -247,7 +247,7 @@ These modules still require HTTP API calls because the CLI does not yet support 
 | Module | Backend Configuration |
 |--------|----------------------|
 | **Auth** | [auth/backend-configuration.md](auth/backend-configuration.md) |
-| **AI** | [ai/backend-configuration.md](ai/backend-configuration.md) |
+| **AI / Model Gateway** | [ai/backend-configuration.md](ai/backend-configuration.md) |
 
 ## SDK Quick Reference
 
@@ -259,7 +259,7 @@ All SDK methods return `{ data, error }`.
 | `insforge.auth` | `.signUp()`, `.signInWithPassword()`, `.signInWithOAuth()`, `.signOut()`, `.getCurrentUser()` |
 | `insforge.storage` | `.from().upload()`, `.uploadAuto()`, `.download()`, `.remove()` |
 | `insforge.functions` | `.invoke()` |
-| `insforge.ai` | `.chat.completions.create()`, `.images.generate()`, `.embeddings.create()` |
+| `insforge.ai` (Model Gateway) | `.chat.completions.create()` (text, images, or both as input), `.images.generate()`, `.embeddings.create()` |
 | `insforge.realtime` | `.connect()`, `.subscribe()`, `.publish()`, `.on()`, `.disconnect()` |
 
 ## Important Notes

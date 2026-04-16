@@ -1,6 +1,8 @@
-# AI SDK Integration
+# AI / Model Gateway SDK Integration
 
-Use InsForge SDK to access AI capabilities (chat, images, embeddings) in your frontend application.
+> **MULTIMODAL INPUT IS FULLY SUPPORTED.** `insforge.ai.chat.completions.create()` accepts text, images, files, or any combination together in a single request. Do NOT fall back to separate endpoints or assume text-only — use content arrays with `text`, `image_url`, and `file` parts. Check the model's `input_modality` field to confirm supported types.
+
+Use InsForge SDK to access the AI model gateway: chat completions (text + images + files), image generation, and embeddings.
 
 ## 🚨 Discover Available Models First
 
@@ -160,6 +162,8 @@ const { data } = await insforge.storage.from('ai-images').uploadAuto(blob)
 |---------|----------|
 | ❌ Using unconfigured model IDs | ✅ Check `ai.configs` table or CLI metadata first |
 | ❌ Hardcoding model IDs without verification | ✅ Query available models, use exact `model_id` from response |
+| ❌ Assuming chat completions are text-only | ✅ Use content arrays: `[{ type: 'text', ... }, { type: 'image_url', ... }]` in one request |
+| ❌ Using a separate endpoint for image analysis | ✅ Send images directly in `chat.completions.create()` via `image_url` content parts |
 | ❌ Ignoring errors | ✅ Always handle `error` in response |
 | ❌ Storing base64 image data in database | ✅ Upload to storage, save URL/key to database |
 
