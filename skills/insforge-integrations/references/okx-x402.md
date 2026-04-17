@@ -289,7 +289,7 @@ import { buildPaymentRequirements, build402Response, decodePaymentSignature, bui
 
 export async function POST(req: Request) {
   const paymentRequirements = buildPaymentRequirements(req.url);
-  const paymentSigHeader = req.headers.get("X-PAYMENT-SIGNATURE");
+  const paymentSigHeader = req.headers.get("PAYMENT-SIGNATURE");
 
   if (!paymentSigHeader) return build402Response(paymentRequirements);
 
