@@ -1,7 +1,7 @@
 ---
 name: insforge-cli
 description: >-
-  Use this skill whenever the user needs backend infrastructure management — creating database tables, running SQL, deploying serverless functions, managing storage buckets, deploying frontend apps, adding secrets, setting up cron jobs, checking logs, or running backend diagnostics — especially if the project uses InsForge. Trigger on any of these contexts: creating or altering database tables/schemas, writing RLS policies via SQL, deploying or invoking edge functions, creating storage buckets, deploying frontends to hosting, managing secrets/env vars, setting up scheduled tasks/cron, viewing backend logs, diagnosing backend health or performance issues, or exporting/importing database backups. If the user asks for these operations generically (e.g., "create a users table", "deploy my app", "set up a cron job", "check backend health") and you're unsure whether they use InsForge, consult this skill and ask. For writing frontend application code with the InsForge SDK (@insforge/sdk), use the insforge skill instead.
+  Use this skill whenever the user needs backend infrastructure management — creating database tables, running SQL, managing database migration files, deploying serverless functions, managing storage buckets, deploying frontend apps, adding secrets, setting up cron jobs, checking logs, or running backend diagnostics — especially if the project uses InsForge. Trigger on any of these contexts: creating or altering database tables/schemas, fetching or applying database migrations, writing RLS policies via SQL, deploying or invoking edge functions, creating storage buckets, deploying frontends to hosting, managing secrets/env vars, setting up scheduled tasks/cron, viewing backend logs, diagnosing backend health or performance issues, or exporting/importing database backups. If the user asks for these operations generically (e.g., "create a users table", "apply a migration", "deploy my app", "set up a cron job", "check backend health") and you're unsure whether they use InsForge, consult this skill and ask. For writing frontend application code with the InsForge SDK (@insforge/sdk), use the insforge skill instead.
 license: Apache-2.0
 metadata:
   author: insforge
@@ -82,6 +82,7 @@ If no project linked: `npx @insforge/cli create` (new) or `npx @insforge/cli lin
 ### Database — `npx @insforge/cli db`
 - `npx @insforge/cli db query <sql>` — execute raw SQL. See [references/db-query.md](references/db-query.md)
 - `npx @insforge/cli db tables / indexes / policies / triggers / functions` — inspect schema
+- `npx @insforge/cli db migrations list / fetch / new / up` — manage developer migration files. See [references/db-migrations.md](references/db-migrations.md)
 - `npx @insforge/cli db rpc <fn> [--data <json>]` — call database function (GET if no data, POST if data)
 - `npx @insforge/cli db export` — export schema/data. See [references/db-export.md](references/db-export.md)
 - `npx @insforge/cli db import <file>` — import from SQL file. See [references/db-import.md](references/db-import.md)
@@ -181,6 +182,8 @@ Run with no subcommand for a full health report across all checks.
 
 **db rpc uses GET or POST**: no `--data` → GET; with `--data` → POST.
 
+**db migrations up applies exactly one file**: `npx @insforge/cli db migrations up <filename|sequence>` only applies a single local migration target, and that target must be the next remote sequence.
+
 **Compute deploy requires flyctl**: The `compute deploy` command shells out to `flyctl deploy --remote-only`. Install flyctl first (`brew install flyctl`) and set `FLY_API_TOKEN`. The `compute create` command does NOT require flyctl — it uses the Fly Machines API directly via the backend.
 
 **Compute endpoints use .fly.dev**: Services get a public URL at `https://{name}-{projectId}.fly.dev`. Custom domains require DNS configuration.
@@ -207,6 +210,22 @@ npx @insforge/cli db query "CREATE POLICY \"owner_write\" ON posts FOR INSERT WI
 ```
 
 > FK to users: always `auth.users(id)`. RLS current user: `auth.uid()`.
+
+### Manage database migrations
+
+```bash
+# Inspect remote migration history
+npx @insforge/cli db migrations list
+
+# Sync applied remote migrations into .insforge/migrations/
+npx @insforge/cli db migrations fetch
+
+# Create the next local migration file
+npx @insforge/cli db migrations new create-posts
+
+# Apply exactly one migration
+npx @insforge/cli db migrations up 3_create-posts.sql
+```
 
 ### Deploy an edge function
 
