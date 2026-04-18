@@ -142,7 +142,8 @@ begin
   );
   return new;
 end;
-$$ language plpgsql security definer;
+$$ language plpgsql security definer
+set search_path = pg_catalog, public, realtime;
 
 drop trigger if exists x402_payment_realtime on x402_payments;
 create trigger x402_payment_realtime
@@ -786,7 +787,7 @@ export function usePayments() {
 
 **UI composition** (framework-agnostic outline — see [demo source](https://github.com/InsForge/insforge-integration/tree/main/payment/okx-x402/src/components) for complete Tailwind components):
 
-```
+```tsx
 <Dashboard>
   <FlowSteps />              // 4-step visual: Request → Sign → Settle → Deliver
   <ApiPlayground>            // Uses Step 4 state machine
@@ -799,7 +800,7 @@ export function usePayments() {
     <tr>
       <td>{timeAgo(p.created_at)}</td>
       <td>{shortAddr(p.payer_address)}</td>
-      <td><a href={txUrl(p.chain, p.tx_hash)} target="_blank">{shortAddr(p.tx_hash)}</a></td>  {/* Step 0: Explorer URLs */}
+      <td><a href={txUrl(p.chain, p.tx_hash)} target="_blank" rel="noopener noreferrer">{shortAddr(p.tx_hash)}</a></td>  {/* Step 0: Explorer URLs */}
       <td>{formatAmount(p.amount)}</td>
     </tr>
   </PaymentLog>
@@ -830,7 +831,7 @@ export function ReportView({ body }: { body: { report: any; payment: any } }) {
       <ReactMarkdown>{report.analysis}</ReactMarkdown>
       <p>
         Paid <strong>{payment.amount}</strong> · tx{" "}
-        <a href={txUrl("xlayer", payment.tx_hash)} target="_blank">{payment.tx_hash.slice(0, 10)}…</a>
+        <a href={txUrl("xlayer", payment.tx_hash)} target="_blank" rel="noopener noreferrer">{payment.tx_hash.slice(0, 10)}…</a>
       </p>
     </div>
   );
