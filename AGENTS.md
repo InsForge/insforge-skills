@@ -16,17 +16,19 @@ agent-skills/
 │       ├── ai/             # AI/ML operations
 │       ├── realtime/       # Real-time messaging
 │       └── deployments/    # App deployment
-│   └── insforge-cli/       # InsForge CLI project management
-│       ├── SKILL.md        # Skill manifest and command reference
-│       └── references/     # CLI command reference
-│           ├── create.md
-│           ├── login.md
-│           ├── link.md
-│           ├── db-query.md
-│           ├── db-export.md
-│           ├── db-import.md
-│           ├── functions-deploy.md
-│           └── deployments-deploy.md
+│   ├── insforge-cli/       # InsForge CLI project management
+│   │   ├── SKILL.md        # Skill manifest and command reference
+│   │   └── references/     # CLI command reference
+│   │       ├── create.md
+│   │       ├── login.md
+│   │       ├── link.md
+│   │       ├── db-query.md
+│   │       ├── db-export.md
+│   │       ├── db-import.md
+│   │       ├── functions-deploy.md
+│   │       └── deployments-deploy.md
+│   └── login-to-insforge-cloud/  # Agent OAuth Device Flow (RFC 8628)
+│       └── SKILL.md              # Agent-facing control-plane auth + project provision
 ├── AGENTS.md               # This file
 ├── CONTRIBUTING.md         # Contribution guidelines
 ├── LICENSE                 # MIT License

@@ -85,6 +85,22 @@ Integrate third-party authentication providers with InsForge for Row Level Secur
 
 </details>
 
+<details>
+<summary><strong>login-to-insforge-cloud</strong> - Agent OAuth Device Flow for InsForge Cloud</summary>
+
+Teach any AI agent (Claude, Codex, Gemini, custom) to log into the InsForge cloud control plane on behalf of the user, provision a new InsForge project, then switch to calling that project directly. Implements [RFC 8628](https://datatracker.ietf.org/doc/html/rfc8628) Device Authorization Grant — the same pattern used by `gh auth login`, `aws sso login`, and `gcloud auth application-default login`.
+
+- **Device Flow login**: start a flow, show `user_code` + verification URL, poll `/token`
+- **Error handling**: `authorization_pending`, `slow_down`, `expired_token`, `access_denied`
+- **Project provisioning**: `POST /projects` with the control-plane token
+- **Phase switch**: hand off to the project's own API (anon key) — stop using the control-plane token once you have the project URL
+- **Refresh rotation** with replay detection
+- **Defensive defaults**: token redaction in logs, no disk persistence without consent, revoke-UI reminder
+
+**Key distinction**: This skill gets an agent **into** InsForge Cloud. Once you have a project, use the **insforge** skill (SDK) for application code or the **insforge-cli** skill for infrastructure management.
+
+</details>
+
 ## Usage
 
 Once installed, AI agents can access InsForge-specific guidance when:
@@ -135,17 +151,19 @@ skills/
 │       └── deployments-deploy.md
 ├── insforge-debug/
 │   └── SKILL.md              # Debug & diagnostics skill
-└── insforge-integrations/
-    ├── auth0/
-    │   └── SKILL.md          # Auth0 integration guide
-    ├── clerk/
-    │   └── SKILL.md          # Clerk integration guide
-    ├── kinde/
-    │   └── SKILL.md          # Kinde integration guide
-    ├── stytch/
-    │   └── SKILL.md          # Stytch integration guide
-    └── workos/
-        └── SKILL.md          # WorkOS integration guide
+├── insforge-integrations/
+│   ├── auth0/
+│   │   └── SKILL.md          # Auth0 integration guide
+│   ├── clerk/
+│   │   └── SKILL.md          # Clerk integration guide
+│   ├── kinde/
+│   │   └── SKILL.md          # Kinde integration guide
+│   ├── stytch/
+│   │   └── SKILL.md          # Stytch integration guide
+│   └── workos/
+│       └── SKILL.md          # WorkOS integration guide
+└── login-to-insforge-cloud/
+    └── SKILL.md              # Agent OAuth Device Flow + project provision
 ```
 
 ### Documentation Pattern
