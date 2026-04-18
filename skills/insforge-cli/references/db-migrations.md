@@ -178,8 +178,9 @@ npx @insforge/cli db migrations list --json
 |---------|----------|
 | Naming files manually with underscores or spaces | Use `npx @insforge/cli db migrations new <migration-name>` |
 | Reaching for `db query` to create or alter schema | Use migration files for schema changes; reserve `db query` for row changes |
-| Applying a file out of order | Apply the next pending local migration, or use `up --to` / `up --all` |
-| Expecting forbidden internal schema changes to work in custom migrations | Keep custom migrations within the schemas supported by the backend |
+| Applying a file out of order | Apply the next pending local migration, or fix/delete the earlier local file that is blocking it |
+| Keeping a local file older than the current remote head | Rename it with a newer timestamp or delete it locally if it is stale |
+| Adding `BEGIN` / `COMMIT` / `ROLLBACK` to migration SQL | Remove them; the backend already wraps the migration in its own transaction |
 | Editing a failed migration without checking live state first | Re-inspect the current schema and adjust the SQL to match reality |
 | Editing already-fetched remote history casually | Treat fetched files as applied history, not drafts |
 | Assuming `fetch` overwrites local files | `fetch` skips existing file paths instead of replacing them |
@@ -194,6 +195,7 @@ npx @insforge/cli db migrations list --json
 5. Edit the SQL file                → .insforge/migrations/<version>_<migration-name>.sql
 6. Apply one migration explicitly   → npx @insforge/cli db migrations up <filename>
 7. Or batch apply safely            → npx @insforge/cli db migrations up --to <target> / --all
-8. If it fails, inspect live state  → check current schema again, then adjust the migration SQL
-9. Re-check remote state            → npx @insforge/cli db migrations list
+8. If it fails, fix/delete the local blocker → if an earlier file is broken or stale, fix it or remove it before retrying later ones
+9. If SQL failed, inspect live state → check current schema again, then adjust the migration SQL
+10. Re-check remote state           → npx @insforge/cli db migrations list
 ```
