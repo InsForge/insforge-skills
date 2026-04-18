@@ -184,7 +184,11 @@ Run with no subcommand for a full health report across all checks.
 
 **db rpc uses GET or POST**: no `--data` → GET; with `--data` → POST.
 
-**db migrations up applies exactly one file**: `npx @insforge/cli db migrations up <filename|sequence>` only applies a single local migration target, and that target must be the next remote sequence.
+**db migrations use timestamped files**: migration filenames use `YYYYMMDDHHmmss_name.sql`, for example `20260418091500_create-posts.sql`.
+
+**db migrations up supports safe batch modes**: `npx @insforge/cli db migrations up <filename|version>` applies one explicit local target. `npx @insforge/cli db migrations up --to <version|filename>` and `npx @insforge/cli db migrations up --all` apply pending files in ascending version order and stop on the first failure.
+
+**db migrations run inside a backend-managed transaction**: do not put `BEGIN`, `COMMIT`, or `ROLLBACK` in migration files.
 
 **The live database schema is the source of truth**: before writing a migration, and again if a migration fails, inspect the current database state first (`db tables / indexes / policies / triggers / functions`, plus `db migrations list`) and then adjust the migration statements to match reality. Do not assume local files are still current.
 
@@ -213,13 +217,13 @@ npx @insforge/cli db migrations fetch
 # Create the next schema migration file
 npx @insforge/cli db migrations new create-posts
 
-# Edit .insforge/migrations/1_create-posts.sql with CREATE TABLE / ALTER TABLE / policies
+# Edit .insforge/migrations/20260418091500_create-posts.sql with CREATE TABLE / ALTER TABLE / policies
 
-# Apply exactly one migration
-npx @insforge/cli db migrations up 1_create-posts.sql
+# Apply pending migrations safely
+npx @insforge/cli db migrations up --all
 ```
 
-> Use migrations for schema changes. Use `db query` for row changes and inspection. FK to users: `auth.users(id)`. RLS current user: `auth.uid()`.
+> Use migrations for schema changes. Use `db query` for row changes and inspection. In migrations, FK to users with `auth.users(id)` and use `auth.uid()` in RLS policies.
 
 ### Manage database migrations
 
@@ -233,8 +237,8 @@ npx @insforge/cli db migrations fetch
 # Create the next local migration file
 npx @insforge/cli db migrations new create-posts
 
-# Apply exactly one migration
-npx @insforge/cli db migrations up 3_create-posts.sql
+# Apply all pending local migrations
+npx @insforge/cli db migrations up --all
 ```
 
 ### Deploy an edge function

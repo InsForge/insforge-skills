@@ -8,34 +8,38 @@ Manage developer database migration files for an InsForge project.
 npx @insforge/cli db migrations list
 npx @insforge/cli db migrations fetch
 npx @insforge/cli db migrations new <migration-name>
-npx @insforge/cli db migrations up <migration-file-name-or-sequence-number>
+npx @insforge/cli db migrations up <migration-file-name-or-version>
+npx @insforge/cli db migrations up --to <migration-file-name-or-version>
+npx @insforge/cli db migrations up --all
 ```
 
 ## What Each Command Does
 
 | Command | Description |
 |--------|-------------|
-| `list` | Show applied remote migrations (sequence, name, created date) |
+| `list` | Show applied remote migrations (version, name, created date) |
 | `fetch` | Download remote applied migrations into `.insforge/migrations/` |
-| `new <migration-name>` | Create the next local migration file with the next sequence number |
-| `up <filename\\|sequence>` | Apply exactly one local migration file |
+| `new <migration-name>` | Create the next local migration file with the next timestamp version |
+| `up <filename\\|version>` | Apply exactly one explicit local migration file |
+| `up --to <filename\\|version>` | Apply pending local migrations up to a chosen target |
+| `up --all` | Apply every pending local migration file |
 
 ## Filename Format
 
 Migration files must be named exactly:
 
 ```text
-<migration_sequence_number>_<migration-name>.sql
+<migration_version>_<migration-name>.sql
 ```
 
 Examples:
 
-- valid: `1_create-users.sql`
-- valid: `12_add-post-index.sql`
-- invalid: `01_create-users.sql`
-- invalid: `1_create_users.sql`
-- invalid: `1_CreateUsers.sql`
-- invalid: `1 create-users.sql`
+- valid: `20260418091500_create-users.sql`
+- valid: `20260418103045_add-post-index.sql`
+- invalid: `20260418_create-users.sql`
+- invalid: `20260418091500_create_users.sql`
+- invalid: `20260418091500_CreateUsers.sql`
+- invalid: `20260418091500 create-users.sql`
 
 ### Migration Name Rules
 
@@ -68,10 +72,16 @@ npx @insforge/cli db migrations fetch
 npx @insforge/cli db migrations new create-posts
 
 # Apply by exact filename
-npx @insforge/cli db migrations up 3_create-posts.sql
+npx @insforge/cli db migrations up 20260418091500_create-posts.sql
 
-# Apply by sequence number
-npx @insforge/cli db migrations up 3
+# Apply by version
+npx @insforge/cli db migrations up 20260418091500
+
+# Apply all pending migrations through a target
+npx @insforge/cli db migrations up --to 20260418110000
+
+# Apply all pending migrations
+npx @insforge/cli db migrations up --all
 
 # JSON output
 npx @insforge/cli db migrations list --json
@@ -79,10 +89,10 @@ npx @insforge/cli db migrations list --json
 
 ## Output
 
-- `list` prints a table with sequence number, name, and created date
+- `list` prints a table with version, name, and created date
 - `fetch` reports how many files were created and skipped
 - `new` prints the created filename
-- `up` prints the applied filename on success
+- `up` prints the applied filename(s) on success
 
 ## Command Behavior
 
@@ -100,17 +110,31 @@ npx @insforge/cli db migrations list --json
 ### `new <migration-name>`
 
 - Validates the migration name
-- Looks at the latest remote migration sequence
-- Validates local pending migrations before choosing the next sequence number
-- Fails if local pending migrations are malformed, duplicated, or non-contiguous
+- Looks at the latest remote migration version
+- Validates local filenames before choosing the next timestamp version
+- Uses the greater of current UTC time or the latest known local/remote version, bumping by one second when needed
+- Fails if local migration filenames are malformed or duplicated
 
-### `up <filename|sequence>`
+### `up <filename|version>`
 
 - Resolves exactly one local file target
 - Applies exactly one migration file
-- The target must be the next remote sequence
+- The target must be the next pending local migration after the latest remote version
 - Fails if the target is ambiguous, missing, empty, invalidly named, or already applied
 - Unrelated invalid files elsewhere in `.insforge/migrations/` do not block an explicit valid target
+
+### `up --to <filename|version>`
+
+- Strictly validates every local migration filename first
+- Applies pending local migrations in ascending version order
+- Stops after the chosen target migration is applied
+- Fails if the target is missing, already applied, ambiguous, or not present in the pending set
+
+### `up --all`
+
+- Strictly validates every local migration filename first
+- Applies every pending local migration in ascending version order
+- Stops on the first failure
 
 ## Best Practices
 
@@ -129,17 +153,24 @@ npx @insforge/cli db migrations list --json
    - Sync remote history into `.insforge/migrations/` before adding local pending migrations.
 
 5. **Use `new` instead of naming files by hand**
-   - Let the CLI assign the next sequence number safely.
+   - Let the CLI assign the next timestamp version safely.
 
-6. **Prefer `up <filename>` over `up <sequence>`**
-   - An explicit filename makes the target clearer and avoids ambiguity.
+6. **Use explicit single-target apply for focused changes**
+   - `up <filename>` or `up <version>` is ideal when you want one specific migration.
 
-7. **Re-check schema after failures**
+7. **Use batch apply for CI or bootstrap**
+   - `up --to <target>` or `up --all` is safer than hand-looping files in shell scripts because the CLI keeps ordering and fail-fast behavior consistent.
+
+8. **Re-check schema after failures**
    - If a migration fails, inspect the live database state again before editing the migration file.
    - Adjust the SQL to match the newest schema instead of assuming the previous file is still correct.
 
-8. **Treat fetched files as history**
+9. **Treat fetched files as history**
    - Once a migration is applied remotely, avoid editing its local file.
+
+10. **Do not include transaction statements in migration files**
+   - The backend executes each migration inside its own transaction.
+   - Do not add `BEGIN`, `COMMIT`, or `ROLLBACK` to the migration SQL.
 
 ## Common Mistakes
 
@@ -147,8 +178,8 @@ npx @insforge/cli db migrations list --json
 |---------|----------|
 | Naming files manually with underscores or spaces | Use `npx @insforge/cli db migrations new <migration-name>` |
 | Reaching for `db query` to create or alter schema | Use migration files for schema changes; reserve `db query` for row changes |
-| Applying a file out of order | Only apply the next remote sequence |
-| Expecting `up` to apply every pending file | `up` applies exactly one target migration |
+| Applying a file out of order | Apply the next pending local migration, or use `up --to` / `up --all` |
+| Expecting forbidden internal schema changes to work in custom migrations | Keep custom migrations within the schemas supported by the backend |
 | Editing a failed migration without checking live state first | Re-inspect the current schema and adjust the SQL to match reality |
 | Editing already-fetched remote history casually | Treat fetched files as applied history, not drafts |
 | Assuming `fetch` overwrites local files | `fetch` skips existing file paths instead of replacing them |
@@ -160,8 +191,9 @@ npx @insforge/cli db migrations list --json
 2. Inspect remote migration state   → npx @insforge/cli db migrations list
 3. Sync remote history locally      → npx @insforge/cli db migrations fetch
 4. Create the next migration file   → npx @insforge/cli db migrations new <migration-name>
-5. Edit the SQL file                → .insforge/migrations/<sequence>_<migration-name>.sql
+5. Edit the SQL file                → .insforge/migrations/<version>_<migration-name>.sql
 6. Apply one migration explicitly   → npx @insforge/cli db migrations up <filename>
-7. If it fails, inspect live state  → check current schema again, then adjust the migration SQL
-8. Re-check remote state            → npx @insforge/cli db migrations list
+7. Or batch apply safely            → npx @insforge/cli db migrations up --to <target> / --all
+8. If it fails, inspect live state  → check current schema again, then adjust the migration SQL
+9. Re-check remote state            → npx @insforge/cli db migrations list
 ```

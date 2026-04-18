@@ -107,7 +107,7 @@ const insforge = createClient({
 
 ### Real-time Configuration
 
-For real-time channels and database triggers, use `insforge db query` with SQL to create triggers that publish to channels. The real-time SDK is for frontend event handling and messaging, not backend configuration.
+For real-time channels and database triggers, use SQL migrations or database admin tooling to configure channels, triggers, and policies. The real-time SDK is for frontend event handling and messaging, not backend configuration.
 
 #### Create Database Triggers
 
