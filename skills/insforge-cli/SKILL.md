@@ -87,6 +87,8 @@ If no project linked: `npx @insforge/cli create` (new) or `npx @insforge/cli lin
 - `npx @insforge/cli db export` — export schema/data. See [references/db-export.md](references/db-export.md)
 - `npx @insforge/cli db import <file>` — import from SQL file. See [references/db-import.md](references/db-import.md)
 
+> Use `db migrations` for schema changes. Reserve `db query` for inspecting data and for row-level `SELECT / INSERT / UPDATE / DELETE` work.
+
 ### Edge Functions — `npx @insforge/cli functions`
 - `npx @insforge/cli functions list` — list deployed functions
 - `npx @insforge/cli functions code <slug>` — view function source
@@ -184,6 +186,8 @@ Run with no subcommand for a full health report across all checks.
 
 **db migrations up applies exactly one file**: `npx @insforge/cli db migrations up <filename|sequence>` only applies a single local migration target, and that target must be the next remote sequence.
 
+**The live database schema is the source of truth**: before writing a migration, and again if a migration fails, inspect the current database state first (`db tables / indexes / policies / triggers / functions`, plus `db migrations list`) and then adjust the migration statements to match reality. Do not assume local files are still current.
+
 **Compute deploy requires flyctl**: The `compute deploy` command shells out to `flyctl deploy --remote-only`. Install flyctl first (`brew install flyctl`) and set `FLY_API_TOKEN`. The `compute create` command does NOT require flyctl — it uses the Fly Machines API directly via the backend.
 
 **Compute endpoints use .fly.dev**: Services get a public URL at `https://{name}-{projectId}.fly.dev`. Custom domains require DNS configuration.
@@ -194,22 +198,28 @@ Run with no subcommand for a full health report across all checks.
 
 ## Common Workflows
 
-### Set up database schema
+### Set up database schema with migrations
 
 ```bash
-npx @insforge/cli db query "CREATE TABLE posts (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  title TEXT NOT NULL,
-  content TEXT,
-  author_id UUID REFERENCES auth.users(id),
-  created_at TIMESTAMPTZ DEFAULT now()
-)"
-npx @insforge/cli db query "ALTER TABLE posts ENABLE ROW LEVEL SECURITY"
-npx @insforge/cli db query "CREATE POLICY \"public_read\" ON posts FOR SELECT USING (true)"
-npx @insforge/cli db query "CREATE POLICY \"owner_write\" ON posts FOR INSERT WITH CHECK (auth.uid() = author_id)"
+# Inspect the current live schema first
+npx @insforge/cli db tables
+npx @insforge/cli db indexes
+npx @insforge/cli db policies
+npx @insforge/cli db migrations list
+
+# Sync applied remote migration history locally
+npx @insforge/cli db migrations fetch
+
+# Create the next schema migration file
+npx @insforge/cli db migrations new create-posts
+
+# Edit .insforge/migrations/1_create-posts.sql with CREATE TABLE / ALTER TABLE / policies
+
+# Apply exactly one migration
+npx @insforge/cli db migrations up 1_create-posts.sql
 ```
 
-> FK to users: always `auth.users(id)`. RLS current user: `auth.uid()`.
+> Use migrations for schema changes. Use `db query` for row changes and inspection. FK to users: `auth.users(id)`. RLS current user: `auth.uid()`.
 
 ### Manage database migrations
 

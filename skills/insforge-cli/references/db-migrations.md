@@ -117,16 +117,28 @@ npx @insforge/cli db migrations list --json
 1. **Start with `list` on unfamiliar projects**
    - Check the current remote migration history before creating or applying anything.
 
-2. **Run `fetch` on a new machine or branch**
+2. **Use migrations for schema changes**
+   - Create and evolve tables, indexes, policies, triggers, and other schema changes through migration files.
+   - Reserve `db query` for row-level data fixes, backfills, and inspection.
+
+3. **Check the live schema first**
+   - Treat the current database schema as the source of truth.
+   - Before writing a migration, inspect the newest state with `db tables / indexes / policies / triggers / functions` and `db migrations list`.
+
+4. **Run `fetch` on a new machine or branch**
    - Sync remote history into `.insforge/migrations/` before adding local pending migrations.
 
-3. **Use `new` instead of naming files by hand**
+5. **Use `new` instead of naming files by hand**
    - Let the CLI assign the next sequence number safely.
 
-4. **Prefer `up <filename>` over `up <sequence>`**
+6. **Prefer `up <filename>` over `up <sequence>`**
    - An explicit filename makes the target clearer and avoids ambiguity.
 
-5. **Treat fetched files as history**
+7. **Re-check schema after failures**
+   - If a migration fails, inspect the live database state again before editing the migration file.
+   - Adjust the SQL to match the newest schema instead of assuming the previous file is still correct.
+
+8. **Treat fetched files as history**
    - Once a migration is applied remotely, avoid editing its local file.
 
 ## Common Mistakes
@@ -134,18 +146,22 @@ npx @insforge/cli db migrations list --json
 | Mistake | Solution |
 |---------|----------|
 | Naming files manually with underscores or spaces | Use `npx @insforge/cli db migrations new <migration-name>` |
+| Reaching for `db query` to create or alter schema | Use migration files for schema changes; reserve `db query` for row changes |
 | Applying a file out of order | Only apply the next remote sequence |
 | Expecting `up` to apply every pending file | `up` applies exactly one target migration |
+| Editing a failed migration without checking live state first | Re-inspect the current schema and adjust the SQL to match reality |
 | Editing already-fetched remote history casually | Treat fetched files as applied history, not drafts |
 | Assuming `fetch` overwrites local files | `fetch` skips existing file paths instead of replacing them |
 
 ## Recommended Workflow
 
 ```text
-1. Inspect remote state             → npx @insforge/cli db migrations list
-2. Sync remote history locally      → npx @insforge/cli db migrations fetch
-3. Create the next migration file   → npx @insforge/cli db migrations new <migration-name>
-4. Edit the SQL file                → .insforge/migrations/<sequence>_<migration-name>.sql
-5. Apply one migration explicitly   → npx @insforge/cli db migrations up <filename>
-6. Re-check remote state            → npx @insforge/cli db migrations list
+1. Inspect live schema first        → npx @insforge/cli db tables / indexes / policies / triggers / functions
+2. Inspect remote migration state   → npx @insforge/cli db migrations list
+3. Sync remote history locally      → npx @insforge/cli db migrations fetch
+4. Create the next migration file   → npx @insforge/cli db migrations new <migration-name>
+5. Edit the SQL file                → .insforge/migrations/<sequence>_<migration-name>.sql
+6. Apply one migration explicitly   → npx @insforge/cli db migrations up <filename>
+7. If it fails, inspect live state  → check current schema again, then adjust the migration SQL
+8. Re-check remote state            → npx @insforge/cli db migrations list
 ```
