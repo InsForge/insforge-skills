@@ -81,7 +81,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
 Use Clerk's optional catch-all routes so Clerk's internal redirects work:
 
-```
+```text
 app/sign-in/[[...sign-in]]/page.tsx
 app/sign-up/[[...sign-up]]/page.tsx
 ```
@@ -137,10 +137,17 @@ export function useInsforgeClient(): { client: InsForgeClient; isReady: boolean 
 
     let cancelled = false;
     const refresh = async () => {
-      const token = await getToken({ template: 'insforge' });
-      if (cancelled) return;
-      client.getHttpClient().setAuthToken(token ?? null);
-      setIsReady(true);
+      try {
+        const token = await getToken({ template: 'insforge' });
+        if (cancelled) return;
+        client.getHttpClient().setAuthToken(token ?? null);
+        setIsReady(!!token);
+      } catch (err) {
+        if (cancelled) return;
+        client.getHttpClient().setAuthToken(null);
+        setIsReady(false);
+        console.error('Failed to refresh Clerk token for InsForge client', err);
+      }
     };
 
     void refresh();
