@@ -217,7 +217,7 @@ npx @insforge/cli db migrations fetch
 # Create the next schema migration file
 npx @insforge/cli db migrations new create-posts
 
-# Edit .insforge/migrations/20260418091500_create-posts.sql with CREATE TABLE / ALTER TABLE / policies
+# Edit migrations/20260418091500_create-posts.sql with CREATE TABLE / ALTER TABLE / policies
 
 # Apply pending migrations safely
 npx @insforge/cli db migrations up --all
@@ -231,7 +231,7 @@ npx @insforge/cli db migrations up --all
 # Inspect remote migration history
 npx @insforge/cli db migrations list
 
-# Sync applied remote migrations into .insforge/migrations/
+# Sync applied remote migrations into migrations/
 npx @insforge/cli db migrations fetch
 
 # Create the next local migration file

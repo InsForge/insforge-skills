@@ -18,7 +18,7 @@ npx @insforge/cli db migrations up --all
 | Command | Description |
 |--------|-------------|
 | `list` | Show applied remote migrations (version, name, created date) |
-| `fetch` | Download remote applied migrations into `.insforge/migrations/` |
+| `fetch` | Download remote applied migrations into `migrations/` |
 | `new <migration-name>` | Create the next local migration file with the next timestamp version |
 | `up <filename\\|version>` | Apply exactly one explicit local migration file |
 | `up --to <filename\\|version>` | Apply pending local migrations up to a chosen target |
@@ -56,7 +56,7 @@ No spaces, underscores, uppercase letters, or other special characters.
 Migration files live under:
 
 ```text
-.insforge/migrations/
+migrations/
 ```
 
 ## Examples
@@ -65,7 +65,7 @@ Migration files live under:
 # View remote migration history
 npx @insforge/cli db migrations list
 
-# Fetch remote migration files into .insforge/migrations/
+# Fetch remote migration files into migrations/
 npx @insforge/cli db migrations fetch
 
 # Create the next migration file
@@ -103,7 +103,7 @@ npx @insforge/cli db migrations list --json
 
 ### `fetch`
 
-- Ensures `.insforge/migrations/` exists
+- Ensures `migrations/` exists
 - Writes one local `.sql` file per applied remote migration
 - Skips existing file paths without overwriting them, even if the contents differ
 
@@ -121,7 +121,7 @@ npx @insforge/cli db migrations list --json
 - Applies exactly one migration file
 - The target must be the next pending local migration after the latest remote version
 - Fails if the target is ambiguous, missing, empty, invalidly named, or already applied
-- Unrelated invalid files elsewhere in `.insforge/migrations/` do not block an explicit valid target
+- Unrelated invalid files elsewhere in `migrations/` do not block an explicit valid target
 
 ### `up --to <filename|version>`
 
@@ -150,7 +150,7 @@ npx @insforge/cli db migrations list --json
    - Before writing a migration, inspect the newest state with `db tables / indexes / policies / triggers / functions` and `db migrations list`.
 
 4. **Run `fetch` on a new machine or branch**
-   - Sync remote history into `.insforge/migrations/` before adding local pending migrations.
+   - Sync remote history into `migrations/` before adding local pending migrations.
 
 5. **Use `new` instead of naming files by hand**
    - Let the CLI assign the next timestamp version safely.
@@ -192,7 +192,7 @@ npx @insforge/cli db migrations list --json
 2. Inspect remote migration state   → npx @insforge/cli db migrations list
 3. Sync remote history locally      → npx @insforge/cli db migrations fetch
 4. Create the next migration file   → npx @insforge/cli db migrations new <migration-name>
-5. Edit the SQL file                → .insforge/migrations/<version>_<migration-name>.sql
+5. Edit the SQL file                → migrations/<version>_<migration-name>.sql
 6. Apply one migration explicitly   → npx @insforge/cli db migrations up <filename>
 7. Or batch apply safely            → npx @insforge/cli db migrations up --to <target> / --all
 8. If it fails, fix/delete the local blocker → if an earlier file is broken or stale, fix it or remove it before retrying later ones
