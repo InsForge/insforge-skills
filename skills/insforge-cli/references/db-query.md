@@ -1,6 +1,6 @@
 # npx @insforge/cli db query
 
-Execute a raw SQL query against the project database.
+Execute a raw SQL query against the project database for inspection and row-level data changes.
 
 ## Syntax
 
@@ -20,20 +20,14 @@ npx @insforge/cli db query <sql> [options]
 # Basic query
 npx @insforge/cli db query "SELECT * FROM auth.users LIMIT 10"
 
-# Create a table
-npx @insforge/cli db query "CREATE TABLE posts (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  title TEXT NOT NULL,
-  content TEXT,
-  author_id UUID REFERENCES auth.users(id),
-  created_at TIMESTAMPTZ DEFAULT now()
-)"
+# Update rows
+npx @insforge/cli db query "UPDATE posts SET status = 'published' WHERE id = 'post_123'"
 
-# Enable RLS
-npx @insforge/cli db query "ALTER TABLE posts ENABLE ROW LEVEL SECURITY"
+# Insert rows
+npx @insforge/cli db query "INSERT INTO posts (title, status) VALUES ('Hello', 'draft')"
 
-# Create RLS policy
-npx @insforge/cli db query "CREATE POLICY \"public_read\" ON posts FOR SELECT USING (true)"
+# Delete rows
+npx @insforge/cli db query "DELETE FROM posts WHERE archived = true"
 
 # Query system tables
 npx @insforge/cli db query "SELECT * FROM pg_tables WHERE schemaname = 'public'" --unrestricted
@@ -47,6 +41,26 @@ npx @insforge/cli db query "SELECT count(*) FROM users" --json
 - **Human:** Formatted table
 - **JSON:** `{ "rows": [...] }`
 
+## Use Migrations for Schema Changes
+
+Do **not** use `db query` for schema changes such as:
+
+- `CREATE TABLE`
+- `ALTER TABLE`
+- `CREATE INDEX`
+- `CREATE POLICY`
+- `CREATE TRIGGER`
+- other DDL or schema-shaping changes
+
+Use `npx @insforge/cli db migrations new ...` and `npx @insforge/cli db migrations up ...` instead.
+
+Use `db query` for:
+
+- reading data
+- backfilling or correcting rows
+- one-off row updates
+- inspecting database metadata or system tables
+
 ## InsForge SQL References
 
 When writing SQL for InsForge, use these built-in references:
@@ -57,39 +71,18 @@ When writing SQL for InsForge, use these built-in references:
 | `auth.users(id)` | Built-in users table — use for foreign keys, not a custom table |
 | `system.update_updated_at()` | Built-in trigger function that auto-updates `updated_at` columns |
 
-### Complete Example: Table with RLS and Triggers
+### Complete Example: Row-Level Data Fix
 
 ```bash
-npx @insforge/cli db query "CREATE TABLE posts (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  title TEXT NOT NULL,
-  content TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-)"
+# Inspect the current rows
+npx @insforge/cli db query "SELECT id, status FROM posts WHERE status IS NULL"
 
-npx @insforge/cli db query "ALTER TABLE posts ENABLE ROW LEVEL SECURITY"
-
-npx @insforge/cli db query "CREATE POLICY \"public_read\" ON posts FOR SELECT USING (true)"
-
-npx @insforge/cli db query "CREATE POLICY \"owner_write\" ON posts
-  FOR INSERT WITH CHECK (user_id = auth.uid())"
-
-npx @insforge/cli db query "CREATE POLICY \"owner_update\" ON posts
-  FOR UPDATE USING (user_id = auth.uid())
-  WITH CHECK (user_id = auth.uid())"
-
-npx @insforge/cli db query "CREATE POLICY \"owner_delete\" ON posts
-  FOR DELETE USING (user_id = auth.uid())"
-
-npx @insforge/cli db query "CREATE TRIGGER posts_updated_at
-  BEFORE UPDATE ON posts
-  FOR EACH ROW
-  EXECUTE FUNCTION system.update_updated_at()"
+# Backfill missing row values
+npx @insforge/cli db query "UPDATE posts SET status = 'draft' WHERE status IS NULL"
 ```
 
 ## Notes
 
 - Without `--unrestricted`, system tables (`pg_tables`, `information_schema`) are not accessible.
+- For schema changes, use the migrations workflow in [db-migrations.md](db-migrations.md).
 - For advanced RLS patterns (infinite recursion prevention, SECURITY DEFINER, performance), see the insforge skill's [postgres-rls.md](../../insforge/database/postgres-rls.md).

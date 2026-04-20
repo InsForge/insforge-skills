@@ -1,7 +1,7 @@
 ---
 name: insforge-cli
 description: >-
-  Use this skill whenever the user needs backend infrastructure management — creating database tables, running SQL, deploying serverless functions, managing storage buckets, deploying frontend apps, adding secrets, setting up cron jobs, checking logs, or running backend diagnostics — especially if the project uses InsForge. Trigger on any of these contexts: creating or altering database tables/schemas, writing RLS policies via SQL, deploying or invoking edge functions, creating storage buckets, deploying frontends to hosting, managing secrets/env vars, setting up scheduled tasks/cron, viewing backend logs, diagnosing backend health or performance issues, or exporting/importing database backups. If the user asks for these operations generically (e.g., "create a users table", "deploy my app", "set up a cron job", "check backend health") and you're unsure whether they use InsForge, consult this skill and ask. For writing frontend application code with the InsForge SDK (@insforge/sdk), use the insforge skill instead.
+  Use this skill whenever the user needs backend infrastructure management — creating database tables, running SQL, managing database migration files, deploying serverless functions, managing storage buckets, deploying frontend apps, adding secrets, setting up cron jobs, checking logs, or running backend diagnostics — especially if the project uses InsForge. Trigger on any of these contexts: creating or altering database tables/schemas, fetching or applying database migrations, writing RLS policies via SQL, deploying or invoking edge functions, creating storage buckets, deploying frontends to hosting, managing secrets/env vars, setting up scheduled tasks/cron, viewing backend logs, diagnosing backend health or performance issues, or exporting/importing database backups. If the user asks for these operations generically (e.g., "create a users table", "apply a migration", "deploy my app", "set up a cron job", "check backend health") and you're unsure whether they use InsForge, consult this skill and ask. For writing frontend application code with the InsForge SDK (@insforge/sdk), use the insforge skill instead.
 license: Apache-2.0
 metadata:
   author: insforge
@@ -82,9 +82,12 @@ If no project linked: `npx @insforge/cli create` (new) or `npx @insforge/cli lin
 ### Database — `npx @insforge/cli db`
 - `npx @insforge/cli db query <sql>` — execute raw SQL. See [references/db-query.md](references/db-query.md)
 - `npx @insforge/cli db tables / indexes / policies / triggers / functions` — inspect schema
+- `npx @insforge/cli db migrations list / fetch / new / up` — manage developer migration files. See [references/db-migrations.md](references/db-migrations.md)
 - `npx @insforge/cli db rpc <fn> [--data <json>]` — call database function (GET if no data, POST if data)
 - `npx @insforge/cli db export` — export schema/data. See [references/db-export.md](references/db-export.md)
 - `npx @insforge/cli db import <file>` — import from SQL file. See [references/db-import.md](references/db-import.md)
+
+> Use `db migrations` for schema changes. Reserve `db query` for inspecting data and for row-level `SELECT / INSERT / UPDATE / DELETE` work.
 
 ### Edge Functions — `npx @insforge/cli functions`
 - `npx @insforge/cli functions list` — list deployed functions
@@ -181,6 +184,14 @@ Run with no subcommand for a full health report across all checks.
 
 **db rpc uses GET or POST**: no `--data` → GET; with `--data` → POST.
 
+**db migrations use timestamped files**: migration filenames use `YYYYMMDDHHmmss_name.sql`, for example `20260418091500_create-posts.sql`.
+
+**db migrations up supports safe batch modes**: `npx @insforge/cli db migrations up <filename|version>` applies one explicit local target. `npx @insforge/cli db migrations up --to <version|filename>` and `npx @insforge/cli db migrations up --all` apply pending files in ascending version order and stop on the first failure.
+
+**db migrations run inside a backend-managed transaction**: do not put `BEGIN`, `COMMIT`, or `ROLLBACK` in migration files.
+
+**The live database schema is the source of truth**: before writing a migration, and again if a migration fails, inspect the current database state first (`db tables / indexes / policies / triggers / functions`, plus `db migrations list`) and then adjust the migration statements to match reality. Do not assume local files are still current.
+
 **Compute deploy requires flyctl**: The `compute deploy` command shells out to `flyctl deploy --remote-only`. Install flyctl first (`brew install flyctl`) and set `FLY_API_TOKEN`. The `compute create` command does NOT require flyctl — it uses the Fly Machines API directly via the backend.
 
 **Compute endpoints use .fly.dev**: Services get a public URL at `https://{name}-{projectId}.fly.dev`. Custom domains require DNS configuration.
@@ -191,22 +202,44 @@ Run with no subcommand for a full health report across all checks.
 
 ## Common Workflows
 
-### Set up database schema
+### Set up database schema with migrations
 
 ```bash
-npx @insforge/cli db query "CREATE TABLE posts (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  title TEXT NOT NULL,
-  content TEXT,
-  author_id UUID REFERENCES auth.users(id),
-  created_at TIMESTAMPTZ DEFAULT now()
-)"
-npx @insforge/cli db query "ALTER TABLE posts ENABLE ROW LEVEL SECURITY"
-npx @insforge/cli db query "CREATE POLICY \"public_read\" ON posts FOR SELECT USING (true)"
-npx @insforge/cli db query "CREATE POLICY \"owner_write\" ON posts FOR INSERT WITH CHECK (auth.uid() = author_id)"
+# Inspect the current live schema first
+npx @insforge/cli db tables
+npx @insforge/cli db indexes
+npx @insforge/cli db policies
+npx @insforge/cli db migrations list
+
+# Sync applied remote migration history locally
+npx @insforge/cli db migrations fetch
+
+# Create the next schema migration file
+npx @insforge/cli db migrations new create-posts
+
+# Edit migrations/20260418091500_create-posts.sql with CREATE TABLE / ALTER TABLE / policies
+
+# Apply pending migrations safely
+npx @insforge/cli db migrations up --all
 ```
 
-> FK to users: always `auth.users(id)`. RLS current user: `auth.uid()`.
+> Use migrations for schema changes. Use `db query` for row changes and inspection. In migrations, FK to users with `auth.users(id)` and use `auth.uid()` in RLS policies.
+
+### Manage database migrations
+
+```bash
+# Inspect remote migration history
+npx @insforge/cli db migrations list
+
+# Sync applied remote migrations into migrations/
+npx @insforge/cli db migrations fetch
+
+# Create the next local migration file
+npx @insforge/cli db migrations new create-posts
+
+# Apply all pending local migrations
+npx @insforge/cli db migrations up --all
+```
 
 ### Deploy an edge function
 
