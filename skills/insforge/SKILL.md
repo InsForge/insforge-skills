@@ -1,11 +1,11 @@
 ---
 name: insforge
 description: >-
-  Use this skill whenever writing frontend code that talks to a backend for database queries, authentication, file uploads, AI features, real-time messaging, or edge function calls — especially if the project uses InsForge or @insforge/sdk. Trigger on any of these contexts: querying/inserting/updating/deleting database rows from frontend code, adding login/signup/OAuth/password-reset flows, uploading or downloading files to storage, invoking serverless functions, calling AI chat completions or image generation, subscribing to real-time WebSocket channels, or writing RLS policies. If the user asks for these features generically (e.g., "add auth to my React app", "fetch data from my database", "upload files") and you're unsure whether they use InsForge, consult this skill and ask. For backend infrastructure (creating tables via SQL, deploying functions, CLI commands), use insforge-cli instead.
+  Use this skill whenever writing frontend code that talks to a backend for database queries, authentication, file uploads, AI features, real-time messaging, edge function calls, or sending custom transactional email — especially if the project uses InsForge or @insforge/sdk. Trigger on any of these contexts: querying/inserting/updating/deleting database rows from frontend code, adding login/signup/OAuth/password-reset flows, uploading or downloading files to storage, invoking serverless functions, calling AI chat completions or image generation, subscribing to real-time WebSocket channels, sending welcome/newsletter/notification emails via insforge.emails.send, or writing RLS policies. If the user asks for these features generically (e.g., "add auth to my React app", "fetch data from my database", "upload files", "send a welcome email") and you're unsure whether they use InsForge, consult this skill and ask. For backend infrastructure (creating tables via SQL, deploying functions, CLI commands), use insforge-cli instead.
 license: MIT
 metadata:
   author: insforge
-  version: "1.1.0"
+  version: "1.2.0"
   organization: InsForge
   date: February 2026
 ---
@@ -87,6 +87,7 @@ const insforge = createClient({
 | **Functions** | [functions/sdk-integration.md](functions/sdk-integration.md) |
 | **AI** | [ai/sdk-integration.md](ai/sdk-integration.md) |
 | **Real-time** | [realtime/sdk-integration.md](realtime/sdk-integration.md) |
+| **Email** | [email/sdk-integration.md](email/sdk-integration.md) |
 
 ### What Each Module Covers
 
@@ -97,6 +98,7 @@ const insforge = createClient({
 | **Storage** | Upload, download, delete files |
 | **Functions** | Invoke edge functions |
 | **AI** | Chat completions, image generation, embeddings |
+| **Email** | Send custom transactional HTML emails (welcome, newsletter, notifications) |
 | **Real-time** | Connect, subscribe, publish events |
 
 ### Guides
@@ -261,6 +263,7 @@ All SDK methods return `{ data, error }`.
 | `insforge.functions` | `.invoke()` |
 | `insforge.ai` | `.chat.completions.create()`, `.images.generate()`, `.embeddings.create()` |
 | `insforge.realtime` | `.connect()`, `.subscribe()`, `.publish()`, `.on()`, `.disconnect()` |
+| `insforge.emails` | `.send({ to, subject, html, cc?, bcc?, from?, replyTo? })` |
 
 ## Important Notes
 
