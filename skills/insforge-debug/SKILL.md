@@ -20,9 +20,37 @@ metadata:
 
 # InsForge Debug
 
-Diagnose problems in InsForge projects — from frontend SDK errors to backend infrastructure issues. This skill helps you **locate** problems by running the right commands and surfacing logs/status. It does NOT suggest fixes; hand the diagnostic output to the developer or their agent for repair decisions.
+Diagnose problems in InsForge projects — from frontend SDK errors to backend infrastructure issues. This skill helps you **locate** problems by running the right commands and surfacing logs/status. The manual scenarios below locate problems without suggesting fixes; the [AI-assisted path](#ai-assisted-diagnosis-fastest-path) additionally returns suggested causes and solutions.
 
 **Always use `npx @insforge/cli`** — never install the CLI globally.
+
+## AI-Assisted Diagnosis (Fastest Path)
+
+When the user gives a concrete description of the problem (error message, failing URL, HTTP status), hand it to the InsForge debug agent. It inspects backend state on its own and returns a diagnosis plus possible solutions.
+
+```bash
+npx @insforge/cli diagnose --ai "<issue description>"
+```
+
+**When to use this path first**:
+- The user pastes an error, request URL, or status code and asks "why?"
+- You want a fast first pass before drilling into the manual scenarios below
+- The problem spans multiple subsystems (frontend + backend + database) and you're not sure where to start
+
+**Examples**:
+
+```bash
+# Edge function error
+npx @insforge/cli diagnose --ai "I invoked edge function https://kttprzh4.functions.insforge.app/newton, got error: 508: Loop Detected (LOOP_DETECTED)\n\nRecursive requests to the same deployment cannot be processed."
+
+# Slow database query
+npx @insforge/cli diagnose --ai "I query data with https://kttprzh4.us-west.insforge.app/api/database/records/order_customer_details?select=*&order=total_amount.desc, it costs 1.4s, why?"
+
+# Unresponsive backend / 504
+npx @insforge/cli diagnose --ai "my backend is unresponsive, request https://kttprzh4.us-west.insforge.app/api/database/records/todo?select=*&order=created_at.desc got 504 error, why?"
+```
+
+Unlike the other commands in this skill, `diagnose --ai` returns both a diagnosis and suggested solutions. Relay them to the user as a starting point, but verify against the underlying logs/metrics (the scenarios below) before committing to a fix.
 
 ## Quick Triage
 
@@ -354,6 +382,10 @@ Source names are case-insensitive.
 ```bash
 # Full health report (all checks)
 npx @insforge/cli diagnose
+
+# AI-powered diagnosis from a natural-language problem description
+# Returns diagnosis + suggested solutions
+npx @insforge/cli diagnose --ai "<issue description>"
 
 # EC2 instance metrics (CPU, memory, disk, network)
 npx @insforge/cli diagnose metrics [--range 1h|6h|24h|7d] [--metrics <list>]
