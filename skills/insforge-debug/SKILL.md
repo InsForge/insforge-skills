@@ -8,8 +8,9 @@ description: >-
   queries, authentication/authorization failures, realtime channel issues,
   backend performance degradation (high CPU/memory/slow responses),
   edge function deploy failures, or frontend Vercel deploy failures.
-  This skill guides diagnostic command execution to locate problems;
-  it does not provide fix suggestions.
+  This skill guides diagnostic command execution to locate problems.
+  The manual scenarios surface logs/status only; the AI-assisted path
+  (`diagnose --ai`) additionally returns suggested causes and solutions.
 license: Apache-2.0
 metadata:
   author: insforge

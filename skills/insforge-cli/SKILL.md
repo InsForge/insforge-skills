@@ -147,6 +147,7 @@ If no project linked: `npx @insforge/cli create` (new) or `npx @insforge/cli lin
 Run with no subcommand for a full health report across all checks.
 
 - `npx @insforge/cli diagnose` — full health report (runs all diagnostics)
+- `npx @insforge/cli diagnose --ai "<issue description>"` — hand a natural-language problem description (error, failing URL, HTTP status) to the InsForge debug agent; returns a diagnosis plus suggested solutions
 - `npx @insforge/cli diagnose metrics [--range 1h|6h|24h|7d] [--metrics <list>]` — EC2 instance metrics (CPU, memory, disk, network). Default range: `1h`
 - `npx @insforge/cli diagnose advisor [--severity critical|warning|info] [--category security|performance|health] [--limit <n>]` — latest advisor scan results and issues. Default limit: 50
 - `npx @insforge/cli diagnose db [--check <checks>]` — database health checks. Checks: `connections`, `slow-queries`, `bloat`, `size`, `index-usage`, `locks`, `cache-hit` (default: `all`)
