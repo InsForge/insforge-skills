@@ -1,8 +1,14 @@
-# npx @insforge/cli compute deploy
+# npx @insforge/cli compute deploy — backend container from a Dockerfile
 
 > ⚠️ **In progress.** Compute services are still in development; the API and CLI may change.
 
-Build a Dockerfile and deploy it as a compute service using `flyctl deploy`.
+Build a Dockerfile and deploy it as a **backend** compute service using
+`flyctl deploy`. The container runs on Fly.io and is reachable via a public
+HTTPS endpoint.
+
+> Looking to deploy a **frontend** (static site / SPA / Next.js to Vercel)? Use
+> `npx @insforge/cli deployments deploy` instead — see
+> [deployments-deploy.md](deployments-deploy.md).
 
 ## Syntax
 

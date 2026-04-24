@@ -1,6 +1,11 @@
-# npx @insforge/cli deployments deploy
+# npx @insforge/cli deployments deploy — frontend hosting (Vercel)
 
-Deploy a frontend project to InsForge hosting (via Vercel).
+Deploy a frontend project (static site / SPA / Next.js / etc.) to InsForge
+hosting (via Vercel).
+
+> Looking to deploy a **backend** Docker container (API, worker)? Use
+> `npx @insforge/cli compute deploy` instead — see
+> [compute-deploy.md](compute-deploy.md).
 
 ## Syntax
 

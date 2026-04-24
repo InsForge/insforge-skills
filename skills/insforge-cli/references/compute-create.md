@@ -1,8 +1,12 @@
-# npx @insforge/cli compute create
+# npx @insforge/cli compute create — backend container from a pre-built image
 
 > ⚠️ **In progress.** Compute services are still in development; the API and CLI may change.
 
-Deploy a pre-built Docker image as a compute service on Fly.io.
+Deploy a pre-built Docker image as a **backend** compute service on Fly.io.
+
+> Looking to deploy a **frontend** (static site / SPA / Next.js to Vercel)? Use
+> `npx @insforge/cli deployments deploy` instead — see
+> [deployments-deploy.md](deployments-deploy.md).
 
 ## Syntax
 
