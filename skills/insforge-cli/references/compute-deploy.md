@@ -1,5 +1,11 @@
 # npx @insforge/cli compute deploy
 
+> ⚠️ **Currently in development.** Compute services are not yet generally
+> available. The API, CLI flags, and behaviors documented here may change
+> before GA. Track status via PR #1062 (OSS) and PR #456 (cloud backend).
+> Available on staging (`api-beta.insforge.dev`) for testing; not yet on
+> production (`api.insforge.dev`).
+
 Build a Dockerfile and deploy it as a compute service using `flyctl deploy`.
 
 ## Syntax
