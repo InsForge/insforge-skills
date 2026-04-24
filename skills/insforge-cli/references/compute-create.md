@@ -1,10 +1,6 @@
 # npx @insforge/cli compute create
 
-> ⚠️ **Currently in development.** Compute services are not yet generally
-> available. The API, CLI flags, and behaviors documented here may change
-> before GA. Track status via PR #1062 (OSS) and PR #456 (cloud backend).
-> Available on staging (`api-beta.insforge.dev`) for testing; not yet on
-> production (`api.insforge.dev`).
+> ⚠️ **In progress.** Compute services are still in development; the API and CLI may change.
 
 Deploy a pre-built Docker image as a compute service on Fly.io.
 

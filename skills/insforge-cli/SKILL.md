@@ -112,10 +112,7 @@ If no project linked: `npx @insforge/cli create` (new) or `npx @insforge/cli lin
 
 ### Compute Services — `npx @insforge/cli compute`
 
-> ⚠️ **Currently in development.** Compute services are not yet generally available.
-> The API, CLI flags, and behaviors below may change before GA. Available on
-> staging (`api-beta.insforge.dev`) for testing; not yet on production
-> (`api.insforge.dev`). Track status via PR #1062 (OSS) and PR #456 (cloud backend).
+> ⚠️ **In progress.** Compute services are still in development; the API and CLI may change.
 >
 > **Availability:** Compute requires the backend to have Fly.io configured. If not enabled, the API returns `COMPUTE_SERVICE_NOT_CONFIGURED` with setup instructions in `nextActions`. Follow those instructions.
 
