@@ -21,8 +21,8 @@ npx @insforge/cli compute deploy [directory] [options]
 | `[directory]` | Path to directory containing the Dockerfile | current directory |
 | `--name <name>` | Service name (DNS-safe) | **required** |
 | `--port <port>` | Container internal port | auto-detect from `fly.toml` or `8080` |
-| `--cpu <tier>` | CPU tier | auto-detect from `fly.toml` or `shared-1x` |
-| `--memory <mb>` | Memory in MB | auto-detect from `fly.toml` or `512` |
+| `--cpu <tier>` | CPU tier in Fly.io standard format `<kind>-<N>x` (see [compute-create](compute-create.md#cpu-tier-flyio-standard-format) for the full table and recommended picks) | auto-detect from `fly.toml` or `shared-1x` |
+| `--memory <mb>` | Memory in MB (any positive integer; Fly enforces per-tier bounds) | auto-detect from `fly.toml` or `512` |
 | `--region <region>` | Fly.io region | auto-detect from `fly.toml` or `iad` |
 | `--env <json>` | Environment variables as JSON | none |
 
