@@ -171,11 +171,18 @@ The basic RAG flow is prototype-grade. For production add chunking (semantic
 boundaries, not fixed tokens), query rewriting, re-ranking, context
 truncation, and retrieval evaluation.
 
-Pair InsForge with an orchestration framework for these — LangChain /
-LlamaIndex / Haystack (Python or TypeScript) for pipeline orchestration, or
-Vercel AI SDK for streaming React/Next.js UIs. They all plug into InsForge as
-a Postgres-backed vector store: call `insforge.ai.embeddings.create()` for
-embeddings and `insforge.ai.chat.completions.create()` for generation.
+Pair InsForge with an orchestration framework for these:
+
+| Framework | Language | Best for |
+|-----------|----------|----------|
+| LangChain | Python / TypeScript | Full pipeline orchestration |
+| LlamaIndex | Python / TypeScript | Document indexing, query engines |
+| Haystack | Python | Modular pipelines, evaluation |
+| Vercel AI SDK | TypeScript | Streaming UI, React/Next.js |
+
+All of them plug into InsForge as a Postgres-backed vector store: call
+`insforge.ai.embeddings.create()` for embeddings and
+`insforge.ai.chat.completions.create()` for generation.
 
 ### One Model per Column
 

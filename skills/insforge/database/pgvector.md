@@ -25,7 +25,7 @@ npx @insforge/cli db query "
   );
 "
 
-# 3. Similarity-search RPC
+# 3. Similarity-search RPC (dimension must match the table above)
 npx @insforge/cli db query "
   create or replace function match_documents(
     query_embedding vector(1536),
