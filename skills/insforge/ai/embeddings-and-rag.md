@@ -46,7 +46,7 @@ Note: this table tracks chat/image models, not embeddings. Don't use it to
 
 ```typescript
 const response = await insforge.ai.embeddings.create({
-  model: EMBEDDING_MODEL_ID,           // from ai.configs, e.g. 'openai/text-embedding-3-small'
+  model: EMBEDDING_MODEL_ID,           // e.g. 'openai/text-embedding-3-small' — see 'Picking an Embedding Model' above
   input: 'Your text here',             // string or string[]
 });
 
@@ -57,7 +57,7 @@ Supported parameters:
 
 | Parameter | Type | Notes |
 |-----------|------|-------|
-| `model` | string | required; exact `model_id` from `ai.configs` |
+| `model` | string | required; any OpenRouter-supported embedding model ID — does **not** need to be in `ai.configs` |
 | `input` | string \| string[] | required; pass an array for batch embedding |
 | `encoding_format` | `'float'` \| `'base64'` | default `'float'`; use `'float'` for pgvector |
 | `dimensions` | number | override output dimensionality when the model supports it |
