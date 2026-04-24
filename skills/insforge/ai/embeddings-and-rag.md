@@ -10,21 +10,37 @@ usage and end-to-end patterns.
 
 ---
 
-## Discover Configured Models First
+## Picking an Embedding Model
 
-Do **not** hardcode embedding model IDs. Each project has its own AI configuration.
+Embedding models route through the InsForge AI gateway (OpenRouter under the
+hood) and work **without** needing a per-project `ai.configs` entry. Any
+OpenRouter-supported embedding model ID is accepted directly.
+
+This is different from chat and image models, which **do** need to be enabled
+in the Dashboard → AI Settings (and appear in `ai.configs`). The chat path
+validates against `ai.configs` and rejects unknown IDs; the embeddings path
+just forwards to OpenRouter.
+
+Practical defaults:
+
+| Model | Dimensions | Notes |
+|-------|------------|-------|
+| `openai/text-embedding-3-small` | 1536 | Good default — cheap, fast, strong quality |
+| `openai/text-embedding-3-large` | 3072 | Higher quality, 2× storage/cost |
+| `google/gemini-embedding-001` | 3072 | Gemini alternative |
+
+If an embedding call fails with a model error, it's an OpenRouter availability
+issue, not an InsForge configuration issue — don't send the user to the
+Dashboard for this.
+
+You can sanity-check what embedding and chat models are exposed via the CLI:
 
 ```bash
-npx @insforge/cli db query \
-  "SELECT model_id, provider, input_modality, output_modality
-   FROM ai.configs
-   WHERE is_active = true"
+npx @insforge/cli db query "SELECT model_id, provider, input_modality, output_modality FROM ai.configs WHERE is_active = true"
 ```
 
-Use only `model_id` values from the response that have `text` in
-`output_modality` for embeddings (e.g. `openai/text-embedding-3-small`). If none
-are configured, tell the user to enable one in the InsForge Dashboard → AI
-Settings — do not retry with guessed IDs.
+Note: this table tracks chat/image models, not embeddings. Don't use it to
+"validate" an embedding model.
 
 ## Generate an Embedding
 
@@ -179,7 +195,7 @@ embeddings and `insforge.ai.chat.completions.create()` for generation.
 
 | Mistake | Fix |
 |---------|-----|
-| Hardcoding a model ID the project hasn't enabled | Query `ai.configs` first; surface a clear error to the user if none are active |
+| Telling the user to enable an embedding model in the Dashboard | Embedding models don't live in `ai.configs` — they route through OpenRouter directly. If an embed call fails, the model name is wrong or OpenRouter is down |
 | Column dimension ≠ model dimension | Match `vector(N)` to the model's output exactly |
 | Passing `encoding_format: 'base64'` to pgvector | Use `'float'` (the default) — pgvector expects `number[]` |
 | Computing cosine similarity in the client | Use an RPC that does the math inside SQL |

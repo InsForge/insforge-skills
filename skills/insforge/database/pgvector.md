@@ -9,31 +9,56 @@ For generating the embeddings themselves and wiring up a RAG flow, see
 
 ---
 
-## Enable the Extension
+## Setup via the CLI
 
-Run once per project via the CLI:
+All of the following are one-liners via `npx @insforge/cli db query`. Run them
+in order when bringing up pgvector on a project:
 
 ```bash
+# 1. Enable the extension (name is `vector`, not `pgvector`)
 npx @insforge/cli db query "create extension if not exists vector;"
+
+# 2. Create the table — dimension must match the embedding model you'll use
+npx @insforge/cli db query "
+  create table documents (
+    id bigserial primary key,
+    content text,
+    embedding vector(1536),
+    created_at timestamptz default now()
+  );
+"
+
+# 3. Create the similarity-search RPC (see 'Similarity Search as an RPC' below)
+npx @insforge/cli db query "
+  create or replace function match_documents(
+    query_embedding vector(1536),
+    match_count int default 5,
+    match_threshold float default 0.78
+  ) returns table (id bigint, content text, similarity float)
+  language sql stable as \$\$
+    select id, content, 1 - (embedding <=> query_embedding) as similarity
+    from documents
+    where 1 - (embedding <=> query_embedding) > match_threshold
+    order by embedding <=> query_embedding
+    limit match_count;
+  \$\$;
+"
+
+# 4. Add the HNSW index (safe on empty tables; see 'Indexing' below)
+npx @insforge/cli db query "
+  create index on documents using hnsw (embedding vector_cosine_ops);
+"
 ```
 
-The extension is named `vector` in PostgreSQL — not `pgvector`.
+> **Escaping:** in zsh/bash, inner `$$` (PL/pgSQL delimiter) must be escaped as
+> `\$\$` or wrapped in a SQL file run with `npx @insforge/cli db query --file`.
 
 ## Schema Design
 
-The column dimension **must match the embedding model** you plan to use. Mismatched
-dimensions are rejected at insert time.
+The column dimension **must match the embedding model** you plan to use.
+Mismatched dimensions are rejected at insert time.
 
-```sql
-create table documents (
-  id          bigserial primary key,
-  content     text,
-  embedding   vector(1536),        -- matches openai/text-embedding-3-small
-  created_at  timestamptz default now()
-);
-```
-
-Common dimensions for the embedding models exposed through the InsForge AI gateway:
+Common dimensions for embedding models routed through the InsForge AI gateway:
 
 | Model | Dimensions |
 |-------|------------|
@@ -42,8 +67,20 @@ Common dimensions for the embedding models exposed through the InsForge AI gatew
 | `openai/text-embedding-ada-002` | 1536 |
 | `google/gemini-embedding-001` | 3072 |
 
-If you plan to swap models later, prefer the larger dimension up front — you cannot
-alter a vector column's dimension in place without a migration.
+If you plan to swap models later, prefer the larger dimension up front — you
+cannot alter a vector column's dimension in place without a migration.
+
+### Raw SQL Inserts
+
+From a SQL shell (or CLI `db query`), cast a JSON array to `vector(N)`:
+
+```sql
+insert into documents (content, embedding)
+values ('example', '[0.1, 0.2, ...]'::vector(1536));
+```
+
+From the SDK you pass a plain `number[]` — no cast needed (see
+[../ai/embeddings-and-rag.md](../ai/embeddings-and-rag.md)).
 
 ## Distance Operators
 
