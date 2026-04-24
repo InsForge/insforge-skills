@@ -106,7 +106,7 @@ const insforge = createClient({
 | Guide | When to Use |
 |-------|-------------|
 | [database/postgres-rls.md](database/postgres-rls.md) | Writing or reviewing RLS policies — covers infinite recursion prevention, `SECURITY DEFINER` patterns, performance tips, and common InsForge RLS patterns |
-| [storage/s3-gateway.md](storage/s3-gateway.md) | Fallback path when the consumer is existing S3 tooling (aws CLI, AWS SDKs, rclone, Terraform, boto3) and adopting `@insforge/sdk` is impractical — covers endpoint/region setup, access-key management, path-style addressing, and supported vs. not-supported S3 operations. **Prefer the SDK** ([storage/sdk-integration.md](storage/sdk-integration.md)) for app code |
+| [storage/s3-gateway.md](storage/s3-gateway.md) | Fallback path when the consumer is existing S3 tooling (aws CLI, AWS SDKs, rclone, Terraform, boto3) and adopting `@insforge/sdk` is impractical — covers endpoint/region setup, access-key management, path-style addressing, and supported vs. not-supported S3 operations. **Requires InsForge 2.0.9+.** **Prefer the SDK** ([storage/sdk-integration.md](storage/sdk-integration.md)) for app code |
 
 ### Real-time Configuration
 

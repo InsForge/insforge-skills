@@ -4,6 +4,8 @@
 
 InsForge Storage speaks the **AWS S3 protocol** at `/storage/v1/s3`. Any SigV4-signing client — `aws` CLI, AWS SDKs, `rclone`, Terraform, custom scripts — can read and write the same buckets exposed through the `@insforge/sdk`, REST API, and Dashboard.
 
+> **Requires InsForge 2.0.9 or later.** The S3 gateway was introduced in 2.0.9; earlier versions do not expose `/storage/v1/s3` and the admin endpoints under `/api/storage/s3/*` return 404. Confirm the project's server version before configuring any S3 client — on Cloud, check the Dashboard footer or `GET /api/health`; self-hosted, check your deployment's image tag.
+
 > **Cloud only.** The S3 gateway is available on InsForge Cloud projects. Self-hosted deployments can achieve the same capability by running the platform against a MinIO or AWS S3 bucket and exposing `/storage/v1/s3` behind their own ingress.
 
 ## When to use the S3 gateway (vs. the SDK)
