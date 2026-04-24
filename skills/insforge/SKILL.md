@@ -1,7 +1,7 @@
 ---
 name: insforge
 description: >-
-  Use this skill whenever writing frontend code that talks to a backend for database queries, authentication, file uploads, AI features, real-time messaging, edge function calls, or sending custom transactional email — especially if the project uses InsForge or @insforge/sdk. Trigger on any of these contexts: querying/inserting/updating/deleting database rows from frontend code, adding login/signup/OAuth/password-reset flows, uploading or downloading files to storage, invoking serverless functions, calling AI chat completions or image generation, subscribing to real-time WebSocket channels, sending welcome/newsletter/notification emails via insforge.emails.send, or writing RLS policies. If the user asks for these features generically (e.g., "add auth to my React app", "fetch data from my database", "upload files", "send a welcome email") and you're unsure whether they use InsForge, consult this skill and ask. For backend infrastructure (creating tables via SQL, deploying functions, CLI commands), use insforge-cli instead.
+  Use this skill whenever writing code that talks to an InsForge backend for database queries, authentication, file uploads, AI features, real-time messaging, edge function calls, sending custom transactional email, or pointing S3-compatible tooling (aws CLI, AWS SDKs, rclone, Terraform, boto3) at InsForge Storage — especially if the project uses InsForge or @insforge/sdk. Trigger on any of these contexts: querying/inserting/updating/deleting database rows from frontend code, adding login/signup/OAuth/password-reset flows, uploading or downloading files to storage, configuring the S3-compatible storage gateway (/storage/v1/s3) or minting S3 access keys for CI/backup scripts, invoking serverless functions, calling AI chat completions or image generation, subscribing to real-time WebSocket channels, sending welcome/newsletter/notification emails via insforge.emails.send, or writing RLS policies. If the user asks for these features generically (e.g., "add auth to my React app", "fetch data from my database", "upload files", "push build artifacts with aws s3 cp", "configure rclone for my bucket", "send a welcome email") and you're unsure whether they use InsForge, consult this skill and ask. For backend infrastructure (creating tables via SQL, deploying functions, CLI commands), use insforge-cli instead.
 license: MIT
 metadata:
   author: insforge
@@ -95,7 +95,7 @@ const insforge = createClient({
 |--------|---------|
 | **Database** | CRUD operations, filters, pagination, RPC calls |
 | **Auth** | Sign up/in, OAuth, sessions, profiles, password reset |
-| **Storage** | Upload, download, delete files |
+| **Storage** | Upload, download, delete files; S3-compatible gateway for CI / backup tooling |
 | **Functions** | Invoke edge functions |
 | **AI** | Chat completions, image generation, embeddings |
 | **Email** | Send custom transactional HTML emails (welcome, newsletter, notifications) |
@@ -106,6 +106,7 @@ const insforge = createClient({
 | Guide | When to Use |
 |-------|-------------|
 | [database/postgres-rls.md](database/postgres-rls.md) | Writing or reviewing RLS policies — covers infinite recursion prevention, `SECURITY DEFINER` patterns, performance tips, and common InsForge RLS patterns |
+| [storage/s3-gateway.md](storage/s3-gateway.md) | Fallback path when the consumer is existing S3 tooling (aws CLI, AWS SDKs, rclone, Terraform, boto3) and adopting `@insforge/sdk` is impractical — covers endpoint/region setup, access-key management, path-style addressing, and supported vs. not-supported S3 operations. **Requires InsForge 2.0.9+.** **Prefer the SDK** ([storage/sdk-integration.md](storage/sdk-integration.md)) for app code |
 
 ### Real-time Configuration
 

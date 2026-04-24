@@ -2,6 +2,8 @@
 
 Use InsForge SDK to upload, download, and manage files in your frontend application.
 
+> **Recommended path.** Prefer `@insforge/sdk` for all storage work — it is the supported default for app code (browser and server), handles auth/session scoping, and avoids handing out long-lived project-admin credentials. Reach for the [S3-compatible gateway](./s3-gateway.md) only when the consumer is existing S3 tooling (CI pipelines running `aws s3 cp` / `rclone sync`, Terraform, backup/log shippers) where adopting the SDK would be impractical.
+
 ## Setup
 
 First, ensure your `.env` file is configured with your InsForge URL and anon key. Get the anon key with `npx @insforge/cli secrets get ANON_KEY`. See the main [SKILL.md](../SKILL.md) for framework-specific variable names and full setup steps.
