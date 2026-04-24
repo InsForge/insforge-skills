@@ -106,6 +106,8 @@ const insforge = createClient({
 | Guide | When to Use |
 |-------|-------------|
 | [database/postgres-rls.md](database/postgres-rls.md) | Writing or reviewing RLS policies — covers infinite recursion prevention, `SECURITY DEFINER` patterns, performance tips, and common InsForge RLS patterns |
+| [database/pgvector.md](database/pgvector.md) | Building semantic search, recommendations, or RAG — covers the `vector` extension, schema/dimensions, distance operators, HNSW/IVFFlat indexes, and RPC similarity search |
+| [ai/embeddings-and-rag.md](ai/embeddings-and-rag.md) | Generating embeddings through the InsForge AI gateway, storing them in pgvector, and wiring up a basic RAG pipeline with chat completions |
 
 ### Real-time Configuration
 
