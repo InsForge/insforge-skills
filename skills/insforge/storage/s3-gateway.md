@@ -26,7 +26,7 @@ Both values are shown in the Dashboard under **Storage → Settings → S3 Confi
 
 | Field | Value |
 | --- | --- |
-| Endpoint | `https://{project-ref}.{region}.insforge.app/storage/v1/s3` |
+| Endpoint | `https://{app-key}.{region}.insforge.app/storage/v1/s3` |
 | Region | `us-east-2` (or the value set via `AWS_REGION`) |
 
 Clients **must** use path-style URLs (`forcePathStyle: true` / `addressing_style = path` / `force_path_style = true`). Virtual-hosted style (`{bucket}.endpoint/...`) is not supported — configurations that omit path-style will fail with signature or DNS errors.
@@ -74,7 +74,7 @@ Revocation invalidates the server-side LRU cache immediately, so clients still h
 
 All examples assume:
 
-- `endpoint` = `https://project_ref.region.insforge.app/storage/v1/s3`
+- `endpoint` = `https://your-appkey.your-region.insforge.app/storage/v1/s3`
 - `region` = `us-east-2`
 - Path-style addressing enabled
 
@@ -86,7 +86,7 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 const client = new S3Client({
   forcePathStyle: true,
   region: 'us-east-2',
-  endpoint: 'https://project_ref.region.insforge.app/storage/v1/s3',
+  endpoint: 'https://your-appkey.your-region.insforge.app/storage/v1/s3',
   credentials: {
     accessKeyId: 'your_access_key_id',
     secretAccessKey: 'your_secret_access_key',
@@ -114,7 +114,7 @@ aws_secret_access_key = your_secret_access_key
 # ~/.aws/config
 [profile insforge]
 region = us-east-2
-endpoint_url = https://project_ref.region.insforge.app/storage/v1/s3
+endpoint_url = https://your-appkey.your-region.insforge.app/storage/v1/s3
 s3 =
   addressing_style = path
 ```
@@ -134,7 +134,7 @@ from botocore.config import Config
 s3 = boto3.client(
     's3',
     region_name='us-east-2',
-    endpoint_url='https://project_ref.region.insforge.app/storage/v1/s3',
+    endpoint_url='https://your-appkey.your-region.insforge.app/storage/v1/s3',
     aws_access_key_id='your_access_key_id',
     aws_secret_access_key='your_secret_access_key',
     config=Config(s3={'addressing_style': 'path'}),
@@ -152,7 +152,7 @@ type = s3
 provider = Other
 access_key_id = your_access_key_id
 secret_access_key = your_secret_access_key
-endpoint = https://project_ref.region.insforge.app/storage/v1/s3
+endpoint = https://your-appkey.your-region.insforge.app/storage/v1/s3
 region = us-east-2
 force_path_style = true
 ```
