@@ -113,6 +113,11 @@ await insforge.database.from('documents').insert([{
 }])
 ```
 
+For end-to-end embedding + RAG patterns (batching, similarity search RPCs, full
+retrieval-augmented generation flow), see [embeddings-and-rag.md](./embeddings-and-rag.md).
+For the pgvector schema, distance operators, and indexes, see
+[../database/pgvector.md](../database/pgvector.md).
+
 ### Image Generation
 
 ```javascript
