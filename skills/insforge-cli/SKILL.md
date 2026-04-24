@@ -104,7 +104,12 @@ If no project linked: `npx @insforge/cli create` (new) or `npx @insforge/cli lin
 - `npx @insforge/cli storage upload <file> --bucket <name> [--key <objectKey>]` — upload file
 - `npx @insforge/cli storage download <objectKey> --bucket <name> [--output <path>]` — download file
 
-### Deployments — `npx @insforge/cli deployments`
+### Frontend Deployments (Vercel) — `npx @insforge/cli deployments`
+
+Deploy a frontend application (static site / SPA / Next.js / etc.) to Vercel,
+managed through InsForge. For backend container workloads see **Backend Compute
+Services** below.
+
 - `npx @insforge/cli deployments deploy [dir]` — deploy frontend app. See [references/deployments-deploy.md](references/deployments-deploy.md)
 - `npx @insforge/cli deployments list` — list deployments
 - `npx @insforge/cli deployments status <id> [--sync]` — get deployment status (--sync fetches from Vercel)
@@ -113,8 +118,14 @@ If no project linked: `npx @insforge/cli create` (new) or `npx @insforge/cli lin
 - `npx @insforge/cli deployments env set <key> <value>` — create or update a deployment environment variable
 - `npx @insforge/cli deployments env delete <id>` — delete a deployment environment variable by ID
 
-### Compute Services — `npx @insforge/cli compute`
+### Backend Compute Services (Fly.io) — `npx @insforge/cli compute`
 
+Deploy and manage backend containerized services (APIs, workers, microservices)
+on Fly.io. Each service runs as a Docker container reachable via a public HTTPS
+endpoint. For frontend hosting see **Frontend Deployments** above.
+
+> ⚠️ **In progress.** Compute services are still in development; the API and CLI may change.
+>
 > **Availability:** Compute requires the backend to have Fly.io configured. If not enabled, the API returns `COMPUTE_SERVICE_NOT_CONFIGURED` with setup instructions in `nextActions`. Follow those instructions.
 
 - `npx @insforge/cli compute list` — list all compute services (name, status, image, CPU, memory, endpoint)

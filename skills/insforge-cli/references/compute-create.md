@@ -1,6 +1,12 @@
-# npx @insforge/cli compute create
+# npx @insforge/cli compute create — backend container from a pre-built image
 
-Deploy a pre-built Docker image as a compute service on Fly.io.
+> ⚠️ **In progress.** Compute services are still in development; the API and CLI may change.
+
+Deploy a pre-built Docker image as a **backend** compute service on Fly.io.
+
+> Looking to deploy a **frontend** (static site / SPA / Next.js to Vercel)? Use
+> `npx @insforge/cli deployments deploy` instead — see
+> [deployments-deploy.md](deployments-deploy.md).
 
 ## Syntax
 
@@ -20,19 +26,47 @@ npx @insforge/cli compute create [options]
 | `--region <region>` | Fly.io region | `iad` |
 | `--env <json>` | Environment variables as JSON object | none |
 
-## CPU Tiers
+## CPU Tier (Fly.io standard format)
 
-| Tier | Description |
-|------|-------------|
-| `shared-1x` | Shared CPU, 1 vCPU (default) |
-| `shared-2x` | Shared CPU, 2 vCPU |
-| `performance-1x` | Dedicated CPU, 1 vCPU |
-| `performance-2x` | Dedicated CPU, 2 vCPU |
-| `performance-4x` | Dedicated CPU, 4 vCPU |
+`--cpu` accepts any well-formed Fly.io machine size in the format **`<kind>-<N>x`** where:
+- `<kind>` is `shared` or `performance`
+- `<N>` is the vCPU count
 
-## Memory Options
+InsForge does **not** maintain a hardcoded allow-list — Fly.io is the source of truth for which sizes actually exist. If you pass an unsupported combination (e.g. `performance-32x`), Fly returns a clean validation error at machine-create time.
 
-256, 512 (default), 1024, 2048, 4096, 8192 MB
+Common standard tiers (current as of writing):
+
+| Tier | Kind | vCPU | Typical RAM range |
+|------|------|------|-------------------|
+| `shared-1x` (default) | shared | 1 | 256 MB – 2 GB |
+| `shared-2x` | shared | 2 | 512 MB – 4 GB |
+| `shared-4x` | shared | 4 | 1 GB – 8 GB |
+| `shared-8x` | shared | 8 | 2 GB – 16 GB |
+| `performance-1x` | dedicated | 1 | 2 GB – 8 GB |
+| `performance-2x` | dedicated | 2 | 4 GB – 16 GB |
+| `performance-4x` | dedicated | 4 | 8 GB – 32 GB |
+| `performance-8x` | dedicated | 8 | 16 GB – 64 GB |
+| `performance-16x` | dedicated | 16 | 32 GB – 128 GB |
+
+For the authoritative current list and pricing, see Fly.io's machine-size documentation: <https://fly.io/docs/about/pricing/#started-machines>.
+
+## Memory
+
+`--memory <mb>` accepts any positive integer (MB). Fly enforces the per-tier bounds shown above; out-of-range combinations return a Fly validation error. Default: `512`.
+
+Examples: `--memory 256`, `--memory 4096`, `--memory 65536`.
+
+### Common picks
+
+| Use case | Recommended `--cpu --memory` |
+|----------|------------------------------|
+| Static site / proxy | `shared-1x 256` |
+| Small Node/Python API | `shared-1x 512` |
+| Mid API with caching | `shared-2x 1024` |
+| API needing 4 GB RAM | `shared-2x 4096` or `shared-4x 4096` |
+| 8 cores + 4 GB (CPU-heavy short jobs) | `performance-8x 4096` |
+| ML inference (CPU) | `performance-4x 8192` |
+| Heavy data processing | `performance-8x 16384` |
 
 ## Regions
 
@@ -48,11 +82,13 @@ npx @insforge/cli compute create [options]
 
 ## What It Does
 
-1. Validates input (name must be DNS-safe, port 1-65535, memory must be an allowed value)
+1. Validates input (name must be DNS-safe, port 1-65535, `--cpu` must match `<kind>-<N>x`, memory must be a positive integer)
 2. Creates a Fly.io app via the Machines API
 3. Launches a machine with the specified Docker image, CPU/memory config, and port mapping
 4. Waits for the machine to reach `started` state
 5. Returns the service record with a public endpoint URL
+
+Fly.io validates the `<cpu, memory>` combination at step 3. Unsupported combos (e.g. `shared-1x` with 16 GB) return a Fly error surfaced as `COMPUTE_SERVICE_DEPLOY_FAILED`.
 
 ## Examples
 
@@ -69,6 +105,14 @@ npx @insforge/cli compute create \
   --memory 2048 \
   --region sin \
   --env '{"HF_TOKEN": "hf_abc123", "PORT": "8000"}'
+
+# 8 cores + 4 GB RAM (e.g. CPU-bound batch worker)
+npx @insforge/cli compute create \
+  --name batch-worker \
+  --image myregistry/batch:latest \
+  --port 8080 \
+  --cpu performance-8x \
+  --memory 4096
 
 # JSON output for scripting
 npx @insforge/cli compute create --name my-api --image node:20-alpine --port 3000 --json

@@ -1,6 +1,14 @@
-# npx @insforge/cli compute deploy
+# npx @insforge/cli compute deploy — backend container from a Dockerfile
 
-Build a Dockerfile and deploy it as a compute service using `flyctl deploy`.
+> ⚠️ **In progress.** Compute services are still in development; the API and CLI may change.
+
+Build a Dockerfile and deploy it as a **backend** compute service using
+`flyctl deploy`. The container runs on Fly.io and is reachable via a public
+HTTPS endpoint.
+
+> Looking to deploy a **frontend** (static site / SPA / Next.js to Vercel)? Use
+> `npx @insforge/cli deployments deploy` instead — see
+> [deployments-deploy.md](deployments-deploy.md).
 
 ## Syntax
 
@@ -21,8 +29,8 @@ npx @insforge/cli compute deploy [directory] [options]
 | `[directory]` | Path to directory containing the Dockerfile | current directory |
 | `--name <name>` | Service name (DNS-safe) | **required** |
 | `--port <port>` | Container internal port | auto-detect from `fly.toml` or `8080` |
-| `--cpu <tier>` | CPU tier | auto-detect from `fly.toml` or `shared-1x` |
-| `--memory <mb>` | Memory in MB | auto-detect from `fly.toml` or `512` |
+| `--cpu <tier>` | CPU tier in Fly.io standard format `<kind>-<N>x` (see [compute-create](compute-create.md#cpu-tier-flyio-standard-format) for the full table and recommended picks) | auto-detect from `fly.toml` or `shared-1x` |
+| `--memory <mb>` | Memory in MB (any positive integer; Fly enforces per-tier bounds) | auto-detect from `fly.toml` or `512` |
 | `--region <region>` | Fly.io region | auto-detect from `fly.toml` or `iad` |
 | `--env <json>` | Environment variables as JSON | none |
 
