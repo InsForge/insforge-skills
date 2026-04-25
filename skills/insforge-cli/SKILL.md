@@ -127,8 +127,8 @@ endpoint. For frontend hosting see **Frontend Deployments** above.
 
 - `npx @insforge/cli compute list` — list all compute services (name, status, image, CPU, memory, endpoint)
 - `npx @insforge/cli compute get <id>` — get service details
-- `npx @insforge/cli compute create --name <name> --image <image> [--port 8080] [--cpu shared-1x] [--memory 512] [--region iad] [--env '{"KEY":"val"}']` — create and deploy a Docker container. See [references/compute-create.md](references/compute-create.md)
-- `npx @insforge/cli compute deploy [directory] --name <name> [--port] [--cpu] [--memory] [--region] [--env]` — build a Dockerfile and deploy via `flyctl deploy`. See [references/compute-deploy.md](references/compute-deploy.md)
+- `npx @insforge/cli compute deploy --image <url> --name <name> [--port] [--cpu] [--memory] [--region] [--env]` — deploy a pre-built Docker image (no build, no flyctl). See [references/compute-deploy.md](references/compute-deploy.md)
+- `npx @insforge/cli compute deploy [directory] --name <name> [--port] [--cpu] [--memory] [--region] [--env]` — build a Dockerfile from source (defaults to cwd) and deploy via remote `flyctl deploy`. Same command, different mode based on whether `--image` is given.
 - `npx @insforge/cli compute update <id> [--image] [--port] [--cpu] [--memory] [--region]` — update service config
 - `npx @insforge/cli compute stop <id>` — stop a running service
 - `npx @insforge/cli compute start <id>` — start a stopped service
@@ -192,7 +192,9 @@ Run with no subcommand for a full health report across all checks.
 
 **db rpc uses GET or POST**: no `--data` → GET; with `--data` → POST.
 
-**Compute deploy requires flyctl**: The `compute deploy` command shells out to `flyctl deploy --remote-only`. Install flyctl first (`brew install flyctl`) and set `FLY_API_TOKEN`. The `compute create` command does NOT require flyctl — it uses the Fly Machines API directly via the backend.
+**Compute deploy modes**:
+- `--image <url>` mode (pre-built image) — backend pulls and runs. No `flyctl` or `FLY_API_TOKEN` needed locally. Fast (~5s).
+- Source mode (no `--image`, build from a Dockerfile in the directory) — uses `flyctl deploy --remote-only` for the build. Requires `flyctl` installed locally (`brew install flyctl`). The Fly token is fetched transparently from the InsForge backend — users do NOT need their own Fly account or `FLY_API_TOKEN`.
 
 **Compute endpoints use .fly.dev**: Services get a public URL at `https://{name}-{projectId}.fly.dev`. Custom domains require DNS configuration.
 
@@ -288,20 +290,22 @@ npx @insforge/cli deployments deploy ./dist
 
 ### Deploy a Docker container (compute service)
 
-Two paths: pre-built image or build from Dockerfile.
+One command, two modes: pre-built image (`--image`) or build from Dockerfile (positional dir).
 
-**Pre-built image (e.g. nginx, Redis, custom registry):**
+**Pre-built image (e.g. nginx, Redis, your-registry/your-app):**
 ```bash
-npx @insforge/cli compute create --name my-api --image nginx:alpine --port 80 --region iad
+npx @insforge/cli compute deploy --image nginx:alpine --name my-api --port 80 --region iad
 npx @insforge/cli compute list
 # Service is running with a public https://{name}-{project}.fly.dev endpoint
+# No flyctl, no FLY_API_TOKEN, no local Docker required.
 ```
 
 **Build from Dockerfile:**
 ```bash
-# Requires: flyctl installed + FLY_API_TOKEN set
+# Requires: flyctl installed locally (brew install flyctl).
+# FLY_API_TOKEN is fetched automatically — you do NOT need a Fly account.
 npx @insforge/cli compute deploy ./my-app --name my-api --port 8000
-# Builds remotely on Fly, deploys the image, syncs state back to InsForge
+# Builds remotely on Fly's builders, deploys, syncs state back to InsForge.
 ```
 
 **Lifecycle management:**
