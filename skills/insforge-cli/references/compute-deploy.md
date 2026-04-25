@@ -14,12 +14,23 @@ Deploy a backend service from a **pre-built Docker image**.
 > `npx @insforge/cli deployments deploy` instead — see
 > [deployments-deploy.md](deployments-deploy.md).
 
-## What this command does (and what it doesn't)
+## ⚠️ v1 limitation: image-only
 
-- ✅ **Does:** deploy any Docker image from any registry (Docker Hub, GHCR, your own private registry) to a Fly.io machine. InsForge handles the Fly account, IP allocation, machine lifecycle, and the public HTTPS endpoint.
-- ❌ **Does NOT:** build images for you. You produce the image yourself — locally with Docker, or in CI (e.g. GitHub Actions). Once it's in a registry, this command deploys it.
+InsForge **deploys** Docker images. **Does not build them.**
 
-If you want to ship from source code (no Docker locally), see the [GitHub Actions starter](#github-actions-deploy-on-push) below — your CI builds the image, then calls this command (or its API equivalent) to deploy.
+| Scenario | v1 |
+|---|---|
+| Deploy a pre-built image (`--image <url>`) | ✅ |
+| Build from a directory + Dockerfile | ❌ roadmap |
+| Auto-detect + build (no Dockerfile, Vercel-style) | ❌ roadmap |
+
+**You produce the image; InsForge runs it.** Three paths:
+
+1. **Local Docker:** `docker build -t ghcr.io/<you>/<app>:v1 . && docker push ...` → `compute deploy --image ghcr.io/<you>/<app>:v1`
+2. **GitHub Actions** (no local Docker): drop the [starter workflow](#github-actions-deploy-on-push) into `.github/workflows/`. Push triggers build + push + deploy.
+3. **Public image** (no build): `compute deploy --image nginx:alpine` (or any registry image)
+
+**Anti-pattern: `flyctl deploy` from your laptop.** Returns 401 — the Fly account is InsForge's, not yours. No workaround in v1 short of one of the three paths above.
 
 ## Syntax
 

@@ -201,7 +201,7 @@ Run with no subcommand for a full health report across all checks.
 
 **db rpc uses GET or POST**: no `--data` → GET; with `--data` → POST.
 
-**Compute deploy is image-only**: `compute deploy --image <url>` deploys a pre-built Docker image. InsForge does NOT build images for you — that's your toolchain's job (local Docker, GitHub Actions, your own CI). Once the image is in a registry (Docker Hub, GHCR, etc.), this command pulls and runs it on Fly. No `flyctl`, no `FLY_API_TOKEN`, no local Docker needed at deploy time. Typical deploy: ~5s. For users without local Docker, see the GitHub Actions starter in the reference doc.
+**⚠️ v1 limitation — image-only.** `compute deploy --image <url>` deploys a pre-built image. It does NOT build from source. If you have source code, build it elsewhere (local Docker, or the GitHub Actions starter in the reference doc), push to any registry, then deploy via `--image`. Server-side build is roadmap, not v1. Don't reach for `flyctl deploy` as a workaround — it 401s because the Fly account is InsForge's, not yours.
 
 **Compute endpoints use .fly.dev**: Services get a public URL at `https://{name}-{projectId}.fly.dev`. Custom domains require DNS configuration.
 
