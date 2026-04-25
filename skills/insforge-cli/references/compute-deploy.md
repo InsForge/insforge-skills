@@ -24,13 +24,9 @@ InsForge **deploys** Docker images. **Does not build them.**
 | Build from a directory + Dockerfile | ❌ roadmap |
 | Auto-detect + build (no Dockerfile, Vercel-style) | ❌ roadmap |
 
-**You produce the image; InsForge runs it.** Three paths:
+**You produce the image; InsForge runs it.** Build locally with Docker and push to a registry (GHCR, Docker Hub, etc.), then deploy via `--image`. Off-the-shelf public images (`nginx:alpine`, etc.) work too — no build needed.
 
-1. **Local Docker:** `docker build -t ghcr.io/<you>/<app>:v1 . && docker push ...` → `compute deploy --image ghcr.io/<you>/<app>:v1`
-2. **GitHub Actions** (no local Docker): drop the [starter workflow](#github-actions-deploy-on-push) into `.github/workflows/`. Push triggers build + push + deploy.
-3. **Public image** (no build): `compute deploy --image nginx:alpine` (or any registry image)
-
-**Anti-pattern: `flyctl deploy` from your laptop.** Returns 401 — the Fly account is InsForge's, not yours. No workaround in v1 short of one of the three paths above.
+**Anti-pattern: `flyctl deploy` from your laptop.** Returns 401 — the Fly account is InsForge's, not yours.
 
 ## Syntax
 
@@ -75,82 +71,20 @@ npx @insforge/cli compute deploy \
 
 ## Producing the image
 
-You need a Docker image in a registry before you can deploy. Two paths:
-
-### Local (you have Docker installed)
+In your project directory with a Dockerfile:
 
 ```bash
-# In your project directory with a Dockerfile
 docker build -t ghcr.io/<your-gh-username>/<app-name>:v1 .
 echo $GITHUB_TOKEN | docker login ghcr.io -u <your-gh-username> --password-stdin
 docker push ghcr.io/<your-gh-username>/<app-name>:v1
 
-# Then deploy it
 npx @insforge/cli compute deploy \
   --image ghcr.io/<your-gh-username>/<app-name>:v1 \
   --name <app-name> \
   --port <port>
 ```
 
-### GitHub Actions (no local Docker required)
-
-Drop this in `.github/workflows/insforge-deploy.yml`. On every push to `main`, GitHub Actions builds your image, pushes it to GHCR, and deploys via InsForge.
-
-```yaml
-name: Deploy to InsForge
-on:
-  push:
-    branches: [main]
-
-permissions:
-  contents: read
-  packages: write   # to push to GHCR
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - uses: docker/build-push-action@v5
-        id: build
-        with:
-          context: .
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository }}:${{ github.sha }}
-            ghcr.io/${{ github.repository }}:latest
-
-      - name: Deploy via InsForge API
-        env:
-          INSFORGE_API_KEY: ${{ secrets.INSFORGE_API_KEY }}
-          INSFORGE_OSS_HOST: ${{ secrets.INSFORGE_OSS_HOST }}
-          IMAGE: ghcr.io/${{ github.repository }}:${{ github.sha }}
-        run: |
-          curl -fsSL -X POST "$INSFORGE_OSS_HOST/api/compute/services" \
-            -H "Authorization: Bearer $INSFORGE_API_KEY" \
-            -H "Content-Type: application/json" \
-            -d "{
-              \"name\": \"${{ github.event.repository.name }}\",
-              \"imageUrl\": \"$IMAGE\",
-              \"port\": 8080,
-              \"cpu\": \"shared-1x\",
-              \"memory\": 512,
-              \"region\": \"iad\"
-            }"
-```
-
-You'll need two GitHub repository secrets:
-- `INSFORGE_API_KEY` — your InsForge project's access API key (`compute list` to find it, or check `~/.insforge/project.json` `api_key` field)
-- `INSFORGE_OSS_HOST` — your InsForge project's OSS host (e.g. `https://abc123.us-east.insforge.app`)
-
-This is the **Vercel-style "push to deploy"** workflow. No local Docker required.
+Any OCI registry works (GHCR, Docker Hub, etc.) as long as the image is publicly pullable. Private registries require per-project credential setup — contact support.
 
 ## CPU Tier (Fly.io standard format)
 
@@ -237,7 +171,7 @@ JSON mode (`--json`):
 ## FAQ
 
 **Q: Why doesn't InsForge build my image for me like Vercel does?**
-A: Building images is a separate problem from deploying them, and the right tool for the job is your CI (GitHub Actions, etc.) or local Docker. InsForge focuses on the deploy + run + scale + observe layer. The GitHub Actions starter above gives you the same "push to deploy" UX without us having to operate a build farm.
+A: Building images is a separate problem from deploying them. Use local Docker (or your own CI) to produce the image. InsForge focuses on the deploy + run + scale + observe layer. Server-side build is roadmap.
 
 **Q: Can I use a private image from my own registry?**
 A: Public images (e.g. Docker Hub public, GHCR public) work out of the box. Private registry support requires per-project credential configuration; contact support to set this up.

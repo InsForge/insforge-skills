@@ -137,7 +137,7 @@ For frontend hosting see **Frontend Deployments** above.
 
 - `npx @insforge/cli compute list` — list all compute services (name, status, image, CPU, memory, endpoint)
 - `npx @insforge/cli compute get <id>` — get service details
-- `npx @insforge/cli compute deploy --image <url> --name <name> [--port] [--cpu] [--memory] [--region] [--env]` — deploy a pre-built Docker image. See [references/compute-deploy.md](references/compute-deploy.md). For users without local Docker, the doc includes a GitHub Actions starter that builds + pushes + deploys on `git push`.
+- `npx @insforge/cli compute deploy --image <url> --name <name> [--port] [--cpu] [--memory] [--region] [--env]` — deploy a pre-built Docker image. See [references/compute-deploy.md](references/compute-deploy.md).
 - `npx @insforge/cli compute update <id> [--image] [--port] [--cpu] [--memory] [--region]` — update service config
 - `npx @insforge/cli compute stop <id>` — stop a running service
 - `npx @insforge/cli compute start <id>` — start a stopped service
@@ -201,7 +201,7 @@ Run with no subcommand for a full health report across all checks.
 
 **db rpc uses GET or POST**: no `--data` → GET; with `--data` → POST.
 
-**⚠️ v1 limitation — image-only.** `compute deploy --image <url>` deploys a pre-built image. It does NOT build from source. If you have source code, build it elsewhere (local Docker, or the GitHub Actions starter in the reference doc), push to any registry, then deploy via `--image`. Server-side build is roadmap, not v1. Don't reach for `flyctl deploy` as a workaround — it 401s because the Fly account is InsForge's, not yours.
+**⚠️ v1 limitation — image-only.** `compute deploy --image <url>` deploys a pre-built image. It does NOT build from source. Build locally with Docker, push to any registry, then deploy via `--image`. Server-side build is roadmap, not v1. Don't reach for `flyctl deploy` as a workaround — it 401s because the Fly account is InsForge's, not yours.
 
 **Compute endpoints use .fly.dev**: Services get a public URL at `https://{name}-{projectId}.fly.dev`. Custom domains require DNS configuration.
 
@@ -313,9 +313,6 @@ docker build -t ghcr.io/you/app:v1 .
 docker push ghcr.io/you/app:v1
 npx @insforge/cli compute deploy --image ghcr.io/you/app:v1 --name my-api --port 8000
 ```
-
-**Your own image (no local Docker — GitHub Actions builds for you):**
-Drop the [starter workflow](references/compute-deploy.md#github-actions-deploy-on-push) into `.github/workflows/insforge-deploy.yml`. On every `git push` to main, GitHub Actions builds + pushes + deploys via the InsForge API. Vercel-style "push to deploy". Free CI minutes for public repos.
 
 **Lifecycle management:**
 ```bash
