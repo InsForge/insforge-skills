@@ -137,8 +137,7 @@ For frontend hosting see **Frontend Deployments** above.
 
 - `npx @insforge/cli compute list` — list all compute services (name, status, image, CPU, memory, endpoint)
 - `npx @insforge/cli compute get <id>` — get service details
-- `npx @insforge/cli compute deploy --image <url> --name <name> [--port] [--cpu] [--memory] [--region] [--env]` — deploy a pre-built Docker image (no build, no flyctl). See [references/compute-deploy.md](references/compute-deploy.md)
-- `npx @insforge/cli compute deploy [directory] --name <name> [--port] [--cpu] [--memory] [--region] [--env]` — build a Dockerfile from source (defaults to cwd) and deploy via remote `flyctl deploy`. Same command, different mode based on whether `--image` is given.
+- `npx @insforge/cli compute deploy --image <url> --name <name> [--port] [--cpu] [--memory] [--region] [--env]` — deploy a pre-built Docker image. See [references/compute-deploy.md](references/compute-deploy.md). For users without local Docker, the doc includes a GitHub Actions starter that builds + pushes + deploys on `git push`.
 - `npx @insforge/cli compute update <id> [--image] [--port] [--cpu] [--memory] [--region]` — update service config
 - `npx @insforge/cli compute stop <id>` — stop a running service
 - `npx @insforge/cli compute start <id>` — start a stopped service
@@ -202,9 +201,7 @@ Run with no subcommand for a full health report across all checks.
 
 **db rpc uses GET or POST**: no `--data` → GET; with `--data` → POST.
 
-**Compute deploy modes**:
-- `--image <url>` mode (pre-built image) — backend pulls and runs. No `flyctl` or `FLY_API_TOKEN` needed locally. Fast (~5s).
-- Source mode (no `--image`, build from a Dockerfile in the directory) — uses `flyctl deploy --remote-only` for the build. Requires `flyctl` installed locally (`brew install flyctl`). The Fly token is fetched transparently from the InsForge backend — users do NOT need their own Fly account or `FLY_API_TOKEN`.
+**Compute deploy is image-only**: `compute deploy --image <url>` deploys a pre-built Docker image. InsForge does NOT build images for you — that's your toolchain's job (local Docker, GitHub Actions, your own CI). Once the image is in a registry (Docker Hub, GHCR, etc.), this command pulls and runs it on Fly. No `flyctl`, no `FLY_API_TOKEN`, no local Docker needed at deploy time. Typical deploy: ~5s. For users without local Docker, see the GitHub Actions starter in the reference doc.
 
 **Compute endpoints use .fly.dev**: Services get a public URL at `https://{name}-{projectId}.fly.dev`. Custom domains require DNS configuration.
 
@@ -300,9 +297,9 @@ npx @insforge/cli deployments deploy ./dist
 
 ### Deploy a Docker container (compute service)
 
-One command, two modes: pre-built image (`--image`) or build from Dockerfile (positional dir).
+InsForge deploys pre-built Docker images. Build the image with your own toolchain, then deploy.
 
-**Pre-built image (e.g. nginx, Redis, your-registry/your-app):**
+**Off-the-shelf image:**
 ```bash
 npx @insforge/cli compute deploy --image nginx:alpine --name my-api --port 80 --region iad
 npx @insforge/cli compute list
@@ -310,13 +307,15 @@ npx @insforge/cli compute list
 # No flyctl, no FLY_API_TOKEN, no local Docker required.
 ```
 
-**Build from Dockerfile:**
+**Your own image (local Docker):**
 ```bash
-# Requires: flyctl installed locally (brew install flyctl).
-# FLY_API_TOKEN is fetched automatically — you do NOT need a Fly account.
-npx @insforge/cli compute deploy ./my-app --name my-api --port 8000
-# Builds remotely on Fly's builders, deploys, syncs state back to InsForge.
+docker build -t ghcr.io/you/app:v1 .
+docker push ghcr.io/you/app:v1
+npx @insforge/cli compute deploy --image ghcr.io/you/app:v1 --name my-api --port 8000
 ```
+
+**Your own image (no local Docker — GitHub Actions builds for you):**
+Drop the [starter workflow](references/compute-deploy.md#github-actions-deploy-on-push) into `.github/workflows/insforge-deploy.yml`. On every `git push` to main, GitHub Actions builds + pushes + deploys via the InsForge API. Vercel-style "push to deploy". Free CI minutes for public repos.
 
 **Lifecycle management:**
 ```bash
