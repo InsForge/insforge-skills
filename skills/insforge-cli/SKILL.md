@@ -120,9 +120,18 @@ Services** below.
 
 ### Backend Compute Services (Fly.io) — `npx @insforge/cli compute`
 
-Deploy and manage backend containerized services (APIs, workers, microservices)
-on Fly.io. Each service runs as a Docker container reachable via a public HTTPS
-endpoint. For frontend hosting see **Frontend Deployments** above.
+Deploy and manage backend containerized services (APIs, workers, microservices).
+Each service runs as a Docker container reachable via a public HTTPS endpoint.
+For frontend hosting see **Frontend Deployments** above.
+
+> 🔧 **Implementation note (for agents):** InsForge runs compute on **Fly.io**
+> under the hood, but **DO NOT use `flyctl` directly** to deploy or manage
+> these services. The Fly account, org, IP allocation, and machine ownership
+> all live on the InsForge cloud — `flyctl` invoked with the user's own credentials
+> will land in the wrong org and fail with `unauthorized`. Always use
+> `npx @insforge/cli compute …`. The CLI is just an HTTP client that calls the
+> InsForge backend; the backend talks to Fly. No `flyctl` and no Fly token
+> are needed locally.
 
 > ⚠️ **In progress.** Compute services are still in development; the API and CLI may change.
 >
@@ -130,8 +139,7 @@ endpoint. For frontend hosting see **Frontend Deployments** above.
 
 - `npx @insforge/cli compute list` — list all compute services (name, status, image, CPU, memory, endpoint)
 - `npx @insforge/cli compute get <id>` — get service details
-- `npx @insforge/cli compute create --name <name> --image <image> [--port 8080] [--cpu shared-1x] [--memory 512] [--region iad] [--env '{"KEY":"val"}']` — create and deploy a Docker container. See [references/compute-create.md](references/compute-create.md)
-- `npx @insforge/cli compute deploy [directory] --name <name> [--port] [--cpu] [--memory] [--region] [--env]` — build a Dockerfile and deploy via `flyctl deploy`. See [references/compute-deploy.md](references/compute-deploy.md)
+- `npx @insforge/cli compute deploy --image <url> --name <name> [--port] [--cpu] [--memory] [--region] [--env]` — deploy a pre-built Docker image. See [references/compute-deploy.md](references/compute-deploy.md).
 - `npx @insforge/cli compute update <id> [--image] [--port] [--cpu] [--memory] [--region]` — update service config
 - `npx @insforge/cli compute stop <id>` — stop a running service
 - `npx @insforge/cli compute start <id>` — start a stopped service
@@ -204,7 +212,7 @@ Run with no subcommand for a full health report across all checks.
 
 **The live database schema is the source of truth**: before writing a migration, and again if a migration fails, inspect the current database state first (`db tables / indexes / policies / triggers / functions`, plus `db migrations list`) and then adjust the migration statements to match reality. Do not assume local files are still current.
 
-**Compute deploy requires flyctl**: The `compute deploy` command shells out to `flyctl deploy --remote-only`. Install flyctl first (`brew install flyctl`) and set `FLY_API_TOKEN`. The `compute create` command does NOT require flyctl — it uses the Fly Machines API directly via the backend.
+**⚠️ v1 limitation — image-only.** `compute deploy --image <url>` deploys a pre-built image. It does NOT build from source. Build locally with Docker, push to any registry, then deploy via `--image`. Server-side build is roadmap, not v1. Don't reach for `flyctl deploy` as a workaround — it 401s because the Fly account is InsForge's, not yours.
 
 **Compute endpoints use .fly.dev**: Services get a public URL at `https://{name}-{projectId}.fly.dev`. Custom domains require DNS configuration.
 
@@ -322,20 +330,21 @@ npx @insforge/cli deployments deploy ./dist
 
 ### Deploy a Docker container (compute service)
 
-Two paths: pre-built image or build from Dockerfile.
+InsForge deploys pre-built Docker images. Build the image with your own toolchain, then deploy.
 
-**Pre-built image (e.g. nginx, Redis, custom registry):**
+**Off-the-shelf image:**
 ```bash
-npx @insforge/cli compute create --name my-api --image nginx:alpine --port 80 --region iad
+npx @insforge/cli compute deploy --image nginx:alpine --name my-api --port 80 --region iad
 npx @insforge/cli compute list
 # Service is running with a public https://{name}-{project}.fly.dev endpoint
+# No flyctl, no FLY_API_TOKEN, no local Docker required.
 ```
 
-**Build from Dockerfile:**
+**Your own image (local Docker):**
 ```bash
-# Requires: flyctl installed + FLY_API_TOKEN set
-npx @insforge/cli compute deploy ./my-app --name my-api --port 8000
-# Builds remotely on Fly, deploys the image, syncs state back to InsForge
+docker build -t ghcr.io/you/app:v1 .
+docker push ghcr.io/you/app:v1
+npx @insforge/cli compute deploy --image ghcr.io/you/app:v1 --name my-api --port 8000
 ```
 
 **Lifecycle management:**
