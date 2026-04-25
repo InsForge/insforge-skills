@@ -2,6 +2,15 @@
 
 > ⚠️ **In progress.** Compute services are still in development; the API and CLI may change.
 
+> 🔧 **DO NOT call `flyctl` directly to manage InsForge compute services.**
+> InsForge runs containers on Fly.io under the hood, but the Fly account, org,
+> IPs, and machine ownership all live on the InsForge cloud. Using `flyctl`
+> with your own credentials will land in the wrong Fly org and fail with
+> `unauthorized` — even if you have a valid Fly account. Use these `compute …`
+> commands instead; they bridge InsForge↔Fly for you (including fetching a
+> scoped deploy token transparently). The only place `flyctl` runs at all is
+> internally during the build step of mode 2, using a token InsForge mints.
+
 Deploy a backend compute service. **One command, two modes:**
 
 | Mode | When | Command shape |

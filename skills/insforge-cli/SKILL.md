@@ -117,9 +117,19 @@ Services** below.
 
 ### Backend Compute Services (Fly.io) — `npx @insforge/cli compute`
 
-Deploy and manage backend containerized services (APIs, workers, microservices)
-on Fly.io. Each service runs as a Docker container reachable via a public HTTPS
-endpoint. For frontend hosting see **Frontend Deployments** above.
+Deploy and manage backend containerized services (APIs, workers, microservices).
+Each service runs as a Docker container reachable via a public HTTPS endpoint.
+For frontend hosting see **Frontend Deployments** above.
+
+> 🔧 **Implementation note (for agents):** InsForge runs compute on **Fly.io**
+> under the hood, but **DO NOT use `flyctl` directly** to deploy or manage
+> these services. The Fly account, org, IP allocation, and machine ownership
+> all live on the InsForge cloud — `flyctl` invoked with the user's own credentials
+> will land in the wrong org and fail with `unauthorized`. Always use
+> `npx @insforge/cli compute …`. The CLI handles the InsForge↔Fly bridge for you
+> (including fetching short-lived deploy tokens transparently). The only time
+> `flyctl` runs at all is internally during `compute deploy [dir]`'s build step,
+> with a token InsForge mints for you.
 
 > ⚠️ **In progress.** Compute services are still in development; the API and CLI may change.
 >
