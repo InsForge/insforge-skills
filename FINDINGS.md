@@ -487,3 +487,105 @@ curl -sS -X POST http://localhost:3000/api/auth/sign-up/email \
   -H 'Content-Type: application/json' -H 'Origin: http://localhost:3000' \
   -d '{"email":"x@y.com","password":"hunter2hunter2","name":"X"}'
 ```
+
+## Side-by-side: Supabase upstream guide vs this work
+
+This section is for understanding the delta. If something works on Supabase, it works on InsForge — but the upstream Supabase guide leaves real gaps.
+
+### What's identical
+
+| | Supabase upstream | InsForge (this work) |
+|---|---|---|
+| Connection model | `new Pool({ connectionString })` to Postgres | Same |
+| `npx auth migrate` | Creates `user`/`session`/`account`/`verification` in `public` | Same |
+| Table shape | `id text`, `email text unique`, scrypt password in `account.password` | Identical (verified by `\d` output) |
+| Better Auth `id` format | base62 string from `generateId()` | Identical |
+| ALTER on field add | Re-run `npx auth migrate` | Same |
+| Coexists with native auth (`auth.users`) | Yes | Yes (verified — 4 native users untouched) |
+| Default DB privileges | `anon`, `authenticated` get `arwd` on `public.*` | Same default |
+| Data API | PostgREST | PostgREST (identical version) |
+| JWT verification on data API | HS256 with project JWT secret | HS256 with InsForge JWT secret |
+
+So at the database layer, anything in the Supabase guide reproduces 1:1 against InsForge.
+
+### What the Supabase guide leaves on the floor
+
+These are real problems with the upstream guide that any InsForge user would hit identically — we just don't pretend they aren't there.
+
+| Gap | Supabase guide says | InsForge guide will say |
+|---|---|---|
+| PostgREST anon exposure of `public.user` | nothing | The REVOKE block in gotcha #1 (required) |
+| RLS migration | "doesn't currently cover" — explicitly out of scope | We document `requesting_user_id()` + working policies |
+| How the app talks to the data API after switching to Better Auth | nothing (the guide stops at sign-up flows) | The `/api/insforge-token` bridge — full E2E proof |
+| Schema-cache reload after raw DDL | nothing | `NOTIFY pgrst, 'reload schema'` documented |
+| `Origin` header for non-browser clients | nothing | Documented |
+
+The Supabase guide is a **data migration** guide. The InsForge guide will be a **working integration** guide that takes a developer from zero to two users isolated by RLS.
+
+### What's actually different about InsForge
+
+These are not gaps — they're real differences worth knowing.
+
+| | Supabase | InsForge |
+|---|---|---|
+| Built-in user table | `auth.users` (uuid id) | `auth.users` (uuid id) |
+| RLS helper | `auth.uid()` returns uuid | `requesting_user_id()` — convention from existing integrations, returns text |
+| Admin role bypassing RLS | `service_role` | `project_admin` |
+| Schema reload trigger | Studio / management API | InsForge CLI migrations, or manual `NOTIFY pgrst` |
+| Reload channel name | `pgrst` (default) | `pgrst` (configured the same) |
+| User ID column convention with third-party auth | uuid (forces a mapping table) | text (per existing Clerk/Auth0/WorkOS/Kinde/Stytch guides) |
+
+The `text` user-id convention is actually a small InsForge advantage here — Better Auth's string IDs slot in directly. On Supabase a developer would need to either (a) map Better Auth's string IDs to UUIDs, or (b) override the FK type and lose the join with `auth.users`.
+
+### Two paths through this integration, ranked
+
+| Path | Where Better Auth tables live | Where you need REVOKE | Matches upstream guide | Use when |
+|---|---|---|---|---|
+| **A. `public` + REVOKE** *(canonical)* | `public.{user,session,account,verification}` | yes — one block | ✅ exactly | Default. Closest to the Supabase guide; one extra safety step. |
+| **B. Dedicated `betterauth` schema** | `betterauth.{...}` | no | ❌ diverges | When you want default-safe-without-REVOKE, or when you don't want auth tables visible to InsForge Studio's `public` view. |
+
+Both work end-to-end (A verified including JWT bridge + RLS; B verified for migrate/signup only).
+
+### POC reproducer (the smallest thing that proves the integration)
+
+If you want to demo this from scratch on a clean machine in <5 minutes:
+
+```bash
+# 1. InsForge stack
+cd /Users/gary/projects/insforge-repo/insforge && docker compose up -d postgres postgrest insforge
+
+# 2. Better Auth project
+mkdir /tmp/ba-poc && cd /tmp/ba-poc
+npm init -y && npm pkg set type=module
+npm install better-auth pg jsonwebtoken
+
+# 3. Better Auth config — point at InsForge's Postgres
+cat > auth.js <<'EOF'
+import { betterAuth } from "better-auth";
+import pg from "pg";
+const { Pool } = pg;
+export const auth = betterAuth({
+  database: new Pool({
+    connectionString: "postgresql://postgres:postgres@127.0.0.1:5432/insforge",
+  }),
+  emailAndPassword: { enabled: true },
+  secret: "dev-secret-please-change-in-production",
+  baseURL: "http://localhost:3000",
+});
+EOF
+
+# 4. Create Better Auth tables
+npx @better-auth/cli migrate --config ./auth.js -y
+
+# 5. Lock down PostgREST exposure (the missing-from-Supabase-guide step)
+PGPASSWORD=postgres psql -h 127.0.0.1 -p 5432 -U postgres -d insforge -c '
+  REVOKE ALL ON public."user", public.session, public.account, public.verification
+    FROM anon, authenticated;
+'
+```
+
+That's it for the persistence half. The bridge + RLS half lives in `server.js` + the SQL block under "JWT bridge: end-to-end RLS proof" above; together they are <100 lines of new code.
+
+### Bottom line
+
+> If it works on Supabase, it works on InsForge — and the InsForge integration guide will be more honest about the parts the upstream guide skips.
