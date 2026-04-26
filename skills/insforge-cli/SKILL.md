@@ -110,7 +110,7 @@ Deploy a frontend application (static site / SPA / Next.js / etc.) to Vercel,
 managed through InsForge. For backend container workloads see **Backend Compute
 Services** below.
 
-- `npx @insforge/cli deployments deploy [dir]` — deploy frontend app. See [references/deployments-deploy.md](references/deployments-deploy.md)
+- `npx @insforge/cli deployments deploy [dir]` — deploy frontend app from its source directory. See [references/deployments-deploy.md](references/deployments-deploy.md)
 - `npx @insforge/cli deployments list` — list deployments
 - `npx @insforge/cli deployments status <id> [--sync]` — get deployment status (--sync fetches from Vercel)
 - `npx @insforge/cli deployments cancel <id>` — cancel running deployment
@@ -271,7 +271,7 @@ npx @insforge/cli functions invoke my-handler --data '{"action": "test"}'
 
 ### Deploy frontend
 
-**Always verify the local build succeeds before deploying.** Local builds are faster to debug and don't waste server resources.
+**Always verify the local build succeeds before deploying.** Local builds are faster to debug and don't waste server resources. After the build passes, deploy the project source directory (usually `.`), not `dist/` or other generated build output.
 
 **Environment variables are required.** Frontend apps need env vars (API URL, anon key) to connect to InsForge at runtime. Deploying without them produces a broken app. Before deploying, you must ensure env vars are set using one of these two approaches:
 
@@ -285,14 +285,14 @@ npx @insforge/cli deployments env list
 npx @insforge/cli deployments env set VITE_INSFORGE_URL https://my-app.us-east.insforge.app
 npx @insforge/cli deployments env set VITE_INSFORGE_ANON_KEY ik_xxx
 
-# Deploy — persistent env vars are applied automatically
-npx @insforge/cli deployments deploy ./dist
+# Deploy the project source — persistent env vars are applied automatically
+npx @insforge/cli deployments deploy .
 ```
 
 **Option B — Inline `--env` flag:** Pass env vars as JSON directly on the deploy command. Useful for one-off deploys or overriding persistent vars.
 
 ```bash
-npx @insforge/cli deployments deploy ./dist --env '{"VITE_INSFORGE_URL": "https://my-app.us-east.insforge.app", "VITE_INSFORGE_ANON_KEY": "ik_xxx"}'
+npx @insforge/cli deployments deploy . --env '{"VITE_INSFORGE_URL": "https://my-app.us-east.insforge.app", "VITE_INSFORGE_ANON_KEY": "ik_xxx"}'
 ```
 
 **Full workflow:**
@@ -306,8 +306,8 @@ npx @insforge/cli deployments env list
 npx @insforge/cli deployments env set VITE_INSFORGE_URL https://my-app.us-east.insforge.app
 npx @insforge/cli deployments env set VITE_INSFORGE_ANON_KEY ik_xxx
 
-# 3. Deploy
-npx @insforge/cli deployments deploy ./dist
+# 3. Deploy the project source directory
+npx @insforge/cli deployments deploy .
 ```
 
 **Environment variable prefix by framework:**
@@ -324,9 +324,10 @@ npx @insforge/cli deployments deploy ./dist
 - [ ] `npm run build` succeeds locally
 - [ ] Env vars are set — run `deployments env list` to verify, or pass `--env` on the deploy command
 - [ ] All env vars use the correct framework prefix
+- [ ] Deploy the project source directory (usually `.`), not `dist/`, `build/`, or `.next/`
 - [ ] Edge function directories excluded from frontend build (if applicable)
-- [ ] Never include `node_modules`, `.git`, `.env`, `.insforge`, or build output in the zip
-- [ ] Build output directory matches framework's expected output (`dist/`, `build/`, `.next/`, etc.)
+- [ ] Never include `node_modules`, `.git`, `.env`, or `.insforge` in the upload
+- [ ] Framework build output is configured correctly (`dist/`, `build/`, `.next/`, etc.)
 
 ### Deploy a Docker container (compute service)
 
