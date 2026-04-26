@@ -998,3 +998,92 @@ private onTokenChange(): void {
 | Realtime under token rotation | ✅ auto-reconnect via `onTokenChange` | source: `realtime.ts:182` |
 | `Next.js` (Pattern A or B) | ✅ both work; bridge is rendering-agnostic | source: `auth.api.getSession({ headers })` |
 | `React (Vite/CRA)` SPA | ✅ Pattern A only; bridge on a separate Node backend | doc: cookie/CORS section above |
+
+---
+
+## Organization plugin — REVOKE addendum
+
+The `organization` plugin (one of BA's most-requested) adds **5 new tables in `public`** with `teams: { enabled: true }`:
+
+```text
+organization, team, member, teamMember, invitation
+```
+
+Plus two columns on `session`: `activeOrganizationId`, `activeTeamId`.
+
+### Reproducer
+
+```bash
+# /tmp/ba-insforge-test/auth-org.js — same as auth.js + organization plugin
+BA_PG_PORT=5433 npx @better-auth/cli migrate --config auth-org.js -y
+```
+
+After migrate, `\dt public.*` shows the 5 new tables. **Same default grants** as core BA tables — full SELECT/INSERT/UPDATE/DELETE for both `anon` AND `authenticated`:
+
+```text
+information_schema.role_table_grants → 8 rows × 5 tables = 40 grants total
+```
+
+PostgREST exposes them immediately (200 OK):
+
+```bash
+curl http://127.0.0.1:5431/organization?select=id  # → 200 [...]
+```
+
+### Fix
+
+Same shape as the core REVOKE — note that `teamMember` is camelCase and **must be quoted**:
+
+```sql
+REVOKE ALL ON
+  public.organization, public.team, public.member,
+  public."teamMember", public.invitation
+FROM anon, authenticated;
+
+NOTIFY pgrst, 'reload schema';
+```
+
+After applying:
+
+```bash
+curl http://127.0.0.1:5431/organization → permission denied for table organization  ✅
+curl http://127.0.0.1:5431/member       → permission denied for table member        ✅
+curl http://127.0.0.1:5431/team         → permission denied for table team          ✅
+curl http://127.0.0.1:5431/invitation   → permission denied for table invitation    ✅
+```
+
+### REVOKE persists across re-migrate
+
+Re-running `auth migrate` against an already-migrated DB:
+
+```text
+🚀 No migrations needed.
+```
+
+Subsequent `curl /organization` still returns `permission denied` — confirming Postgres only re-grants on `CREATE TABLE`, not `ALTER TABLE` (same as the core-tables behavior in finding #17).
+
+### Multi-tenant RLS with active org
+
+For `org_id`-scoped policies on app tables, surface `session.activeOrganizationId` as a JWT claim in the bridge route:
+
+```ts
+const token = jwt.sign({
+  sub: session.user.id,
+  role: 'authenticated',
+  aud: 'insforge-api',
+  org_id: session.session.activeOrganizationId ?? null,   // ← add
+}, process.env.INSFORGE_JWT_SECRET!, { algorithm: 'HS256', expiresIn: '1h' });
+```
+
+Then policies use `current_setting('request.jwt.claims', true)::json->>'org_id'` alongside `requesting_user_id()`. (Not stress-tested end-to-end — recommended pattern only.)
+
+### Other table-adding plugins (not tested, derived from BA source)
+
+| Plugin | Tables | REVOKE template (camelCase requires quotes) |
+|---|---|---|
+| `twoFactor` | `twoFactor` | `REVOKE ALL ON public."twoFactor" ...` |
+| `apiKey` | `apikey` | `REVOKE ALL ON public.apikey ...` |
+| `passkey` | `passkey` | `REVOKE ALL ON public.passkey ...` |
+| `oidcProvider` | `oauthApplication`, `oauthAccessToken`, `oauthConsent` | quote each |
+
+**Rule of thumb:** after every `auth migrate`, run `\dt public.*`, diff against last known state, REVOKE anything new.

@@ -87,6 +87,8 @@ NOTIFY pgrst, 'reload schema';
 
 The `REVOKE` survives subsequent `auth migrate` runs (Postgres only re-grants on `CREATE TABLE`, not `ALTER TABLE`). Better Auth itself connects as the `postgres` superuser via the connection string and is unaffected. `project_admin` retains access for InsForge Studio inspection — `REVOKE` from it too if you want full lockdown.
 
+> **Enabling plugins later?** Every Better Auth plugin that adds tables (`organization`, `twoFactor`, `apiKey`, `passkey`, …) creates them in `public` with the same default grants. Re-run an analogous `REVOKE` for the plugin's tables. The Organization plugin specifically is covered in the [Better Auth plugins](#better-auth-plugins-optional) section below.
+
 ## Better Auth route handlers
 
 ```ts
@@ -310,6 +312,68 @@ function setBridgeToken(client, token) {
 Use `setBridgeToken(client, token)` everywhere the existing `useInsforgeClient` hook calls `setAuthToken`. Pattern B (`createClient({ edgeFunctionToken: ... })`) handles both automatically.
 
 After both fixes: a two-user realtime broadcast verifies end-to-end — `senderId` on the received message equals the publisher's Better Auth `id`.
+
+## Better Auth plugins (optional)
+
+Better Auth ships ~37 plugins. Most are drop-in (`twoFactor`, `magicLink`, `username`) and require no InsForge-side changes. Plugins that **add tables** require an additional `REVOKE` so the new rows aren't readable through PostgREST's `anon` role.
+
+### Organization plugin
+
+Adds five tables (`organization`, `team`, `member`, `teamMember`, `invitation`) and two columns on `session` (`activeOrganizationId`, `activeTeamId`):
+
+```ts
+// lib/auth.ts
+import { organization } from 'better-auth/plugins';
+
+export const auth = betterAuth({
+  // ...
+  plugins: [
+    organization({ teams: { enabled: true } }),
+  ],
+});
+```
+
+Re-run `npx @better-auth/cli migrate -y`, then **lock down the new tables exactly like the core ones**:
+
+```sql
+REVOKE ALL ON
+  public.organization, public.team, public.member,
+  public."teamMember", public.invitation
+FROM anon, authenticated;
+
+NOTIFY pgrst, 'reload schema';
+```
+
+`teamMember` is camelCase in BA's schema, so it must be quoted in SQL. Verify with `curl http://<insforge>/organization?select=id` — should return `permission denied for table organization`.
+
+For multi-tenant RLS on app tables, add `org_id` to `request.jwt.claims` by reading `session.activeOrganizationId` in the bridge route and including it as a custom claim:
+
+```ts
+// app/api/insforge-token/route.ts (delta)
+const token = jwt.sign(
+  {
+    sub: session.user.id,
+    role: 'authenticated',
+    aud: 'insforge-api',
+    org_id: session.session.activeOrganizationId ?? null,   // ← add
+  },
+  process.env.INSFORGE_JWT_SECRET!,
+  { algorithm: 'HS256', expiresIn: '1h' },
+);
+```
+
+Then in policies use `current_setting('request.jwt.claims', true)::json->>'org_id'` alongside `requesting_user_id()`.
+
+### Other table-adding plugins
+
+| Plugin | Tables added | REVOKE template |
+|--------|--------------|-----------------|
+| `twoFactor` | `twoFactor` | `REVOKE ALL ON public."twoFactor" FROM anon, authenticated;` |
+| `apiKey` | `apikey` | `REVOKE ALL ON public.apikey FROM anon, authenticated;` |
+| `passkey` | `passkey` | `REVOKE ALL ON public.passkey FROM anon, authenticated;` |
+| `oidcProvider` | `oauthApplication`, `oauthAccessToken`, `oauthConsent` | quote each camelCase name |
+
+Rule of thumb: after every `auth migrate`, `\dt public.*` to see the diff, then REVOKE anything Better Auth created.
 
 ## Cross-origin (React SPA without a Next.js server)
 

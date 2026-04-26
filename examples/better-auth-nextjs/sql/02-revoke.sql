@@ -7,3 +7,19 @@ REVOKE ALL ON public."user", public.session, public.account, public.verification
 
 -- Verify (should show only postgres + project_admin retain access):
 -- \dp public.user
+
+-- ─────────────────────────────────────────────────────────────
+-- Plugins addendum
+-- ─────────────────────────────────────────────────────────────
+-- Every BA plugin that adds tables (organization, twoFactor, apiKey, passkey,
+-- oidcProvider, ...) creates them in `public` with the same default grants.
+-- After enabling a plugin and re-running `auth:migrate`, REVOKE the new ones.
+--
+-- Organization plugin (uncomment if you enable it):
+--
+--   REVOKE ALL ON
+--     public.organization, public.team, public.member,
+--     public."teamMember", public.invitation
+--   FROM anon, authenticated;
+
+NOTIFY pgrst, 'reload schema';
