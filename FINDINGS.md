@@ -1140,3 +1140,79 @@ The end-user bridge route (`/api/insforge-token`) reads BA's session cookie and 
 - Skeleton: `examples/better-auth-nextjs/lib/insforge-server-mailer.ts` (helper)
 - Skeleton: `examples/better-auth-nextjs/lib/auth.ts` (commented-out wiring)
 - Reproducer: `/tmp/ba-insforge-test/email-transport.js`
+
+---
+
+## Final POC — runnable skeleton end-to-end ✅
+
+The reference skeleton in `examples/better-auth-nextjs/` was driven against a clean InsForge stack. All steps executed without manual fix-ups beyond what the README documents.
+
+### Setup
+
+```bash
+cd examples/better-auth-nextjs
+npm install                 # 237 packages, 18s
+# .env.local pointed at ba-sdk-test stack (ports 5433 pg / 7230 app)
+npx better-auth migrate -y  # → "🚀 No migrations needed." (idempotent)
+psql "$DATABASE_URL" -f sql/01-init.sql
+psql "$DATABASE_URL" -f sql/02-revoke.sql
+PORT=3030 npx next dev      # Ready in 2.3s on http://localhost:3030
+```
+
+One package.json fix needed and applied: `@better-auth/cli` versions don't track the `better-auth` core; pinned `^1.4.21` (latest on the cli's `release-1.4` line).
+
+### E2E run (`/tmp/ba-insforge-test/poc-e2e.js`)
+
+Signed up two users **through the live Next.js dev server** and exercised the full path:
+
+```text
+=== Alice (alice.1777236711634@example.com) ===
+signed up:  user.id = Hgon3VoM4mYat902N94CSXK231pR1hfm
+bridge JWT: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpX…
+inserted:   note.id = 68c8a538-…, user_id = Hgon3VoM4mYat902N94CSXK231pR1hfm
+select:     1 row(s)
+
+=== Bob (bob.1777236711634@example.com) ===
+signed up:  user.id = 8Baa7PuiroYSUmanzRiLNtesnYTQkjLr
+bridge JWT: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpX…
+inserted:   note.id = 046ed1ec-…, user_id = 8Baa7PuiroYSUmanzRiLNtesnYTQkjLr
+select:     1 row(s)
+
+Alice sees 1 row(s); Bob sees 1 row(s)
+
+✅ POC GREEN — Better Auth → bridge → InsForge SDK → RLS-isolated CRUD all the way through
+```
+
+Path verified through the actual skeleton code:
+
+```text
+POC client            Next.js skeleton (in worktree)         InsForge stack (port 7230)
+──────────            ───────────────────────────────         ──────────────────────────
+POST /api/auth/...    app/api/auth/[...all]/route.ts          Postgres :5433 → public.user
+                      → BA writes user/session/account
+                      → sets `better-auth.session_token`
+
+GET /api/insforge-    app/api/insforge-token/route.ts         (no call yet)
+  token (with cookie) → reads BA session via auth.api.getSession
+                      → jsonwebtoken HS256 sign with
+                        INSFORGE_JWT_SECRET, sub=user.id
+                      ← { token: "eyJ…" }
+
+(SDK call directly    @insforge/sdk → setAuthToken(token)     POST /api/database/records/notes
+to InsForge backend)  client.database.insert({...})           → PostgREST verifies HS256,
+                                                                executes RLS using
+                                                                requesting_user_id() = sub
+                                                                → row inserted with
+                                                                  user_id = BA's user.id
+```
+
+Dev-server log confirms latencies — `/api/auth/sign-up/email 200 in 72ms` (warm) and `GET /api/insforge-token 200 in 11ms`.
+
+Anon leak still blocked (final post-run check):
+
+```text
+curl http://127.0.0.1:5431/user?select=email
+→ permission denied for table user  ✅
+```
+
+The integration works as documented.

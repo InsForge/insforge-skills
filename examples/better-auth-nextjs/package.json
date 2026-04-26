@@ -19,7 +19,7 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@better-auth/cli": "^1.6.0",
+    "@better-auth/cli": "^1.4.21",
     "@types/jsonwebtoken": "^9.0.8",
     "@types/node": "^22.0.0",
     "@types/pg": "^8.11.10",
