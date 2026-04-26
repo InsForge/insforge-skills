@@ -726,3 +726,96 @@ The SDK's `Realtime` module subscribes to the `TokenManager.onTokenChange` callb
 3. Refresh on a `setInterval` at ~80% of bridge JWT lifetime (50 min for 1h, 30 sec for 60s).
 4. Clear the SDK token on sign-out; don't let an orphan JWT linger.
 5. The InsForge `insforge_csrf_token` cookie is unused in this mode — ignore it.
+
+## How this compares to the other auth integrations
+
+I read all five existing reference guides (Clerk, Auth0, WorkOS, Kinde, Stytch) to figure out where Better Auth fits. There are really only **two SDK-wiring patterns** in the existing skill — the integrations differ on *where* the JWT gets minted, but the SDK plumbing collapses into two shapes.
+
+### Pattern A: long-lived client + imperative refresh (SPA-shaped)
+
+```ts
+const client = createClient({ baseUrl, anonKey, autoRefreshToken: false });
+useEffect(() => {
+  // get token, then:
+  client.getHttpClient().setAuthToken(token);
+}, [signedIn]);
+```
+
+Used by:
+
+| Integration | Token source | Refresh interval | Why this shape |
+|---|---|---|---|
+| **Clerk** | `getToken({ template: 'insforge' })` — Clerk signs HS256 directly | ~50s (60s template expiry) | Clerk has rich client-side state via `useAuth()` |
+| **Better Auth** *(this work)* | `fetch('/api/insforge-token')` — your bridge re-signs HS256 | ~50min (1h JWT) | Better Auth has reactive `authClient.useSession()` |
+
+Properties:
+- One InsForge client instance for the user's whole session
+- Realtime stays connected across token rotations (TokenManager.onTokenChange)
+- Best for SPAs, dashboards, anything React-y
+
+### Pattern B: per-request client construction (server-rendered)
+
+```ts
+export async function createInsForgeClient() {
+  const { user } = await withAuth();      // or auth.api.getSession({ headers })
+  const token = jwt.sign({ sub: user.id, role: 'authenticated', aud: 'insforge-api' },
+                         INSFORGE_JWT_SECRET, { algorithm: 'HS256', expiresIn: '1h' });
+  return createClient({ baseUrl, edgeFunctionToken: token });
+}
+```
+
+Used by:
+
+| Integration | Token source | Where it runs |
+|---|---|---|
+| **Auth0** | Embedded in ID token via Post Login Action — read on the server | Next.js server / RSC |
+| **WorkOS** | `jsonwebtoken` after `withAuth()` | Next.js server / RSC |
+| **Kinde** | `jsonwebtoken` after Kinde session lookup | Next.js server / RSC |
+| **Stytch** | `jsonwebtoken` after Stytch session validation | Next.js server / RSC |
+
+Properties:
+- Fresh client + fresh token per request, no refresh logic needed
+- `edgeFunctionToken` is the SDK config field for "I have a pre-signed JWT" mode (also flips `isServerMode: true`)
+- No SDK state to manage; lifetime = request lifetime
+- Best for SSR, RSC, route handlers, server actions
+
+### Better Auth fits both
+
+The bridge route I built (`/api/insforge-token`) is independent of the rendering model — same Node code on the same `auth.api.getSession({ headers })` call:
+
+- **Client-side fetch in a `useEffect`** → Pattern A (the recommended default)
+- **Direct call inside a server component or route handler** → Pattern B
+
+```tsx
+// Pattern B for Better Auth in a Next.js RSC
+import { auth } from '@/lib/auth';
+import { headers } from 'next/headers';
+import { createClient } from '@insforge/sdk';
+import jwt from 'jsonwebtoken';
+
+export async function createInsForgeClient() {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user) return null;
+  const token = jwt.sign(
+    { sub: session.user.id, role: 'authenticated', aud: 'insforge-api' },
+    process.env.INSFORGE_JWT_SECRET!,
+    { algorithm: 'HS256', expiresIn: '1h' },
+  );
+  return createClient({ baseUrl: process.env.NEXT_PUBLIC_INSFORGE_BASE_URL!, edgeFunctionToken: token });
+}
+```
+
+So the integration guide should show **both patterns** — Pattern A as the SPA default (because Better Auth's `useSession()` makes it ergonomic), Pattern B for SSR-heavy apps. Aligns with how the existing five guides split.
+
+### What's genuinely new about Better Auth among these
+
+| Property | Existing five | Better Auth |
+|---|---|---|
+| Auth provider runs in your DB | No (all SaaS) | Yes (your Postgres — InsForge's, even) |
+| You own the user table | No — `clerk_users`, `workos_users` are mirror tables in their dashboard | Yes — `public.user` in your DB |
+| Migration lock-in | Hard — exporting users from a SaaS provider is painful | Trivial — already in Postgres |
+| Provider goes down → your auth goes down | Yes | No (it's *your* infra) |
+| Cost at scale | per-MAU pricing | $0 marginal |
+| Provider has its own JWT signing | Yes (Clerk template, Auth0 ID token) | Yes (`jwt()` plugin), but asymmetric — incompatible with InsForge's HS256 PostgREST, hence the bridge |
+
+So Better Auth uniquely combines: "self-hosted in your InsForge Postgres" *and* "no vendor for the auth layer at all." It's the most-coupled-to-InsForge of the six options. The doc should lead with that as the differentiator.
