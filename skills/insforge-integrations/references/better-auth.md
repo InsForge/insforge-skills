@@ -277,6 +277,40 @@ NOTIFY pgrst, 'reload schema';
 
 Prefer running this through the InsForge CLI (`npx @insforge/cli db migrations new ... && npx @insforge/cli db migrations up`) — the CLI emits the `NOTIFY` automatically. Raw `psql` works but you must send the notify yourself or PostgREST returns `404 {}` until next reload.
 
+## Realtime (optional)
+
+If you use `client.realtime`, two extra one-time setup steps are needed because Better Auth IDs are strings (not UUIDs) and InsForge realtime currently requires both manual channel registration and a column-type fix.
+
+```sql
+-- 1. Allow string sender_ids (matches the rest of the third-party convention)
+ALTER TABLE realtime.messages ALTER COLUMN sender_id TYPE text;
+
+-- 2. Register a channel pattern (admin-only operation; do this once)
+INSERT INTO realtime.channels (pattern, description, enabled)
+  VALUES ('chat:%', 'app chat channels', TRUE)
+  ON CONFLICT (pattern) DO NOTHING;
+```
+
+The channel pattern uses SQL `LIKE` syntax — `chat:%` matches `chat:lobby`, `chat:dm:user_xyz`, etc.
+
+In the client, when using **Pattern A**, you must update **both** the HTTP token and the realtime token (the SDK's `setAuthToken` only updates HTTP):
+
+```ts
+// helper that keeps both in sync
+function setBridgeToken(client, token) {
+  client.getHttpClient().setAuthToken(token);
+  // tokenManager is `private` in TypeScript but accessible at runtime;
+  // calling setAccessToken here also fires onTokenChange, which reconnects
+  // the realtime socket with the new bearer.
+  // @ts-expect-error: private at compile time, public at runtime
+  client.realtime.tokenManager.setAccessToken(token);
+}
+```
+
+Use `setBridgeToken(client, token)` everywhere the existing `useInsforgeClient` hook calls `setAuthToken`. Pattern B (`createClient({ edgeFunctionToken: ... })`) handles both automatically.
+
+After both fixes: a two-user realtime broadcast verifies end-to-end — `senderId` on the received message equals the publisher's Better Auth `id`.
+
 ## Cross-origin (React SPA without a Next.js server)
 
 Same-origin (Next.js fullstack) is the easy path — Better Auth's session cookie is auto-attached to `/api/insforge-token` requests. If your React app and your Better Auth server are on different origins:
@@ -314,3 +348,5 @@ Forget any of the three and the bridge silently sees no session.
 | ❌ Cross-origin without `sameSite: 'none'; secure` on the BA cookie | ✅ The browser drops the cookie on cross-origin requests by default. Configure Better Auth's cookies for cross-origin explicitly. |
 | ❌ Missing `Origin` header on direct `fetch`/`curl` to Better Auth POSTs | ✅ Better Auth requires `Origin` for CSRF. Browsers send it automatically; server-side clients must add `'Origin: <baseURL>'`. |
 | ❌ Connecting Better Auth as `anon` or `authenticated` after REVOKE | ✅ The connection-pool role must retain privileges. Use `postgres` (or another fully-granted role) in `DATABASE_URL`. |
+| ❌ Realtime client shows `senderId` as the anon UUID instead of the user's BA id (Pattern A only) | ✅ `getHttpClient().setAuthToken()` doesn't propagate to realtime's `TokenManager`. Also call `client.realtime['tokenManager'].setAccessToken(token)` (private API at runtime). Pattern B's `edgeFunctionToken` doesn't need this. |
+| ❌ Realtime publish silently fails for authenticated users (`UNAUTHORIZED`) | ✅ `realtime.messages.sender_id` is `uuid` in core InsForge; Better Auth IDs are strings. One-time fix: `ALTER TABLE realtime.messages ALTER COLUMN sender_id TYPE text;` |

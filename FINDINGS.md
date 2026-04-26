@@ -917,9 +917,63 @@ All modules share `HttpClient.getHeaders()` which adds `Authorization: Bearer ${
 
 So **yes, every SDK module works with the bridged JWT** — no per-module wiring needed. The bridge is the only integration point.
 
-### Realtime in particular
+### Realtime in particular — TWO real platform bugs uncovered
 
-The single concern unique to realtime is that it holds an open WebSocket. If the bridged JWT expires while the socket is connected, the broker may not immediately drop you (depends on the realtime server's mid-stream re-validation). The fix is the standard pattern: rotate well before expiry. With a 1h JWT and a 50min refresh interval, the token never expires while connected — the rotation triggers `onTokenChange` → socket reconnects with the fresh token → channels auto-resubscribe. Verified by reading `realtime.ts:182-196`:
+When I actually ran realtime end-to-end (rather than just reading source), I uncovered **two real platform-level bugs** that affect not just Better Auth but every third-party auth integration in this skill:
+
+#### Bug 1: `setAuthToken()` doesn't propagate to realtime
+
+`HttpClient.setAuthToken(token)` only updates `this.userToken` on the HttpClient. The `Realtime` module reads from a separate `TokenManager.getAccessToken()`. So when Pattern A users call `client.getHttpClient().setAuthToken(jwt)`, HTTP requests use the bridged JWT, but realtime silently falls back to the anon key.
+
+**Reproduction:** running `sdk-realtime.js` showed `senderId: 12345678-1234-5678-90ab-cdef12345678` (the anon UUID) on a message, even though `setAuthToken` had been called with a real Better Auth user's bridged JWT. Server logs confirmed: `role: anon, userId: 12345678-...`.
+
+**Workaround** (private API access, but works at runtime since TS `private` doesn't enforce):
+
+```ts
+function setBridgeToken(client, token) {
+  client.getHttpClient().setAuthToken(token);
+  // @ts-expect-error: tokenManager is private in TS, accessible at runtime
+  client.realtime.tokenManager.setAccessToken(token);
+}
+```
+
+After applying: server logs show `role: authenticated, userId: <BA id>`. The same workaround is needed for Clerk/Auth0/WorkOS/Kinde/Stytch — none of them have tested realtime under their integrations.
+
+**Proper fix** (SDK level): `HttpClient.setAuthToken` should propagate to `TokenManager.setAccessToken` in addition to setting its own `userToken`. The `edgeFunctionToken` constructor path already does this (client.ts:74-76); the imperative path doesn't.
+
+#### Bug 2: `realtime.messages.sender_id` is `uuid` — fatal for string-id auth providers
+
+After fixing Bug 1, realtime *connections* authenticate correctly. But publishes from an authenticated user with a non-UUID id (which is **every third-party auth provider** — Clerk, Auth0, WorkOS, Kinde, Stytch, Better Auth all use strings) silently fail.
+
+**Why:** `socket.manager.ts:330` calls `messageService.insertMessage(channel, event, payload, userId, userRole)`. `insertMessage` issues:
+
+```sql
+INSERT INTO realtime.messages (event_name, channel_id, channel_name, payload, sender_type, sender_id)
+  VALUES ($1, $2, $3, $4, 'user', $5)
+```
+
+with `userId` (the third-party string id) bound to `$5` (column `sender_id uuid`). Postgres rejects with `invalid input syntax for type uuid: "..."`. The catch block swallows the error, returns `null`, and emits `REALTIME_ERROR` with code `UNAUTHORIZED` to the socket — which is a misleading error message.
+
+**Reproduction:** raw psql confirms the cast error:
+
+```text
+INSERT INTO realtime.messages (..., sender_id) VALUES (..., 'KqxYYBLtTrPkdHfKrV6XKnfUyJwrAGsR');
+ERROR:  invalid input syntax for type uuid: "KqxYYBLtTrPkdHfKrV6XKnfUyJwrAGsR"
+```
+
+**Workaround** (one-line ALTER, applies in the user's own DB):
+
+```sql
+ALTER TABLE realtime.messages ALTER COLUMN sender_id TYPE text;
+```
+
+After applying: two-user realtime works end-to-end. Alice publishes; Bob receives with `senderId: <Alice's BA id>` ✅
+
+**Proper fix** (platform level): change `realtime.messages.sender_id` from `uuid` to `text` in InsForge core. The constraint is incompatible with the documented third-party convention (`TEXT user_id` columns) the rest of the platform already uses.
+
+### Realtime in particular — token rotation works (Bug 1 workaround applied)
+
+If the bridged JWT expires while the socket is connected, the broker may not immediately drop you (depends on the realtime server's mid-stream re-validation). The fix is the standard pattern: rotate well before expiry. With a 1h JWT and a 50min refresh interval, the token never expires while connected — the rotation triggers `onTokenChange` → socket reconnects with the fresh token → channels auto-resubscribe. Verified by reading `realtime.ts:182-196`:
 
 ```ts
 private onTokenChange(): void {
