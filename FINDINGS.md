@@ -1087,3 +1087,56 @@ Then policies use `current_setting('request.jwt.claims', true)::json->>'org_id'`
 | `oidcProvider` | `oauthApplication`, `oauthAccessToken`, `oauthConsent` | quote each |
 
 **Rule of thumb:** after every `auth migrate`, run `\dt public.*`, diff against last known state, REVOKE anything new.
+
+---
+
+## Email transport via `client.emails.send` — wiring BA verification/reset
+
+Better Auth fires `sendVerificationEmail` and `sendResetPassword` callbacks server-side. Wired through the InsForge SDK, all transactional mail goes through InsForge's email service (SMTP if configured, cloud relay otherwise).
+
+### Auth path proven
+
+`POST /api/email/send-raw` requires authentication. Tested all three modes:
+
+```text
+no auth                                 → 401 AUTH_INVALID_CREDENTIALS — No token provided
+x-api-key: anon                         → 401 AUTH_INVALID_API_KEY      — Invalid API key
+admin token (project_admin)             → reached service layer        ✅
+bridge-style HS256 (sub + role + aud)   → reached service layer        ✅
+```
+
+A 5-minute HS256 token signed with `INSFORGE_JWT_SECRET` and the same claim shape as our end-user bridge JWT (`sub`, `role: 'authenticated'`, `aud: 'insforge-api'`) clears the auth gate. The `sub` can be any stable string — for service contexts I used `'better-auth-service'`. Reproducer: `email-transport.js`.
+
+### Provider resolution
+
+InsForge resolves the provider per-call (`backend/src/services/email/email.service.ts:resolveProvider()`):
+
+```text
+1. SmtpConfigService.getRawSmtpConfig() returns config? → SmtpEmailProvider
+2. otherwise                                            → CloudEmailProvider
+```
+
+Cloud provider (`providers/email/cloud.provider.ts:25`) hard-fails with `PROJECT_ID is not configured` unless cloud-mode is enabled. SMTP provider needs config via `PUT /api/auth/smtp-config` (admin-only).
+
+### SMTP config gotcha — SSRF guard rejects loopback
+
+Tried `host: "host.docker.internal"` to point at a local maildev catcher:
+
+```text
+PUT /api/auth/smtp-config
+{ "host": "host.docker.internal", "port": 587, ... }
+→ 400 INVALID_INPUT: SMTP host resolves to a private or loopback address, which is not allowed
+```
+
+Good for prod (prevents SSRF), inconvenient for local dev. For testing self-hosted SMTP locally, use a non-loopback hostname (LAN `.local`, ngrok-exposed maildev, or a real provider with sandbox creds).
+
+### Why a service token, not the bridge
+
+The end-user bridge route (`/api/insforge-token`) reads BA's session cookie and signs `sub = session.user.id`. But `sendVerificationEmail` runs **before** the user has a verified session — there is no end-user JWT to bridge. A short-lived service-style HS256 (same secret) is the correct primitive. This is the equivalent of "service role" calls in similar stacks.
+
+### Files
+
+- Reference guide section: `references/better-auth.md` → "Email transport (verification + password reset)"
+- Skeleton: `examples/better-auth-nextjs/lib/insforge-server-mailer.ts` (helper)
+- Skeleton: `examples/better-auth-nextjs/lib/auth.ts` (commented-out wiring)
+- Reproducer: `/tmp/ba-insforge-test/email-transport.js`

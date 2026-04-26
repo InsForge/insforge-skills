@@ -313,6 +313,79 @@ Use `setBridgeToken(client, token)` everywhere the existing `useInsforgeClient` 
 
 After both fixes: a two-user realtime broadcast verifies end-to-end — `senderId` on the received message equals the publisher's Better Auth `id`.
 
+## Email transport (verification + password reset)
+
+Better Auth invokes `sendVerificationEmail` and `sendResetPassword` callbacks on signup and reset flows. Wire those callbacks to InsForge's `client.emails.send()` so all transactional mail goes through one provider.
+
+```ts
+// lib/auth.ts
+import { betterAuth } from 'better-auth';
+import { createClient } from '@insforge/sdk';
+import jwt from 'jsonwebtoken';
+import { Pool } from 'pg';
+
+// Per-call helper — BA callbacks fire server-side without an end-user JWT,
+// so mint a short-lived service-style HS256 token signed with the SAME
+// secret that the bridge route uses. Reusing INSFORGE_JWT_SECRET keeps the
+// trust boundary minimal.
+function insforgeServerClient() {
+  const token = jwt.sign(
+    { sub: 'better-auth-service', role: 'authenticated', aud: 'insforge-api' },
+    process.env.INSFORGE_JWT_SECRET!,
+    { algorithm: 'HS256', expiresIn: '5m' },
+  );
+  const c = createClient({ baseUrl: process.env.NEXT_PUBLIC_INSFORGE_BASE_URL! });
+  c.getHttpClient().setAuthToken(token);
+  return c;
+}
+
+export const auth = betterAuth({
+  database: new Pool({ connectionString: process.env.DATABASE_URL! }),
+  secret: process.env.BETTER_AUTH_SECRET!,
+  baseURL: process.env.BETTER_AUTH_URL!,
+
+  emailAndPassword: {
+    enabled: true,
+    requireEmailVerification: true,
+    sendResetPassword: async ({ user, url }) => {
+      const insforge = insforgeServerClient();
+      const { error } = await insforge.emails.send({
+        to: user.email,
+        subject: 'Reset your password',
+        html: `<p>Click <a href="${url}">here</a> to reset.</p>`,
+      });
+      if (error) throw new Error(error.message);
+    },
+  },
+
+  emailVerification: {
+    sendOnSignUp: true,
+    sendVerificationEmail: async ({ user, url }) => {
+      const insforge = insforgeServerClient();
+      const { error } = await insforge.emails.send({
+        to: user.email,
+        subject: 'Verify your email',
+        html: `<p>Hi ${user.name ?? ''}, click <a href="${url}">here</a> to verify.</p>`,
+      });
+      if (error) throw new Error(error.message);
+    },
+  },
+});
+```
+
+### Where InsForge actually sends from
+
+`client.emails.send` calls `POST /api/email/send-raw`. InsForge resolves the provider per-call:
+
+1. **SMTP** — if you set SMTP credentials via `PUT /api/auth/smtp-config` (admin token), every send goes through your SMTP server.
+2. **Cloud fallback** — if no SMTP is configured, InsForge tries its managed cloud relay. Requires `PROJECT_ID` (set automatically on cloud-hosted projects; missing on self-hosted).
+
+For self-hosted dev, configure SMTP first or you'll get `INTERNAL_ERROR: PROJECT_ID is not configured`. The `/api/auth/smtp-config` PUT validates and **rejects loopback / private addresses** as an SSRF guard, so for a local maildev/mailpit you need a non-loopback hostname (e.g. a `.local` record on your LAN, or expose maildev publicly via ngrok).
+
+### Why a service token, not the bridge route
+
+The bridge route (`/api/insforge-token`) is for end-user requests — it reads BA's session cookie and signs a JWT with `sub = user.id`. But `sendVerificationEmail` runs **before** the user has a session (during signup). A 5-minute service-token JWT signed with `INSFORGE_JWT_SECRET` clears the auth check at `/api/email/send-raw` and is the equivalent of a "service role" call.
+
 ## Better Auth plugins (optional)
 
 Better Auth ships ~37 plugins. Most are drop-in (`twoFactor`, `magicLink`, `username`) and require no InsForge-side changes. Plugins that **add tables** require an additional `REVOKE` so the new rows aren't readable through PostgREST's `anon` role.
