@@ -589,3 +589,140 @@ That's it for the persistence half. The bridge + RLS half lives in `server.js` +
 ### Bottom line
 
 > If it works on Supabase, it works on InsForge — and the InsForge integration guide will be more honest about the parts the upstream guide skips.
+
+## Refresh, cookies, and the SDK
+
+This is the trickiest part of the integration in practice. There are two independent token systems running side-by-side, and the InsForge SDK's defaults assume it owns auth — which it doesn't, in this setup.
+
+### Two token systems in play
+
+| | Better Auth | InsForge SDK |
+|---|---|---|
+| **Identifies the user via** | `better-auth.session_token` cookie | `Authorization: Bearer <jwt>` header |
+| **Storage** | HttpOnly cookie, `SameSite=Lax`, 7d default | In-memory only (`TokenManager` in the SDK) |
+| **Refresh mechanism** | Sliding session in the `session` table; cookie is rolled on activity | `POST /api/auth/sessions/current` with `X-CSRF-Token` and a refresh token, triggered by the SDK on `401 INVALID_TOKEN` |
+| **CSRF cookie** | not used | `insforge_csrf_token` (set on InsForge login/refresh) |
+| **Lifetime** | 7d sliding | 1h (this is the bridged HS256 JWT — the InsForge native refresh token has its own lifetime) |
+
+The Better Auth cookie keeps the *user* signed in. The InsForge bearer keeps the *data API* talking. The bridge is the only thing that connects them.
+
+### Why the SDK's default auto-refresh path is wrong here
+
+Default behavior: `createClient({ ... })` sets `autoRefreshToken: true`. On a `401 INVALID_TOKEN` from any InsForge call, the SDK tries `POST /api/auth/sessions/current` to mint a new InsForge access token from the InsForge refresh token.
+
+When the user signed in via Better Auth, **there is no InsForge refresh token** — InsForge never issued a session for this user. So:
+
+- If the SDK ever does try to auto-refresh, it'll fail and `clearSession()` — the SDK ends up in a logged-out state even though the Better Auth session is still valid.
+- In practice it probably *won't* try, because PostgREST returns `{"code":"PGRST301","message":"JWT expired"}` — no `error` field — which the SDK maps to `error: 'REQUEST_FAILED'`, not `'INVALID_TOKEN'`. So the auto-refresh branch (gated on `error === 'INVALID_TOKEN'`) doesn't fire.
+- But for non-PostgREST endpoints (storage, AI, functions, realtime — anything proxied through InsForge's own API), the error code *can* be `INVALID_TOKEN`, and you don't want auto-refresh to misfire there.
+
+**Fix:** disable auto-refresh and manage the bridge token yourself.
+
+```ts
+const client = createClient({
+  baseUrl: process.env.NEXT_PUBLIC_INSFORGE_BASE_URL!,
+  anonKey:  process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY!,
+  autoRefreshToken: false,   // ← required when Better Auth owns auth
+});
+```
+
+### Recommended client-side pattern (React + Next.js App Router)
+
+This is the same shape as the existing Clerk integration, adapted for Better Auth's session model.
+
+```tsx
+'use client';
+
+import { createClient, type InsForgeClient } from '@insforge/sdk';
+import { authClient } from '@/lib/auth-client';   // your better-auth client
+import { useEffect, useMemo, useState } from 'react';
+
+const REFRESH_INTERVAL_MS = 50 * 60 * 1000;        // 50 min for a 1h bridge JWT
+
+export function useInsforgeClient(): { client: InsForgeClient; isReady: boolean } {
+  const session = authClient.useSession();          // reactive Better Auth session
+  const [isReady, setIsReady] = useState(false);
+
+  const client = useMemo(
+    () =>
+      createClient({
+        baseUrl: process.env.NEXT_PUBLIC_INSFORGE_BASE_URL!,
+        anonKey: process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY!,
+        autoRefreshToken: false,
+      }),
+    [],
+  );
+
+  useEffect(() => {
+    if (!session.data?.user) {
+      client.getHttpClient().setAuthToken(null);
+      setIsReady(false);
+      return;
+    }
+
+    let cancelled = false;
+    const refresh = async () => {
+      try {
+        // Same-origin: better-auth.session_token cookie auto-attached
+        const res = await fetch('/api/insforge-token', { credentials: 'same-origin' });
+        if (!res.ok) throw new Error(`bridge ${res.status}`);
+        const { token } = await res.json();
+        if (cancelled) return;
+        client.getHttpClient().setAuthToken(token);
+        setIsReady(true);
+      } catch {
+        if (cancelled) return;
+        client.getHttpClient().setAuthToken(null);
+        setIsReady(false);
+      }
+    };
+
+    void refresh();
+    const id = setInterval(() => void refresh(), REFRESH_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [client, session.data?.user]);
+
+  return { client, isReady };
+}
+```
+
+Mirrors the existing Clerk integration except `getToken({ template: 'insforge' })` is replaced by `fetch('/api/insforge-token')`. Refresh interval is wider (50 min vs. ~50 sec) because the bridge mints 1h tokens, not 60s template tokens — `useSession()`'s reactivity handles sign-in/sign-out within that window.
+
+### Cookies, CORS, and where the bridge lives
+
+| Layout | What works | Watch out for |
+|---|---|---|
+| **Same-origin** — app + bridge route on one domain (e.g. Next.js fullstack) | Default `SameSite=Lax` BA cookie auto-sent. Use `credentials: 'same-origin'` (or just default). | Nothing. Easiest path. |
+| **Cross-origin** — separate API server holds the bridge, browser app on another origin | Better Auth cookie must be `SameSite=None; Secure`. Bridge must respond with `Access-Control-Allow-Credentials: true` and an explicit `Access-Control-Allow-Origin: <app origin>` (not `*`). App must `fetch(..., { credentials: 'include' })`. | Easy to leave one piece misconfigured and get a silent unauthenticated bridge. |
+| **Pure server-side** — RSC, route handlers, server actions | Read the cookie from request headers, call `auth.api.getSession({ headers: req.headers })`, mint the JWT inline. No CORS concern, no client-side state. | The token is short-lived (1h) — re-mint per server-side flow rather than caching. |
+
+### Sign-out and InsForge state
+
+Better Auth sign-out only invalidates the Better Auth session and clears its cookie. The InsForge SDK still holds the last bridged JWT in memory until you tell it not to. Do this explicitly:
+
+```ts
+await authClient.signOut();
+client.getHttpClient().setAuthToken(null);   // clear in-memory bearer
+// realtime auto-reconnects via the onTokenChange hook in TokenManager
+```
+
+If you skip this, an in-flight request can complete with the now-orphaned JWT (still valid until `exp`).
+
+### The InsForge CSRF cookie is irrelevant — but harmless
+
+`insforge_csrf_token` is set by InsForge's *own* login/refresh flow. With Better Auth driving auth, that cookie is never set, the SDK never reads it (because `getCsrfToken()` only matters for `/api/auth/sessions/current`, which we're not calling), and nothing depends on it. No action needed.
+
+### Realtime
+
+The SDK's `Realtime` module subscribes to the `TokenManager.onTokenChange` callback and re-establishes its WebSocket with the new bearer when the token rotates. So **as long as you call `setAuthToken()` on every refresh** (which the pattern above does), realtime stays connected after a token rotation. If you bypass the SDK and pass JWTs directly to your own WebSocket plumbing, you'd have to wire reconnection yourself.
+
+### Summary: what to tell users in the integration guide
+
+1. `createClient({ ..., autoRefreshToken: false })` — required.
+2. Use `getHttpClient().setAuthToken(token)` imperatively from a `useEffect` keyed on Better Auth's session.
+3. Refresh on a `setInterval` at ~80% of bridge JWT lifetime (50 min for 1h, 30 sec for 60s).
+4. Clear the SDK token on sign-out; don't let an orphan JWT linger.
+5. The InsForge `insforge_csrf_token` cookie is unused in this mode — ignore it.
