@@ -1,4 +1,4 @@
-# npx @insforge/cli compute deploy — deploy a pre-built Docker image
+# npx @insforge/cli compute deploy — deploy a backend container
 
 > ⚠️ **In progress.** Compute services are still in development; the API and CLI may change.
 
@@ -8,29 +8,32 @@
 > with your own credentials will land in the wrong Fly org and fail with
 > `unauthorized`. Use `npx @insforge/cli compute …` instead.
 
-Deploy a backend service from a **pre-built Docker image**.
+Deploy a backend service. Two modes:
+1. **Source mode** (`compute deploy [dir]`): tar a directory containing a Dockerfile, server builds it on AWS CodeBuild
+2. **Image mode** (`compute deploy --image <url>`): deploy a pre-built image from any registry
 
 > Looking to deploy a **frontend** (static site / SPA / Next.js to Vercel)? Use
 > `npx @insforge/cli deployments deploy` instead — see
 > [deployments-deploy.md](deployments-deploy.md).
 
-## ⚠️ v1 limitation: image-only
+## Two modes
 
-InsForge **deploys** Docker images. **Does not build them.**
+| Mode | Command | When to use |
+|---|---|---|
+| **Source** | `compute deploy ./my-app --name my-api` | You have a Dockerfile and want one command. **No local Docker required.** Server builds it on AWS CodeBuild. |
+| **Image** | `compute deploy --image <url> --name my-api` | You already have a built image (CI pipeline, public image, custom registry). |
 
-| Scenario | v1 |
-|---|---|
-| Deploy a pre-built image (`--image <url>`) | ✅ |
-| Build from a directory + Dockerfile | ❌ roadmap |
-| Auto-detect + build (no Dockerfile, Vercel-style) | ❌ roadmap |
-
-**You produce the image; InsForge runs it.** Build locally with Docker and push to a registry (GHCR, Docker Hub, etc.), then deploy via `--image`. Off-the-shelf public images (`nginx:alpine`, etc.) work too — no build needed.
+Both deploy to the same Fly.io infrastructure with the same options (`--port`, `--cpu`, `--memory`, `--region`, `--env`).
 
 **Anti-pattern: `flyctl deploy` from your laptop.** Returns 401 — the Fly account is InsForge's, not yours.
 
 ## Syntax
 
 ```bash
+# Source mode — tar dir, server builds + deploys
+npx @insforge/cli compute deploy <dir> --name <name> [options]
+
+# Image mode — deploy pre-built image
 npx @insforge/cli compute deploy --image <url> --name <name> [options]
 ```
 
@@ -39,20 +42,26 @@ npx @insforge/cli compute deploy --image <url> --name <name> [options]
 | Option | Description | Default |
 |--------|-------------|---------|
 | `--name <name>` | Service name (DNS-safe: lowercase, numbers, dashes) | **required** |
-| `--image <url>` | Docker image URL | **required** |
+| `[dir]` (positional) | Source directory containing a Dockerfile (source mode) | — |
+| `--image <url>` | Docker image URL (image mode) | — |
 | `--port <port>` | Container internal port | `8080` |
 | `--cpu <tier>` | CPU tier in Fly.io standard format `<kind>-<N>x` (see [CPU tier section](#cpu-tier-flyio-standard-format)) | `shared-1x` |
 | `--memory <mb>` | Memory in MB (any positive integer; Fly enforces per-tier bounds) | `512` |
 | `--region <region>` | Fly.io region | `iad` |
 | `--env <json>` | Environment variables as JSON object | none |
 
+Exactly one of `[dir]` or `--image` must be provided.
+
 ## Quick examples
 
 ```bash
+# Source mode — your project, your Dockerfile, no Docker locally
+npx @insforge/cli compute deploy . --name my-api --port 8000
+
 # Off-the-shelf image
 npx @insforge/cli compute deploy --image nginx:alpine --name proxy --port 80
 
-# Your own image from GHCR (build + push first; see "Producing the image" below)
+# Pre-built image from GHCR
 npx @insforge/cli compute deploy \
   --image ghcr.io/your-org/your-app:v1 \
   --name my-api \
@@ -62,16 +71,56 @@ npx @insforge/cli compute deploy \
   --env '{"OPENAI_API_KEY": "sk-..."}'
 
 # Bigger machine (8 cores + 4 GB RAM)
-npx @insforge/cli compute deploy \
-  --image ghcr.io/your-org/batch-worker:v1 \
+npx @insforge/cli compute deploy ./worker \
   --name batch \
   --port 8080 \
   --cpu performance-8x --memory 4096
 ```
 
-## Producing the image
+## Source mode — worked example
 
-In your project directory with a Dockerfile:
+```bash
+# Project layout:
+$ ls
+Dockerfile  app.py  requirements.txt
+
+# Deploy:
+$ npx @insforge/cli compute deploy . --name my-bot --port 8080
+✓ Detected Dockerfile at /path/to/Dockerfile
+✓ Requesting upload credentials...
+✓ Tarring source...
+✓ Uploading source (4.2 KB)...
+✓ Source uploaded. Building on AWS CodeBuild + deploying (~60-120s)...
+✓ Service "my-bot" deployed [running]
+   Endpoint: https://my-bot-projAbc.fly.dev
+```
+
+What happens behind the scenes:
+1. CLI requests a presigned S3 PUT URL from InsForge cloud (5-min TTL, scoped to one S3 key, PUT only)
+2. CLI tars the directory (excluding `.git`, `node_modules`, etc.) and uploads directly to S3 — bytes never proxy through InsForge's servers
+3. Cloud triggers AWS CodeBuild with that source key
+4. CodeBuild fetches the source, builds the Dockerfile, pushes the resulting image to InsForge's ECR
+5. Cloud deploys the image to a Fly machine and returns the URL
+
+Per-project throttle: max 1 in-flight build at a time. A second deploy while one is building returns 429 `BUILD_IN_PROGRESS`.
+
+### When to use source mode vs image mode
+
+- **Source mode**: rapid iteration on a single project, Dockerfile in repo, no Docker locally
+- **Image mode**: CI/CD pipelines (your CI builds + pushes, then InsForge deploys), off-the-shelf images, multiple deploy targets sharing one image
+
+### If you don't have a Dockerfile yet
+
+Ask your AI agent to generate one for your stack:
+- Node app → typically `FROM node:20-alpine`, `npm ci`, `CMD node index.js`
+- Python app → `FROM python:3.12-alpine`, `pip install -r requirements.txt`, `CMD python app.py`
+- Go binary → multi-stage build with `FROM golang:1.22 AS build` then `FROM alpine:3.20`
+
+The InsForge skill knows these patterns; ask the agent and it'll write one.
+
+## Producing an image yourself (for image mode)
+
+If you want to build images in CI and deploy via `--image` instead:
 
 ```bash
 docker build -t ghcr.io/<your-gh-username>/<app-name>:v1 .

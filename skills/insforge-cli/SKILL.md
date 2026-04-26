@@ -139,7 +139,9 @@ For frontend hosting see **Frontend Deployments** above.
 
 - `npx @insforge/cli compute list` — list all compute services (name, status, image, CPU, memory, endpoint)
 - `npx @insforge/cli compute get <id>` — get service details
-- `npx @insforge/cli compute deploy --image <url> --name <name> [--port] [--cpu] [--memory] [--region] [--env]` — deploy a pre-built Docker image. See [references/compute-deploy.md](references/compute-deploy.md).
+- `npx @insforge/cli compute deploy [dir] --name <name> [--port] [--cpu] [--memory] [--region] [--env]` — **source mode**: tars `[dir]` (Dockerfile required), uploads directly to InsForge's S3 staging via presigned URL, server builds it on AWS CodeBuild, deploys to Fly, returns URL. **No local Docker needed.**
+- `npx @insforge/cli compute deploy --image <url> --name <name> [--port] [--cpu] [--memory] [--region] [--env]` — **image mode**: deploys a pre-built image from any registry (CI/CD pipelines, public images like `nginx:alpine`).
+- See [references/compute-deploy.md](references/compute-deploy.md) for both modes.
 - `npx @insforge/cli compute update <id> [--image] [--port] [--cpu] [--memory] [--region]` — update service config
 - `npx @insforge/cli compute stop <id>` — stop a running service
 - `npx @insforge/cli compute start <id>` — start a stopped service
@@ -212,7 +214,7 @@ Run with no subcommand for a full health report across all checks.
 
 **The live database schema is the source of truth**: before writing a migration, and again if a migration fails, inspect the current database state first (`db tables / indexes / policies / triggers / functions`, plus `db migrations list`) and then adjust the migration statements to match reality. Do not assume local files are still current.
 
-**⚠️ v1 limitation — image-only.** `compute deploy --image <url>` deploys a pre-built image. It does NOT build from source. Build locally with Docker, push to any registry, then deploy via `--image`. Server-side build is roadmap, not v1. Don't reach for `flyctl deploy` as a workaround — it 401s because the Fly account is InsForge's, not yours.
+**Compute deploy has two modes.** `compute deploy [dir]` tars a directory containing a Dockerfile, uploads source to InsForge's S3 via presigned URL, server builds it on AWS CodeBuild, returns URL — **no local Docker needed**. `compute deploy --image <url>` deploys a pre-built image from any registry (use this in CI or for off-the-shelf images like `nginx:alpine`). Don't use `flyctl` directly — the Fly account is InsForge's.
 
 **Compute endpoints use .fly.dev**: Services get a public URL at `https://{name}-{projectId}.fly.dev`. Custom domains require DNS configuration.
 
@@ -331,7 +333,20 @@ npx @insforge/cli deployments deploy .
 
 ### Deploy a Docker container (compute service)
 
-InsForge deploys pre-built Docker images. Build the image with your own toolchain, then deploy.
+Two modes — pick by what you have. Both deploy to the same Fly.io infrastructure.
+
+**Source mode (you have a Dockerfile, no Docker locally):**
+```bash
+# Project layout: Dockerfile + your app code
+$ ls
+Dockerfile  app.py  requirements.txt
+
+# One command:
+npx @insforge/cli compute deploy . --name my-api --port 8000
+# CLI tars the dir, uploads to InsForge S3 (presigned URL — bytes go laptop→S3 direct),
+# server builds it on AWS CodeBuild, deploys to Fly, returns URL.
+# No local Docker required.
+```
 
 **Off-the-shelf image:**
 ```bash
@@ -341,10 +356,9 @@ npx @insforge/cli compute list
 # No flyctl, no FLY_API_TOKEN, no local Docker required.
 ```
 
-**Your own image (local Docker):**
+**Pre-built image you pushed yourself (CI/CD, custom registry):**
 ```bash
-docker build -t ghcr.io/you/app:v1 .
-docker push ghcr.io/you/app:v1
+# Built + pushed elsewhere (GitHub Actions, your CI, local Docker, etc.)
 npx @insforge/cli compute deploy --image ghcr.io/you/app:v1 --name my-api --port 8000
 ```
 
