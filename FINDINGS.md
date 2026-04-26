@@ -18,6 +18,160 @@
 - ✅ End-to-end RLS proven: two users, each can read/write only their own rows in a `requesting_user_id()`-protected table; anon sees nothing.
 - ✅ JWT security: tampered/wrong-secret/expired tokens all rejected with `401`. Missing `sub` falls through to RLS deny.
 
+## Gotchas and fixes
+
+Every problem hit during testing, in the order you'd hit them building this. Each has a copy-pasteable fix.
+
+### 1. `public.user` is readable by anon through PostgREST
+
+**Symptom.** Right after `npx auth migrate`, an unauthenticated request through InsForge's data API returns user rows including emails:
+
+```text
+$ curl -sS http://localhost:5430/user
+[{"id":"...","name":"Leaky","email":"leak@test.com",...}]
+```
+
+**Cause.** InsForge default-grants `arwd` (SELECT/INSERT/UPDATE/DELETE) to `anon` and `authenticated` on every table created in `public`. Better Auth lands its tables there with no RLS. The Supabase upstream guide doesn't mention this and Supabase users have the same exposure.
+
+**Fix.** Run once after the first migrate:
+
+```sql
+REVOKE ALL ON public."user", public.session, public.account, public.verification
+  FROM anon, authenticated;
+```
+
+Verify: `curl /user` should now return `401 permission denied for table user`.
+
+### 2. `project_admin` retains access (this is by design — but flag it)
+
+**Symptom.** After the REVOKE above, `\dp public.user` still shows `project_admin=arwd/postgres`.
+
+**Cause.** InsForge's CLI and dashboard run as the `project_admin` role and need to inspect tables for debugging.
+
+**Fix.** Leave it as-is unless you specifically want to lock down admin access. If you do:
+
+```sql
+REVOKE ALL ON public."user", public.session, public.account, public.verification
+  FROM project_admin;
+```
+
+This will break the InsForge Studio's ability to view these tables. Usually not worth it.
+
+### 3. Migrate fails with "no schema has been selected to create in" (schema-isolation alternative only)
+
+**Symptom.** When using `options: '-c search_path=betterauth'` to isolate Better Auth tables in their own schema:
+
+```text
+error: no schema has been selected to create in
+```
+
+**Cause.** Postgres can't auto-create the schema; you have to create it first.
+
+**Fix.**
+
+```sql
+CREATE SCHEMA IF NOT EXISTS betterauth;
+```
+
+Then re-run `npx @better-auth/cli migrate`.
+
+### 4. PostgREST returns `404 {}` on a freshly-created table
+
+**Symptom.** You ran `CREATE TABLE public.notes ...` via raw `psql`, then `POST /notes` through PostgREST returns:
+
+```text
+HTTP/1.1 404 Not Found
+{}
+```
+
+**Cause.** PostgREST caches the schema. It only auto-reloads on a `NOTIFY pgrst` event. The InsForge CLI's migration tool emits this notify; raw `psql` does not.
+
+**Fix.** Either run schema changes through the InsForge CLI:
+
+```bash
+npx @insforge/cli db migrations new add_notes_table
+npx @insforge/cli db migrations up
+```
+
+Or, after raw `psql`, send the notify yourself:
+
+```sql
+NOTIFY pgrst, 'reload schema';
+```
+
+The InsForge stack already configures `PGRST_DB_CHANNEL_ENABLED=true` and `PGRST_DB_CHANNEL=pgrst`, so this works out of the box.
+
+### 5. Better Auth POSTs return `403 MISSING_OR_NULL_ORIGIN`
+
+**Symptom.** Server-to-server `curl`/`fetch` to `POST /api/auth/sign-up/email` without an `Origin` header:
+
+```text
+HTTP/1.1 403 Forbidden
+{"message":"Missing or null Origin","code":"MISSING_OR_NULL_ORIGIN"}
+```
+
+**Cause.** Better Auth's CSRF protection requires an `Origin` header on mutating requests, even without a browser.
+
+**Fix.** Set the header on every write:
+
+```bash
+curl -X POST .../sign-up/email \
+  -H 'Content-Type: application/json' \
+  -H 'Origin: http://localhost:3000' \
+  -d '{...}'
+```
+
+For real server-to-server clients, configure `trustedOrigins` in `betterAuth({...})` and send the matching `Origin`.
+
+### 6. Better Auth's `jwt()` plugin won't authenticate to InsForge's PostgREST
+
+**Symptom.** You enable `plugins: [jwt()]` and try to use `authClient.token()` directly with InsForge — every request rejected with `JWSInvalidSignature`.
+
+**Cause.** Better Auth's JWT plugin issues **asymmetric** tokens (EdDSA / ES256 / RS256) verifiable only via JWKS. InsForge's PostgREST is configured with `PGRST_JWT_SECRET` for **HS256** verification with the InsForge JWT secret. They don't talk natively, and the plugin has no HS256 mode.
+
+**Fix.** Skip Better Auth's `jwt()` plugin entirely. Add a tiny server-side bridge route that reads the Better Auth session and re-signs an HS256 token with the InsForge JWT secret. ~20 lines of code, same pattern as the existing WorkOS/Auth0 guides. See "JWT bridge: end-to-end RLS proof" below for the full route.
+
+### 7. PostgREST has a ~30-second JWT expiry tolerance
+
+**Symptom.** A freshly-expired token (`exp` 1s in the past) still gets a `200` response, not `401`.
+
+**Cause.** PostgREST's default clock-skew window is ~30s — designed to absorb minor clock drift between issuer and verifier.
+
+**Fix.** Nothing required for normal use. If you need hard expiry — for example invalidating a token within the second after a logout — don't rely on `exp` alone; check session validity in your bridge route before issuing a new token, and/or use a server-side revocation list. With `exp` >30s in the past, PostgREST does reject:
+
+```text
+401 Unauthorized
+{"code":"PGRST301","message":"JWT expired"}
+```
+
+### 8. Better Auth user IDs are `text`, not UUID — don't FK to `auth.users`
+
+**Symptom.** You write `user_id uuid REFERENCES auth.users(id)` and inserts fail because the Better Auth-issued `id` (e.g. `f5kGYiUXDPEJqRDQ4jgtNTopIzpj5MgK`) isn't a UUID.
+
+**Cause.** Better Auth's `generateId()` is a base62-style string. InsForge's native `auth.users.id` is a UUID. Better Auth never writes to `auth.users` — it writes to `public.user`.
+
+**Fix.** Use `text` columns for any FK to Better Auth's user table:
+
+```sql
+user_id text NOT NULL REFERENCES public."user"(id) ON DELETE CASCADE
+```
+
+Same convention as every other third-party auth integration in this skill (Clerk, Auth0, WorkOS, Kinde, Stytch).
+
+### 9. Connection-pool user must have privileges on Better Auth's tables
+
+**Symptom.** If you connect Better Auth as `anon` or `authenticated` (or any role you've REVOKE'd from), signups fail with `permission denied for table user`.
+
+**Cause.** `REVOKE` applies to the role used in the connection string, not just to PostgREST request roles.
+
+**Fix.** In the Better Auth connection string, use a role that retains privileges — typically the `postgres` superuser, or a dedicated role you grant explicitly:
+
+```js
+new Pool({ connectionString: "postgresql://postgres:postgres@host/insforge" })
+```
+
+The REVOKE block in gotcha #1 only removes anon/authenticated, so the postgres user still works as expected.
+
 ## Test environment
 
 | Component | Version |
