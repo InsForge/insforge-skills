@@ -2,14 +2,15 @@
 name: insforge-integrations
 description: >-
   Use this skill when integrating a third-party provider with InsForge —
-  either an auth provider (Clerk, Auth0, WorkOS, Kinde, Stytch) for JWT-based
-  RLS, or a payment facilitator (OKX x402) for onchain pay-per-use billing.
-  Covers provider-specific dashboard setup, client/server code, database
-  policies, and common gotchas for each supported integration.
+  either an auth provider (Clerk, Auth0, WorkOS, Kinde, Stytch, Better Auth)
+  for JWT-based RLS, or a payment facilitator (OKX x402) for onchain
+  pay-per-use billing. Covers provider-specific dashboard setup,
+  client/server code, database policies, and common gotchas for each
+  supported integration.
 license: Apache-2.0
 metadata:
   author: insforge
-  version: "1.1.0"
+  version: "1.2.0"
   organization: InsForge
   date: April 2026
 ---
@@ -27,6 +28,7 @@ This skill covers integrating **third-party providers** with InsForge. Currently
 | [WorkOS](references/workos.md) | WorkOS AuthKit + InsForge RLS | WorkOS AuthKit middleware + server-side JWT signing with `jsonwebtoken` |
 | [Kinde](references/kinde.md) | Kinde + InsForge RLS | Kinde token customization for InsForge integration |
 | [Stytch](references/stytch.md) | Stytch + InsForge RLS | Stytch session tokens for InsForge integration |
+| [Better Auth](references/better-auth.md) | Better Auth + InsForge RLS | Self-hosted auth running in your InsForge Postgres — no third-party SaaS, no per-MAU cost |
 
 ## Payment Facilitators
 
@@ -56,6 +58,7 @@ This skill covers integrating **third-party providers** with InsForge. Currently
 - **WorkOS** — Enterprise-focused; AuthKit middleware + server-side JWT signing
 - **Kinde** — Developer-friendly; built-in token customization
 - **Stytch** — API-first; session-based token flow
+- **Better Auth** — Self-hosted in your Postgres; no SaaS vendor; you own the user table. Pairs cleanly with InsForge's Postgres via a connection string + a small bridge route. Requires a one-time `REVOKE` after migrate to seal PostgREST exposure.
 
 **Payment facilitators**
 - **OKX x402** — Onchain pay-per-use via USDG on X Layer; zero gas for the payer
