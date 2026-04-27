@@ -15,14 +15,16 @@ const insforge = createClient({
 })
 ```
 
-## Connect
+## Usage Examples
+
+### Connect
 
 ```javascript
 await insforge.realtime.connect()
 console.log('Connected:', insforge.realtime.isConnected)
 ```
 
-## Subscribe to Channel
+### Subscribe to Channel
 
 ```javascript
 const response = await insforge.realtime.subscribe('order:123')
@@ -37,12 +39,12 @@ if (!response.ok) {
 // Auto-connects if not connected
 ```
 
-## Presence Snapshot on Subscribe
+### Presence Snapshot on Subscribe
 
 A successful `subscribe()` always returns a `presence` snapshot:
 
 ```javascript
-{
+const subscribeResponse = {
   ok: true,
   channel: 'order:123',
   presence: {
@@ -65,7 +67,7 @@ Use this snapshot to seed local participant state before listening for live delt
 - Anonymous connections are tracked per socket, so multiple tabs show up as separate members
 - Do not wait for your own `presence:join` event after subscribing; your own presence is already represented in the subscribe response
 
-## Listen for Events
+### Listen for Events
 
 ```javascript
 // Listen for events
@@ -92,7 +94,7 @@ insforge.realtime.once('order_completed', (payload) => {
 insforge.realtime.off('status_changed', handler)
 ```
 
-## Integrate Presence into UI State
+### Integrate Presence into UI State
 
 ```javascript
 const channel = `chat:${roomId}`
@@ -122,7 +124,7 @@ insforge.realtime.on('presence:join', handleJoin)
 insforge.realtime.on('presence:leave', handleLeave)
 ```
 
-## Publish Messages
+### Publish Messages
 
 ```javascript
 // Must be subscribed to channel first
@@ -132,14 +134,14 @@ await insforge.realtime.publish('chat:room-1', 'new_message', {
 })
 ```
 
-## Unsubscribe and Disconnect
+### Unsubscribe and Disconnect
 
 ```javascript
 insforge.realtime.unsubscribe('order:123')
 insforge.realtime.disconnect()
 ```
 
-## Connection Events
+### Connection Events
 
 ```javascript
 insforge.realtime.on('connect', () => console.log('Connected'))
@@ -150,7 +152,7 @@ insforge.realtime.on('error', ({ code, message }) => console.error(code, message
 
 Error codes: `UNAUTHORIZED`, `NOT_SUBSCRIBED`, `INTERNAL_ERROR`
 
-## Properties
+### Properties
 
 ```javascript
 insforge.realtime.isConnected           // boolean
@@ -159,12 +161,12 @@ insforge.realtime.socketId              // string
 insforge.realtime.getSubscribedChannels() // string[]
 ```
 
-## Message Metadata
+### Message Metadata
 
 All messages include `meta`:
 
 ```javascript
-{
+const message = {
   meta: {
     messageId: 'uuid',
     channel: 'order:123',
@@ -176,7 +178,7 @@ All messages include `meta`:
 }
 ```
 
-## Complete Example
+### Complete Example
 
 ```javascript
 await insforge.realtime.connect()
@@ -237,6 +239,16 @@ await insforge.realtime.publish(channel, 'viewed', {
    - Unsubscribe from channels when no longer needed
    - Disconnect when leaving the page/component
 
+### Recommended Workflow
+
+```text
+1. Create channel patterns        → INSERT INTO realtime.channels via SQL
+2. Connect to realtime            → await insforge.realtime.connect()
+3. Subscribe and seed presence    → const response = await insforge.realtime.subscribe('channel')
+4. Listen for events and deltas   → on('event', handler) + on('presence:join'/'presence:leave')
+5. Clean up on unmount            → unsubscribe() and disconnect()
+```
+
 ## Common Mistakes
 
 | Mistake | Solution |
@@ -247,13 +259,3 @@ await insforge.realtime.publish(channel, 'viewed', {
 | ❌ Not handling connection errors | ✅ Listen for `connect_error` and `disconnect` events |
 | ❌ Forgetting to unsubscribe | ✅ Clean up subscriptions on component unmount |
 | ❌ Publishing without subscribing | ✅ Subscribe to channel before publishing |
-
-## Recommended Workflow
-
-```text
-1. Create channel patterns        → INSERT INTO realtime.channels via SQL
-2. Connect to realtime            → await insforge.realtime.connect()
-3. Subscribe and seed presence    → const response = await insforge.realtime.subscribe('channel')
-4. Listen for events and deltas   → on('event', handler) + on('presence:join'/'presence:leave')
-5. Clean up on unmount            → unsubscribe() and disconnect()
-```
