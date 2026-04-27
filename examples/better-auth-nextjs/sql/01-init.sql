@@ -30,8 +30,17 @@ CREATE POLICY notes_owner_insert ON public.notes
   FOR INSERT TO authenticated
   WITH CHECK (user_id = public.requesting_user_id());
 
+CREATE POLICY notes_owner_update ON public.notes
+  FOR UPDATE TO authenticated
+  USING (user_id = public.requesting_user_id())
+  WITH CHECK (user_id = public.requesting_user_id());
+
+CREATE POLICY notes_owner_delete ON public.notes
+  FOR DELETE TO authenticated
+  USING (user_id = public.requesting_user_id());
+
 GRANT USAGE ON SCHEMA public TO authenticated;
-GRANT SELECT, INSERT ON public.notes TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.notes TO authenticated;
 
 -- 3. Realtime support (optional — skip if you don't use client.realtime).
 -- 3a. Allow string sender_ids (Better Auth IDs are not UUIDs).
