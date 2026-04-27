@@ -195,7 +195,8 @@ insforge.realtime.on('status_changed', (payload) => {
 
 insforge.realtime.on('presence:join', ({ member, meta }) => {
   if (meta.channel !== channel) return
-  members = [...members, member]
+  const exists = members.some((current) => current.presenceId === member.presenceId)
+  members = exists ? members : [...members, member]
   renderPresence(members)
 })
 
@@ -249,7 +250,7 @@ await insforge.realtime.publish(channel, 'viewed', {
 
 ## Recommended Workflow
 
-```
+```text
 1. Create channel patterns        → INSERT INTO realtime.channels via SQL
 2. Connect to realtime            → await insforge.realtime.connect()
 3. Subscribe and seed presence    → const response = await insforge.realtime.subscribe('channel')
