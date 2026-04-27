@@ -430,7 +430,7 @@ Accepts `<positive integer> <unit>` where unit is `second(s)`, `minute(s)`, or `
 | `5 minutes` | Every 5 minutes |
 | `1 hour` | Every hour |
 
-> **When to pick which:** use 5-field cron for "wall-clock" cadence (every Monday at 9 AM, daily midnight, every 5 minutes on the dot). Use interval syntax when you need sub-minute cadence or simple "every N seconds" semantics. At very high cadence, watch the size of `net._http_response` — InsForge prunes responses older than 1 day every 15 minutes, but a runaway high-frequency schedule can still bloat the table.
+> **When to pick which:** use 5-field cron for "wall-clock" cadence (every Monday at 9 AM, daily midnight, every 5 minutes on the dot). Use interval syntax when you need sub-minute cadence or simple "every N seconds" semantics. At very high cadence (e.g. `1 second`), watch `schedules.job_logs` row counts — every fire writes a log row.
 
 #### Secret References in Headers
 
