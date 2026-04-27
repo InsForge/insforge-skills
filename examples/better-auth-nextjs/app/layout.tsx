@@ -1,0 +1,11 @@
+export const metadata = { title: 'Better Auth + InsForge' };
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body style={{ fontFamily: 'system-ui, sans-serif', maxWidth: 600, margin: '40px auto' }}>
+        {children}
+      </body>
+    </html>
+  );
+}
