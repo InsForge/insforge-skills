@@ -156,7 +156,7 @@ For frontend hosting see **Frontend Deployments** above.
 ### Schedules — `npx @insforge/cli schedules`
 - `npx @insforge/cli schedules list` — list all scheduled tasks (shows ID, name, cron, URL, method, active, next run)
 - `npx @insforge/cli schedules get <id>` — get schedule details
-- `npx @insforge/cli schedules create --name --cron --url --method [--headers <json>] [--body <json>]` — create a cron job. `--cron` accepts either 5-field cron (`*/5 * * * *`) or pg_cron interval syntax for sub-minute cadence (`30 seconds`, `5 minutes`, `1 hour`)
+- `npx @insforge/cli schedules create --name --cron --url --method [--headers <json>] [--body <json>]` — create a cron job. `--cron` accepts either 5-field cron (`*/5 * * * *`) or pg_cron interval syntax for sub-minute cadence (`30 seconds`)
 - `npx @insforge/cli schedules update <id> [--name] [--cron] [--url] [--method] [--headers] [--body] [--active]` — update schedule
 - `npx @insforge/cli schedules delete <id>` — delete schedule (with confirmation)
 - `npx @insforge/cli schedules logs <id> [--limit] [--offset]` — view execution logs
@@ -216,7 +216,7 @@ Run with no subcommand for a full health report across all checks.
 
 **Compute endpoints use .fly.dev**: Services get a public URL at `https://{name}-{projectId}.fly.dev`. Custom domains require DNS configuration.
 
-**Schedules accept two cron formats**: 5-field cron (`minute hour day month day-of-week`, e.g. `*/5 * * * *`) **or** pg_cron interval syntax for sub-minute cadence (`2 seconds`, `30 seconds`, `5 minutes`, `1 hour`). 6-field cron with seconds (Quartz/Spring's `*/2 * * * * *`) is **not** supported — use the interval form for sub-minute work. Headers can reference secrets with `${{secrets.KEY_NAME}}`.
+**Schedules accept two cron formats**: 5-field cron (`minute hour day month day-of-week`, e.g. `*/5 * * * *`) **or** pg_cron interval syntax for sub-minute cadence (e.g. `30 seconds`). 6-field cron with seconds (Quartz/Spring's `*/2 * * * * *`) is **not** supported — use the interval form for sub-minute work. Headers can reference secrets with `${{secrets.KEY_NAME}}`.
 
 ---
 
@@ -419,16 +419,7 @@ InsForge accepts **two cron formats**: standard 5-field cron expressions, **or**
 
 **Interval syntax (for sub-minute cadence):**
 
-Accepts `<positive integer> <unit>` where unit is `second(s)`, `minute(s)`, or `hour(s)`. Case-insensitive.
-
-| Expression | Description |
-|------------|-------------|
-| `1 second` | Every second |
-| `2 seconds` | Every 2 seconds |
-| `30 seconds` | Every 30 seconds |
-| `90 seconds` | Every 90 seconds |
-| `5 minutes` | Every 5 minutes |
-| `1 hour` | Every hour |
+Use `<positive integer> seconds` (e.g. `30 seconds`) — the only thing 5-field cron can't express.
 
 > **When to pick which:** use 5-field cron for "wall-clock" cadence (every Monday at 9 AM, daily midnight, every 5 minutes on the dot). Use interval syntax when you need sub-minute cadence or simple "every N seconds" semantics. At very high cadence (e.g. `1 second`), watch `schedules.job_logs` row counts — every fire writes a log row.
 
@@ -451,7 +442,7 @@ Secrets are resolved at schedule creation/update time. If a referenced secret do
 
 1. **Pick the right cron format for the cadence**
    - Wall-clock cadence (daily/hourly/weekly) → 5-field cron (`*/5 * * * *`, `0 9 * * 1-5`)
-   - Sub-minute cadence → pg_cron interval form (`2 seconds`, `30 seconds`, `5 minutes`)
+   - Sub-minute cadence → pg_cron interval form (e.g. `30 seconds`)
    - 6-field cron with seconds (`*/2 * * * * *`) is **not** supported — use the interval form
 
 2. **Store sensitive values as secrets**
