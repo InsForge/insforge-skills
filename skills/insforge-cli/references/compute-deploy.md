@@ -9,8 +9,8 @@
 > `unauthorized`. Use `npx @insforge/cli compute …` instead.
 
 Deploy a backend service. Two modes:
-1. **Source mode** (`compute deploy [dir]`): tar a directory containing a Dockerfile, server builds it on AWS CodeBuild
-2. **Image mode** (`compute deploy --image <url>`): deploy a pre-built image from any registry
+1. **Source mode** (`compute deploy [dir]`): you have a Dockerfile and Docker installed. CLI runs `docker build` + `docker push` locally against `registry.fly.io` using a short-lived per-app deploy token minted by InsForge cloud, then asks the cloud to launch the machine.
+2. **Image mode** (`compute deploy --image <url>`): deploy a pre-built image from any registry. **No local Docker required.**
 
 > Looking to deploy a **frontend** (static site / SPA / Next.js to Vercel)? Use
 > `npx @insforge/cli deployments deploy` instead — see
@@ -18,10 +18,10 @@ Deploy a backend service. Two modes:
 
 ## Two modes
 
-| Mode | Command | When to use |
-|---|---|---|
-| **Source** | `compute deploy ./my-app --name my-api` | You have a Dockerfile and want one command. **No local Docker required.** Server builds it on AWS CodeBuild. |
-| **Image** | `compute deploy --image <url> --name my-api` | You already have a built image (CI pipeline, public image, custom registry). |
+| Mode | Command | When to use | Local Docker? |
+|---|---|---|---|
+| **Source** | `compute deploy ./my-app --name my-api` | You have a Dockerfile and want one command. CLI builds + pushes from your machine using a per-app token InsForge mints on demand. | **Required** |
+| **Image** | `compute deploy --image <url> --name my-api` | You already have a built image (CI pipeline, public image, custom registry). | Not required |
 
 Both deploy to the same Fly.io infrastructure with the same options (`--port`, `--cpu`, `--memory`, `--region`, `--env`).
 
@@ -30,10 +30,11 @@ Both deploy to the same Fly.io infrastructure with the same options (`--port`, `
 ## Syntax
 
 ```bash
-# Source mode — tar dir, server builds + deploys
+# Source mode — local docker build + push, then cloud launches the machine
+# (requires Docker locally; cloud mints a 20-min per-app deploy token)
 npx @insforge/cli compute deploy <dir> --name <name> [options]
 
-# Image mode — deploy pre-built image
+# Image mode — deploy pre-built image (no Docker required)
 npx @insforge/cli compute deploy --image <url> --name <name> [options]
 ```
 
@@ -55,7 +56,7 @@ Exactly one of `[dir]` or `--image` must be provided.
 ## Quick examples
 
 ```bash
-# Source mode — your project, your Dockerfile, no Docker locally
+# Source mode — your project, your Dockerfile, Docker installed
 npx @insforge/cli compute deploy . --name my-api --port 8000
 
 # Off-the-shelf image
@@ -87,27 +88,28 @@ Dockerfile  app.py  requirements.txt
 # Deploy:
 $ npx @insforge/cli compute deploy . --name my-bot --port 8080
 ✓ Detected Dockerfile at /path/to/Dockerfile
-✓ Requesting upload credentials...
-✓ Tarring source...
-✓ Uploading source (4.2 KB)...
-✓ Source uploaded. Building on AWS CodeBuild + deploying (~60-120s)...
+✓ Creating service "my-bot"...
+✓ Created Fly app my-bot-projAbc
+✓ Requesting deploy token...
+✓ Building image registry.fly.io/my-bot-projAbc:cli-1714003200000...
+✓ Logging in to registry.fly.io...
+✓ Pushing registry.fly.io/my-bot-projAbc:cli-1714003200000...
+✓ Launching machine...
 ✓ Service "my-bot" deployed [running]
    Endpoint: https://my-bot-projAbc.fly.dev
 ```
 
 What happens behind the scenes:
-1. CLI requests a presigned S3 PUT URL from InsForge cloud (5-min TTL, scoped to one S3 key, PUT only)
-2. CLI tars the directory (excluding `.git`, `node_modules`, etc.) and uploads directly to S3 — bytes never proxy through InsForge's servers
-3. Cloud triggers AWS CodeBuild with that source key
-4. CodeBuild fetches the source, builds the Dockerfile, pushes the resulting image to InsForge's ECR
-5. Cloud deploys the image to a Fly machine and returns the URL
-
-Per-project throttle: max 1 in-flight build at a time. A second deploy while one is building returns 429 `BUILD_IN_PROGRESS`.
+1. CLI looks up the service by `--name`. If missing, calls the cloud to provision a Fly app shell (no machine yet) and gets back the `flyAppId`.
+2. CLI requests a per-app deploy token from the cloud — a Fly macaroon attenuated to `Apps[<thisAppOnly>] + Registry + 20-min validity window`. The org-wide Fly token never leaves InsForge's servers.
+3. CLI runs `docker build --platform linux/amd64 -t registry.fly.io/<app>:<tag> <dir>` locally.
+4. CLI runs `docker login registry.fly.io -u x --password-stdin` (token piped via stdin, never on argv) and `docker push registry.fly.io/<app>:<tag>`. Image bytes go straight from your Docker daemon to Fly's registry.
+5. CLI sends `PATCH /api/compute/services/<id>` with `imageUrl=registry.fly.io/<app>:<tag>`. Cloud calls Fly Machines API to launch (or restart with the new image) and returns the public URL.
 
 ### When to use source mode vs image mode
 
-- **Source mode**: rapid iteration on a single project, Dockerfile in repo, no Docker locally
-- **Image mode**: CI/CD pipelines (your CI builds + pushes, then InsForge deploys), off-the-shelf images, multiple deploy targets sharing one image
+- **Source mode**: rapid iteration on a single project, Dockerfile in repo, you already have Docker installed.
+- **Image mode**: no Docker on the machine running the CLI (e.g. CI runners that build elsewhere), CI/CD pipelines that push their own images, off-the-shelf images like `nginx:alpine`, or multiple deploy targets sharing one image.
 
 ### If you don't have a Dockerfile yet
 
@@ -214,13 +216,16 @@ JSON mode (`--json`):
 | `COMPUTE_SERVICE_ALREADY_EXISTS` | Duplicate name in project | Choose a different name or delete the existing service |
 | `COMPUTE_QUOTA_EXCEEDED` | At per-project quota (5 active services) | Delete unused services or call `compute reconcile` to clear orphans |
 | `COMPUTE_INVALID_CPU_TIER` | `--cpu` doesn't match `<kind>-<N>x` | Use the format above, e.g. `performance-2x` |
-| `Image pull error` | Registry private without InsForge having creds | Push to a public image, or contact support to configure private registry creds |
-| `Unauthorized` from registry | Image is private and InsForge cloud doesn't have credentials | Make the image public, or use a public registry |
+| `Docker is required for source-mode deploy` | Docker isn't installed or the daemon isn't running | Install Docker Desktop (https://docs.docker.com/get-docker/) and start it, or switch to `--image <pre-built-image>` |
+| `docker push ... failed (exit 1): unauthorized` | Per-app deploy token expired (20-min TTL) | Re-run `compute deploy` — the CLI mints a fresh token per invocation |
+| `docker build failed (exit 1)` | Dockerfile error | Check the build output above the error; fix the Dockerfile and retry |
+| `Image pull error` (image mode) | Registry private without InsForge having creds | Push to a public image, or contact support to configure private registry creds |
+| `Unauthorized` from registry (image mode) | Image is private and InsForge cloud doesn't have credentials | Make the image public, or use a public registry |
 
 ## FAQ
 
-**Q: Why doesn't InsForge build my image for me like Vercel does?**
-A: Building images is a separate problem from deploying them. Use local Docker (or your own CI) to produce the image. InsForge focuses on the deploy + run + scale + observe layer. Server-side build is roadmap.
+**Q: Why does source mode require Docker on my machine?**
+A: It's the simplest, fastest, most secure path: bytes go straight from your daemon to `registry.fly.io`, the cloud never sees your source, and the deploy token is scoped to a single Fly app for 20 minutes. We evaluated server-side builds (CodeBuild, Fly remote builders, depot.dev) but each had blockers — depot.dev silently no-ops on app-scoped tokens, server-side build OOMs on small instances, and broader-scope tokens leak access to other apps. If you don't want Docker locally, use `--image` with a pre-built image from your CI.
 
 **Q: Can I use a private image from my own registry?**
 A: Public images (e.g. Docker Hub public, GHCR public) work out of the box. Private registry support requires per-project credential configuration; contact support to set this up.
@@ -233,6 +238,7 @@ A: It's down. InsForge runs your containers on Fly's infrastructure — Fly's up
 
 ## Notes
 
-- This command does NOT require `flyctl`, Docker, or any other local tool. It just makes an HTTP call to the InsForge backend.
-- The machine starts immediately. Use `compute stop` to pause without destroying.
+- This command never requires `flyctl` or a Fly token. The InsForge cloud holds the org token; the CLI receives short-lived per-app deploy tokens on demand.
+- Source mode requires Docker locally; image mode does not. Pick by what you have.
+- The machine starts immediately on first deploy. Subsequent deploys to the same `--name` update the existing machine in place. Use `compute stop` to pause without destroying.
 - Env vars set via `--env` are encrypted at rest in the InsForge database.
