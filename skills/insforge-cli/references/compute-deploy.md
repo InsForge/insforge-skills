@@ -1,6 +1,10 @@
 # npx @insforge/cli compute deploy — deploy a backend container
 
-> ⚠️ **In progress.** Compute services are still in development; the API and CLI may change.
+> 🔒 **Private preview.** Compute services are not yet generally available.
+> Access is gated per-project; the API, CLI flags, error codes, and quotas
+> may change between releases. To request access, raise quotas, configure a
+> private registry, or report issues, contact the InsForge team
+> (support@insforge.dev or your shared Slack channel).
 
 > 🔧 **DO NOT call `flyctl` directly to manage InsForge compute services.**
 > InsForge runs containers on Fly.io under the hood, but the Fly account, org,
