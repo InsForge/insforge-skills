@@ -139,7 +139,9 @@ For frontend hosting see **Frontend Deployments** above.
 
 - `npx @insforge/cli compute list` — list all compute services (name, status, image, CPU, memory, endpoint)
 - `npx @insforge/cli compute get <id>` — get service details
-- `npx @insforge/cli compute deploy --image <url> --name <name> [--port] [--cpu] [--memory] [--region] [--env]` — deploy a pre-built Docker image. See [references/compute-deploy.md](references/compute-deploy.md).
+- `npx @insforge/cli compute deploy [dir] --name <name> [--port] [--cpu] [--memory] [--region] [--env]` — **source mode**: requires `flyctl` on PATH; **no local Docker daemon needed**. CLI shells out to `flyctl deploy --remote-only --build-only` using a short-lived per-app deploy token minted by InsForge cloud (the user never sees a Fly token). Build runs on Fly's remote builder; image is pushed to `registry.fly.io`; cloud launches the machine.
+- `npx @insforge/cli compute deploy --image <url> --name <name> [--port] [--cpu] [--memory] [--region] [--env]` — **image mode**: deploys a pre-built image from any registry. **Nothing needed locally** beyond the InsForge CLI. Best for CI/CD pipelines and off-the-shelf images like `nginx:alpine`.
+- See [references/compute-deploy.md](references/compute-deploy.md) for both modes.
 - `npx @insforge/cli compute update <id> [--image] [--port] [--cpu] [--memory] [--region]` — update service config
 - `npx @insforge/cli compute stop <id>` — stop a running service
 - `npx @insforge/cli compute start <id>` — start a stopped service
@@ -212,7 +214,7 @@ Run with no subcommand for a full health report across all checks.
 
 **The live database schema is the source of truth**: before writing a migration, and again if a migration fails, inspect the current database state first (`db tables / indexes / policies / triggers / functions`, plus `db migrations list`) and then adjust the migration statements to match reality. Do not assume local files are still current.
 
-**⚠️ v1 limitation — image-only.** `compute deploy --image <url>` deploys a pre-built image. It does NOT build from source. Build locally with Docker, push to any registry, then deploy via `--image`. Server-side build is roadmap, not v1. Don't reach for `flyctl deploy` as a workaround — it 401s because the Fly account is InsForge's, not yours.
+**Compute deploy has two modes.** `compute deploy [dir]` shells out to `flyctl deploy --remote-only --build-only` against your source dir using a short-lived per-app token the cloud mints for that one deploy — **requires `flyctl` on PATH** but **no local Docker daemon** (the build runs remotely on Fly's builder). The token is attenuated to one app + builder/wg with `else: deny` so it cannot reach any other app or org-level endpoint, and it auto-expires after ~20 min. `compute deploy --image <url>` deploys a pre-built image from any registry — **nothing needed locally**, best for CI or off-the-shelf images like `nginx:alpine`. Don't use `flyctl` outside this CLI flow with your own credentials — the Fly account is InsForge's, you'd 401.
 
 **Compute endpoints use .fly.dev**: Services get a public URL at `https://{name}-{projectId}.fly.dev`. Custom domains require DNS configuration.
 
@@ -331,9 +333,26 @@ npx @insforge/cli deployments deploy .
 
 ### Deploy a Docker container (compute service)
 
-InsForge deploys pre-built Docker images. Build the image with your own toolchain, then deploy.
+Two modes — pick by what you have. Both deploy to the same Fly.io infrastructure.
 
-**Off-the-shelf image:**
+**Source mode (you have a Dockerfile; needs `flyctl` on PATH but NO local Docker daemon):**
+```bash
+# Install flyctl once: curl -L https://fly.io/install.sh | sh
+
+# Project layout: Dockerfile + your app code
+$ ls
+Dockerfile  app.py  requirements.txt
+
+# One command:
+npx @insforge/cli compute deploy . --name my-api --port 8000
+# CLI mints a per-app, attenuated Fly deploy token from InsForge cloud
+# (~20 min TTL, scoped to one app, else: deny blocks org-wide reads), then
+# shells out to `flyctl deploy --remote-only --build-only` so the build runs
+# on Fly's remote builder and is pushed to registry.fly.io. Cloud launches
+# the machine and returns the URL. NO local Docker daemon needed.
+```
+
+**Off-the-shelf image (no Docker required):**
 ```bash
 npx @insforge/cli compute deploy --image nginx:alpine --name my-api --port 80 --region iad
 npx @insforge/cli compute list
@@ -341,10 +360,9 @@ npx @insforge/cli compute list
 # No flyctl, no FLY_API_TOKEN, no local Docker required.
 ```
 
-**Your own image (local Docker):**
+**Pre-built image you pushed yourself (CI/CD, custom registry — no Docker required locally):**
 ```bash
-docker build -t ghcr.io/you/app:v1 .
-docker push ghcr.io/you/app:v1
+# Built + pushed elsewhere (GitHub Actions, your CI, etc.)
 npx @insforge/cli compute deploy --image ghcr.io/you/app:v1 --name my-api --port 8000
 ```
 
@@ -360,7 +378,7 @@ npx @insforge/cli compute delete <id>     # destroy everything
 **Memory options:** 256, 512 (default), 1024, 2048, 4096, 8192 MB
 **Regions:** `iad` (default), `sin`, `lax`, `lhr`, `nrt`, `ams`, `syd`
 
-> The `deploy` command requires `flyctl` CLI and `FLY_API_TOKEN` env var. It backs up any existing `fly.toml`, generates one for the deploy, then restores the original.
+> Source mode requires `flyctl` on PATH (no Docker). The CLI never asks the user for `FLY_API_TOKEN` — the cloud mints a short-lived, app-scoped token per deploy and the CLI passes it through env. Tokens auto-expire after ~20 min and cannot be used to deploy or read any other app, even within InsForge's Fly org.
 
 ### Backup and restore database
 
@@ -505,7 +523,7 @@ npx @insforge/cli logs postgrest.logs --limit 50
 | Database bloat / slow queries | `diagnose db` |
 | Security / config issues | `diagnose advisor --category security` |
 | Compute service not starting | `compute logs <id>`, check Fly machine events |
-| Compute deploy failed | Check `FLY_API_TOKEN` is set, `flyctl` installed |
+| Compute source-mode deploy failed | Verify `flyctl` is on PATH (`flyctl version`); the per-app deploy token has a 20-min TTL — re-run if expired. Use `--image <url>` with a pre-built image to skip flyctl entirely. |
 
 ### Non-interactive CI/CD
 

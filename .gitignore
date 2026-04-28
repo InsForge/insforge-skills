@@ -31,3 +31,6 @@ temp/
 # claude skills for skill-creator
 .claude/skills/
 
+# Worktrees
+.worktrees/
+
