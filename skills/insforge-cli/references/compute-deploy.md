@@ -214,8 +214,10 @@ JSON mode (`--json`):
 | Error | Cause | Solution |
 |-------|-------|----------|
 | `COMPUTE_SERVICE_ALREADY_EXISTS` | Duplicate name in project | Choose a different name or delete the existing service |
-| `COMPUTE_QUOTA_EXCEEDED` | At per-project quota (5 active services) | Delete unused services or call `compute reconcile` to clear orphans |
+| `COMPUTE_QUOTA_EXCEEDED` | At per-project quota (5 active services) | Delete unused services with `compute delete <id>`. If the dashboard shows fewer services than the error implies, contact support to clear orphans. |
 | `COMPUTE_INVALID_CPU_TIER` | `--cpu` doesn't match `<kind>-<N>x` | Use the format above, e.g. `performance-2x` |
+| `COMPUTE_IMAGE_NOT_AVAILABLE` | Fly registry alias propagation race exhausted retries (rare) | Re-run the deploy. The cloud silently retries this race 4 times with backoff `[2s, 4s, 8s]`; this error only surfaces if all retries failed. |
+| `COMPUTE_FLY_API_ERROR` | Generic Fly 4xx (bad config, region mismatch, etc.) | Read the structured `error` message — it's the upstream Fly response and usually points at the specific field. |
 | `flyctl is required for source-mode deploy` | flyctl isn't installed or not on PATH | Install: `curl -L https://fly.io/install.sh \| sh`, then reopen your shell. Or switch to `--image <pre-built-image>` |
 | `flyctl deploy ... unauthorized` | Per-app deploy token expired (20-min TTL) | Re-run `compute deploy` — the CLI mints a fresh token per invocation |
 | `flyctl deploy --build-only failed` | Build error in your Dockerfile | Check the build output above (streamed from Fly's remote builder); fix the Dockerfile and retry |
@@ -238,6 +240,9 @@ A: Use `compute update <service-id> --image <new-image-url>`. The machine is res
 
 **Q: What happens to my service if Fly.io has an outage?**
 A: It's down. InsForge runs your containers on Fly's infrastructure — Fly's uptime is your uptime. For HA, you'd typically deploy multiple services in different regions (future feature).
+
+**Q: I see `MANIFEST_UNKNOWN` in a stack trace. What is it?**
+A: After `flyctl` pushes your image, Fly asynchronously aliases the digest from the builder's namespace to your app's namespace. Until that propagates (usually < 8 s) the Machines API returns `400 MANIFEST_UNKNOWN` even though the digest is correct. The InsForge cloud silently retries 4 times with backoff `[2s, 4s, 8s]`, so you almost never see it. If retries exhaust, you get a structured `COMPUTE_IMAGE_NOT_AVAILABLE` 400 with `nextActions` telling you to re-run — re-runs are idempotent and typically succeed instantly because the alias has had time to propagate.
 
 ## Notes
 
