@@ -232,11 +232,19 @@ export async function createInsForgeClient() {
 
 ### Sign-out
 
-Better Auth sign-out doesn't clear the InsForge SDK's in-memory token. Pattern A handles this automatically via the `useEffect` cleanup; if you sign out outside of React, do it explicitly:
+Better Auth sign-out doesn't clear the InsForge SDK's in-memory token. Pattern A handles this automatically via the `useEffect` cleanup; if you sign out outside of React, clear **both** the HTTP token and the realtime token (the SDK's `setAuthToken` only updates HTTP — same dual-update you already do on sign-in via `setBridgeToken`):
 
 ```ts
 await authClient.signOut();
-client.getHttpClient().setAuthToken(null);   // realtime auto-reconnects on token clear
+setBridgeToken(client, null);   // clears HTTP + realtime token together
+```
+
+If you don't have `setBridgeToken` defined, inline both calls:
+
+```ts
+await authClient.signOut();
+client.getHttpClient().setAuthToken(null);
+client.realtime['tokenManager'].setAccessToken(null);
 ```
 
 ## Database setup

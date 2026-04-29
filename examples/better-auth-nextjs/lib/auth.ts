@@ -1,13 +1,23 @@
 import { betterAuth } from 'better-auth';
 import { Pool } from 'pg';
 
+// Fail at module-load if a required var is missing. Better than `!` because
+// the error names the missing var instead of crashing on a downstream undefined.
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`Missing required env var: ${name}. Copy .env.example to .env.local and fill it in.`);
+  }
+  return value;
+}
+
 export const auth = betterAuth({
   database: new Pool({
-    connectionString: process.env.DATABASE_URL!,
+    connectionString: requireEnv('DATABASE_URL'),
   }),
   emailAndPassword: { enabled: true },
-  secret: process.env.BETTER_AUTH_SECRET!,
-  baseURL: process.env.BETTER_AUTH_URL!,
+  secret: requireEnv('BETTER_AUTH_SECRET'),
+  baseURL: requireEnv('BETTER_AUTH_URL'),
 
   // ─────────────────────────────────────────────────────────────────────────
   // Optional: route BA's verification + reset emails through InsForge.
