@@ -124,6 +124,12 @@ Ask your AI agent to generate one for your stack:
 
 The InsForge skill knows these patterns; ask the agent and it'll write one.
 
+### Optional: drop in your own `fly.toml`
+
+By default the CLI auto-generates a minimal `fly.toml` from `--region` and `--port` for the duration of the build, then removes it. You never need to write one.
+
+To customize flyctl behavior (multi-process, healthchecks, volumes, concurrency limits), drop your own `fly.toml` in the deploy directory — the CLI respects it as-is and never overwrites it. flyctl docs: <https://fly.io/docs/reference/configuration/>.
+
 ## Producing an image yourself (for image mode)
 
 If you want to build images in CI and deploy via `--image` instead:
@@ -247,6 +253,9 @@ A: It's down. InsForge runs your containers on Fly's infrastructure — Fly's up
 
 **Q: I see `MANIFEST_UNKNOWN` in a stack trace. What is it?**
 A: After `flyctl` pushes your image, Fly asynchronously aliases the digest from the builder's namespace to your app's namespace. Until that propagates (usually < 8 s) the Machines API returns `400 MANIFEST_UNKNOWN` even though the digest is correct. The InsForge cloud silently retries 4 times with backoff `[2s, 4s, 8s]`, so you almost never see it. If retries exhaust, you get a structured `COMPUTE_IMAGE_NOT_AVAILABLE` 400 with `nextActions` telling you to re-run — re-runs are idempotent and typically succeed instantly because the alias has had time to propagate.
+
+**Q: Do I need a `fly.toml`?**
+A: No — the CLI auto-generates one from `--region`/`--port` for the build, then removes it. To customize, drop your own in the deploy dir; the CLI respects it as-is.
 
 ## Notes
 
