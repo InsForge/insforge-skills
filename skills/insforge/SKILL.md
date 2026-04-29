@@ -95,7 +95,7 @@ const insforge = createClient({
 |--------|---------|
 | **Database** | CRUD operations, filters, pagination, RPC calls |
 | **Auth** | Sign up/in, OAuth, sessions, profiles, password reset |
-| **Storage** | Upload, download, delete files |
+| **Storage** | Upload, download, delete files; write RLS policies for buckets |
 | **Functions** | Invoke edge functions |
 | **AI** | Chat completions, image generation, embeddings |
 | **Email** | Send custom transactional HTML emails (welcome, newsletter, notifications) |
@@ -106,6 +106,7 @@ const insforge = createClient({
 | Guide | When to Use |
 |-------|-------------|
 | [database/postgres-rls.md](database/postgres-rls.md) | Writing or reviewing RLS policies — covers infinite recursion prevention, `SECURITY DEFINER` patterns, performance tips, and common InsForge RLS patterns |
+| [storage/postgres-rls.md](storage/postgres-rls.md) | Writing RLS policies for `storage.objects` — owner-only, public-read, path-scoped, team-shared, and the `NULL uploaded_by` caveat for mixed REST + S3 buckets |
 | [database/pgvector.md](database/pgvector.md) | Building semantic search, recommendations, or RAG — covers the `vector` extension, schema/dimensions, distance operators, HNSW/IVFFlat indexes, and RPC similarity search |
 | [ai/embeddings-and-rag.md](ai/embeddings-and-rag.md) | Generating embeddings through the InsForge AI gateway, storing them in pgvector, and wiring up a basic RAG pipeline with chat completions |
 
