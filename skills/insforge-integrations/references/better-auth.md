@@ -115,17 +115,22 @@ export async function GET() {
   if (!session?.user) {
     return NextResponse.json({ error: 'not signed in' }, { status: 401 });
   }
+  // Mint the smallest claim set InsForge needs. Don't add email or other PII —
+  // RLS reads sub via auth.jwt() ->> 'sub' and that's all that matters.
   const token = jwt.sign(
     {
       sub: session.user.id,
       role: 'authenticated',
       aud: 'insforge-api',
-      email: session.user.email,
     },
     process.env.INSFORGE_JWT_SECRET!,
     { algorithm: 'HS256', expiresIn: '1h' },
   );
-  return NextResponse.json({ token });
+  // no-store: bridge tokens are short-lived and per-session — never cache.
+  return NextResponse.json(
+    { token },
+    { headers: { 'Cache-Control': 'no-store' } },
+  );
 }
 ```
 
@@ -149,6 +154,15 @@ import { useEffect, useMemo, useState } from 'react';
 
 const REFRESH_INTERVAL_MS = 50 * 60 * 1000;   // 50 min for a 1h bridge JWT
 
+// Keep HTTP and realtime tokens in sync. setAuthToken alone leaves realtime
+// stale/unauthorized; tokenManager.setAccessToken also fires onTokenChange,
+// which reconnects the realtime socket with the new bearer.
+function setBridgeToken(client: InsForgeClient, token: string | null) {
+  client.getHttpClient().setAuthToken(token);
+  // @ts-expect-error: tokenManager is private at compile time, public at runtime
+  client.realtime.tokenManager.setAccessToken(token);
+}
+
 export function useInsforgeClient(): { client: InsForgeClient; isReady: boolean } {
   const session = authClient.useSession();
   const [isReady, setIsReady] = useState(false);
@@ -165,7 +179,7 @@ export function useInsforgeClient(): { client: InsForgeClient; isReady: boolean 
 
   useEffect(() => {
     if (!session.data?.user) {
-      client.getHttpClient().setAuthToken(null);
+      setBridgeToken(client, null);
       setIsReady(false);
       return;
     }
@@ -177,11 +191,11 @@ export function useInsforgeClient(): { client: InsForgeClient; isReady: boolean 
         if (!res.ok) throw new Error(`bridge ${res.status}`);
         const { token } = await res.json();
         if (cancelled) return;
-        client.getHttpClient().setAuthToken(token);
+        setBridgeToken(client, token);
         setIsReady(true);
       } catch {
         if (cancelled) return;
-        client.getHttpClient().setAuthToken(null);
+        setBridgeToken(client, null);
         setIsReady(false);
       }
     };
@@ -261,7 +275,9 @@ AS $$
 $$;
 
 -- 2. example: a notes table owned by Better Auth users
-CREATE TABLE public.notes (
+-- All statements below are rerun-safe so this script can be applied repeatedly
+-- (Postgres has no CREATE POLICY IF NOT EXISTS through PG17, so DROP IF EXISTS first).
+CREATE TABLE IF NOT EXISTS public.notes (
   id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
   user_id text NOT NULL DEFAULT public.requesting_user_id()
     REFERENCES public."user"(id) ON DELETE CASCADE,
@@ -271,19 +287,23 @@ CREATE TABLE public.notes (
 
 ALTER TABLE public.notes ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS notes_owner_select ON public.notes;
 CREATE POLICY notes_owner_select ON public.notes
   FOR SELECT TO authenticated
   USING (user_id = public.requesting_user_id());
 
+DROP POLICY IF EXISTS notes_owner_insert ON public.notes;
 CREATE POLICY notes_owner_insert ON public.notes
   FOR INSERT TO authenticated
   WITH CHECK (user_id = public.requesting_user_id());
 
+DROP POLICY IF EXISTS notes_owner_update ON public.notes;
 CREATE POLICY notes_owner_update ON public.notes
   FOR UPDATE TO authenticated
   USING (user_id = public.requesting_user_id())
   WITH CHECK (user_id = public.requesting_user_id());
 
+DROP POLICY IF EXISTS notes_owner_delete ON public.notes;
 CREATE POLICY notes_owner_delete ON public.notes
   FOR DELETE TO authenticated
   USING (user_id = public.requesting_user_id());
@@ -312,23 +332,9 @@ INSERT INTO realtime.channels (pattern, description, enabled)
 
 The channel pattern uses SQL `LIKE` syntax — `chat:%` matches `chat:lobby`, `chat:dm:user_xyz`, etc.
 
-In the client, when using **Pattern A**, you must update **both** the HTTP token and the realtime token (the SDK's `setAuthToken` only updates HTTP):
+The `setBridgeToken` helper shown in Pattern A above already handles the realtime token in lockstep with HTTP — that's why we do the dual-update on every refresh, not just when realtime is in use. Pattern B (`createClient({ edgeFunctionToken: ... })`) handles both automatically.
 
-```ts
-// helper that keeps both in sync
-function setBridgeToken(client, token) {
-  client.getHttpClient().setAuthToken(token);
-  // tokenManager is `private` in TypeScript but accessible at runtime;
-  // calling setAccessToken here also fires onTokenChange, which reconnects
-  // the realtime socket with the new bearer.
-  // @ts-expect-error: private at compile time, public at runtime
-  client.realtime.tokenManager.setAccessToken(token);
-}
-```
-
-Use `setBridgeToken(client, token)` everywhere the existing `useInsforgeClient` hook calls `setAuthToken`. Pattern B (`createClient({ edgeFunctionToken: ... })`) handles both automatically.
-
-After both fixes: a two-user realtime broadcast verifies end-to-end — `senderId` on the received message equals the publisher's Better Auth `id`.
+After the SQL fixes above: a two-user realtime broadcast verifies end-to-end — `senderId` on the received message equals the publisher's Better Auth `id`.
 
 ## Email transport (verification + password reset)
 
