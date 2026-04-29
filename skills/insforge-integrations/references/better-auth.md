@@ -47,13 +47,22 @@ No SaaS dashboard. Better Auth runs entirely in your code + your Postgres.
 import { betterAuth } from 'better-auth';
 import { Pool } from 'pg';
 
+// Fail at module-load if a required var is missing. Better than `!`
+// because the error names the missing var instead of crashing on a
+// downstream undefined.
+function requireEnv(name: string): string {
+  const v = process.env[name];
+  if (!v) throw new Error(`Missing required env var: ${name}`);
+  return v;
+}
+
 export const auth = betterAuth({
   database: new Pool({
-    connectionString: process.env.DATABASE_URL!,   // your InsForge Postgres
+    connectionString: requireEnv('DATABASE_URL'),   // your InsForge Postgres
   }),
   emailAndPassword: { enabled: true },
-  secret: process.env.BETTER_AUTH_SECRET!,         // Better Auth's own session secret — different from InsForge's JWT_SECRET
-  baseURL: process.env.BETTER_AUTH_URL!,           // e.g. http://localhost:3000
+  secret: requireEnv('BETTER_AUTH_SECRET'),         // Better Auth's own session secret — different from InsForge's JWT_SECRET
+  baseURL: requireEnv('BETTER_AUTH_URL'),           // e.g. http://localhost:3000
 });
 ```
 
@@ -157,6 +166,11 @@ const REFRESH_INTERVAL_MS = 50 * 60 * 1000;   // 50 min for a 1h bridge JWT
 // Keep HTTP and realtime tokens in sync. setAuthToken alone leaves realtime
 // stale/unauthorized; tokenManager.setAccessToken also fires onTokenChange,
 // which reconnects the realtime socket with the new bearer.
+//
+// Version note: tokenManager is `private` in TypeScript but accessible at
+// runtime. Verified against `@insforge/sdk@1.2.x`. Pin the SDK in your
+// package.json — if a future version renames or hides this internal, the
+// `@ts-expect-error` will turn into a real type error and you'll know.
 function setBridgeToken(client: InsForgeClient, token: string | null) {
   client.getHttpClient().setAuthToken(token);
   // @ts-expect-error: tokenManager is private at compile time, public at runtime
