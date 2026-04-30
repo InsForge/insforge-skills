@@ -204,6 +204,7 @@ export function useInsforgeClient(): { client: InsForgeClient; isReady: boolean 
         if (!res.ok) throw new Error(`bridge ${res.status}`);
         const { token } = await res.json();
         if (cancelled) return;
+        if (typeof token !== 'string' || !token) throw new Error('bridge: no token in response');
         client.setAccessToken(token);   // updates HTTP + realtime in one call
         setIsReady(true);
       } catch {
@@ -219,7 +220,7 @@ export function useInsforgeClient(): { client: InsForgeClient; isReady: boolean 
       cancelled = true;
       clearInterval(id);
     };
-  }, [client, session.data?.user]);
+  }, [client, session.data?.user?.id]);
 
   return { client, isReady };
 }
@@ -247,9 +248,9 @@ export async function createInsForgeClient() {
       sub: session.user.id,
       role: 'authenticated',
       aud: 'insforge-api',
-      exp: Math.floor(Date.now() / 1000) + 60 * 60,
     },
     process.env.INSFORGE_JWT_SECRET!,
+    { algorithm: 'HS256', expiresIn: '1h' },
   );
 
   return createClient({
@@ -281,6 +282,9 @@ client.realtime['tokenManager'].setAccessToken(null);   // private at compile-ti
 Better Auth user IDs are **strings** (e.g. `f5kGYiUXDPEJqRDQ4jgtNTopIzpj5MgK`), not UUIDs. Use `TEXT` for any FK referencing them, and FK to `public.user(id)` — never to `auth.users(id)` (which is InsForge's separate native table).
 
 ```sql
+-- 0. ensure gen_random_uuid() is available (idempotent)
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 -- 1. helper that extracts sub claim from request.jwt.claims
 CREATE OR REPLACE FUNCTION public.requesting_user_id()
 RETURNS text

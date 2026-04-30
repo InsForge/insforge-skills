@@ -2,6 +2,9 @@
 -- This sets up the requesting_user_id() helper, an example notes table with
 -- per-user RLS, and (optionally) realtime support.
 
+-- 0. Ensure gen_random_uuid() is available (idempotent — pgcrypto is built-in).
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 -- 1. Helper: extract sub claim from request.jwt.claims
 CREATE OR REPLACE FUNCTION public.requesting_user_id()
 RETURNS text

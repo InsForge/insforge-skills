@@ -15,9 +15,9 @@ export async function createInsForgeClient() {
       sub: session.user.id,
       role: 'authenticated',
       aud: 'insforge-api',
-      exp: Math.floor(Date.now() / 1000) + 60 * 60,
     },
     process.env.INSFORGE_JWT_SECRET!,
+    { algorithm: 'HS256', expiresIn: '1h' },
   );
 
   return createClient({

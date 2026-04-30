@@ -37,8 +37,9 @@ export function useInsforgeClient(): { client: InsForgeClient; isReady: boolean 
       try {
         const res = await fetch('/api/insforge-token', { credentials: 'same-origin' });
         if (!res.ok) throw new Error(`bridge ${res.status}`);
-        const { token } = (await res.json()) as { token: string };
+        const { token } = (await res.json()) as { token?: string };
         if (cancelled) return;
+        if (typeof token !== 'string' || !token) throw new Error('bridge: no token in response');
         client.setAccessToken(token);
         setIsReady(true);
       } catch {
@@ -54,7 +55,7 @@ export function useInsforgeClient(): { client: InsForgeClient; isReady: boolean 
       cancelled = true;
       clearInterval(id);
     };
-  }, [client, session.data?.user]);
+  }, [client, session.data?.user?.id]);
 
   return { client, isReady };
 }
