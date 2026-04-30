@@ -2,7 +2,12 @@
 
 Better Auth is the only supported auth provider that **runs inside your own Postgres database** — there is no third-party SaaS in the loop. You point Better Auth at InsForge's Postgres via a connection string, it creates `user` / `session` / `account` / `verification` tables in `public`, and a small bridge route on your app server signs an HS256 JWT for the InsForge HTTP API. Better Auth's `id` column is a string (not UUID), the same convention every other third-party integration here uses for `user_id`.
 
-This guide targets **Next.js (App Router)**. The same pattern works in any Node-server-backed React app, with one extra step for cross-origin browsers (covered at the end).
+This guide covers two framework setups in detail:
+
+- **Next.js (App Router)** — same-origin, fullstack; the easy path
+- **Vite + React** (or any standalone React SPA) — needs a small Node server somewhere to host BA's routes; covered in [its own section](#vite--react-only-setups)
+
+The auth/bridge primitives are framework-agnostic — `lib/auth.ts`, the REVOKE block, RLS policies, plugins, and the `useInsforgeClient` hook are identical across both. Only the route-handler shape and a few env-var prefixes differ.
 
 ## Key packages
 
@@ -21,13 +26,19 @@ This guide targets **Next.js (App Router)**. The same pattern works in any Node-
 4. Configure Better Auth                  → lib/auth.ts pointed at InsForge Postgres
 5. Create Better Auth tables              → npx @better-auth/cli migrate
 6. Lock down PostgREST exposure          → REVOKE block (REQUIRED — see below)
-7. Wire Better Auth route handlers        → app/api/auth/[...all]/route.ts
-8. Add the bridge route                   → app/api/insforge-token/route.ts
+7. Wire Better Auth route handlers        → Next: app/api/auth/[...all]/route.ts
+                                            Vite: server.ts (Hono/Express) on a side port
+8. Add the bridge route                   → Next: app/api/insforge-token/route.ts
+                                            Vite: same server.ts as step 7
 9. Set up requesting_user_id() + RLS      → SQL block
 10. Initialize InsForge client            → useInsforgeClient hook (Pattern A)
-                                              or createInsForgeClient() (Pattern B)
+                                              or createInsForgeClient() (Pattern B, RSC only)
 11. Build features                        → CRUD pages using InsForge client
 ```
+
+Two runnable skeletons live alongside this guide:
+- `examples/better-auth-nextjs/` — Next.js App Router, same-origin
+- `examples/better-auth-react/` — Vite + React, same-origin via proxy
 
 ## Dashboard setup (manual, cannot be automated)
 
@@ -89,7 +100,7 @@ The `REVOKE` survives subsequent `auth migrate` runs (Postgres only re-grants on
 
 > **Enabling plugins later?** Every Better Auth plugin that adds tables (`organization`, `twoFactor`, `apiKey`, `passkey`, …) creates them in `public` with the same default grants. Re-run an analogous `REVOKE` for the plugin's tables. The Organization plugin specifically is covered in the [Better Auth plugins](#better-auth-plugins-optional) section below.
 
-## Better Auth route handlers
+## Better Auth route handlers (Next.js)
 
 ```ts
 // app/api/auth/[...all]/route.ts
@@ -99,7 +110,9 @@ import { toNextJsHandler } from 'better-auth/next-js';
 export const { POST, GET } = toNextJsHandler(auth);
 ```
 
-## The bridge route
+For Vite/React or other non-Next setups (Hono, Express, Fastify, Bun), see [Vite / React-only setups](#vite--react-only-setups).
+
+## The bridge route (Next.js)
 
 This is where the integration lives. Better Auth's own `jwt()` plugin issues asymmetric tokens (EdDSA/ES256/RS256) which InsForge's PostgREST cannot verify — it expects HS256 signed with the InsForge JWT secret. So we re-sign:
 
@@ -129,7 +142,7 @@ export async function GET() {
 }
 ```
 
-Same shape and claims as the WorkOS / Auth0 / Kinde / Stytch guides — only difference is the session is read from Better Auth instead of a SaaS provider.
+Same shape and claims as the WorkOS / Auth0 / Kinde / Stytch guides — only difference is the session is read from Better Auth instead of a SaaS provider. The non-Next equivalent (Hono / Express) is in [Vite / React-only setups](#vite--react-only-setups).
 
 ## InsForge client
 
@@ -137,14 +150,14 @@ Two patterns, same as the existing five guides. **Pattern A** is the default; **
 
 ### Pattern A — long-lived client + imperative refresh (SPA / client components)
 
-Same shape as the Clerk integration. Better Auth's `useSession()` provides reactive sign-in/sign-out state.
+Same shape as the Clerk integration. Better Auth's `useSession()` provides reactive sign-in/sign-out state. **Framework-agnostic React** — works identically in Next.js client components and standalone Vite/CRA/etc apps; only the env-var accessor differs (`process.env.NEXT_PUBLIC_*` vs `import.meta.env.VITE_*`).
 
 ```tsx
 // lib/insforge.ts
-'use client';
+'use client';   // Next.js — drop this directive in Vite / non-Next setups
 
 import { createClient, type InsForgeClient } from '@insforge/sdk';
-import { authClient } from '@/lib/auth-client';
+import { authClient } from './auth-client';
 import { useEffect, useMemo, useState } from 'react';
 
 const REFRESH_INTERVAL_MS = 50 * 60 * 1000;   // 50 min for a 1h bridge JWT
@@ -165,7 +178,7 @@ export function useInsforgeClient(): { client: InsForgeClient; isReady: boolean 
 
   useEffect(() => {
     if (!session.data?.user) {
-      client.getHttpClient().setAuthToken(null);
+      client.setAccessToken(null);
       setIsReady(false);
       return;
     }
@@ -177,11 +190,11 @@ export function useInsforgeClient(): { client: InsForgeClient; isReady: boolean 
         if (!res.ok) throw new Error(`bridge ${res.status}`);
         const { token } = await res.json();
         if (cancelled) return;
-        client.getHttpClient().setAuthToken(token);
+        client.setAccessToken(token);   // updates HTTP + realtime in one call
         setIsReady(true);
       } catch {
         if (cancelled) return;
-        client.getHttpClient().setAuthToken(null);
+        client.setAccessToken(null);
         setIsReady(false);
       }
     };
@@ -197,6 +210,8 @@ export function useInsforgeClient(): { client: InsForgeClient; isReady: boolean 
   return { client, isReady };
 }
 ```
+
+> `client.setAccessToken(token)` is a public SDK method (≥1.3.0) that updates the HTTP client AND the realtime TokenManager in one call. On older SDKs you had to call `client.getHttpClient().setAuthToken(token)` plus reach into the private `client.realtime.tokenManager.setAccessToken(token)` separately — forgetting the second one made `senderId` show up as the anon UUID in realtime broadcasts.
 
 ### Pattern B — per-request client construction (server components, route handlers)
 
@@ -236,7 +251,7 @@ Better Auth sign-out doesn't clear the InsForge SDK's in-memory token. Pattern A
 
 ```ts
 await authClient.signOut();
-client.getHttpClient().setAuthToken(null);   // realtime auto-reconnects on token clear
+client.setAccessToken(null);   // clears HTTP + realtime; SDK ≥ 1.3.0
 ```
 
 ## Database setup
@@ -457,27 +472,127 @@ Then in policies use `current_setting('request.jwt.claims', true)::json->>'org_i
 
 Rule of thumb: after every `auth migrate`, `\dt public.*` to see the diff, then REVOKE anything Better Auth created.
 
-## Cross-origin (React SPA without a Next.js server)
+## Vite / React-only setups
 
-Same-origin (Next.js fullstack) is the easy path — Better Auth's session cookie is auto-attached to `/api/insforge-token` requests. If your React app and your Better Auth server are on different origins:
+A pure React SPA (Vite, CRA, RSPack, …) has no built-in server, so you need a small Node/Bun process to host BA's `/api/auth/*` routes plus the bridge route. Two well-trodden patterns:
 
-1. Better Auth cookie config: `cookies: { ..., sameSite: 'none', secure: true }` so the cookie crosses origins.
-2. Bridge route CORS: `Access-Control-Allow-Credentials: true` and an explicit `Access-Control-Allow-Origin: <app origin>` (not `*`).
-3. Client fetch: `fetch('/api/insforge-token', { credentials: 'include' })`.
+| Pattern | When to use | Origin model |
+|---|---|---|
+| **A. Vite proxy → Next.js / Hono / Express** | Already have (or want) a backend; cleanest for local dev | Same-origin to the browser (proxy hides the server) |
+| **B. Cross-origin React + standalone BA server** | True microservice split; multi-domain prod | Different origins; needs explicit CORS + cookie config |
 
-Forget any of the three and the bridge silently sees no session.
+The runnable skeleton at `examples/better-auth-react/` demonstrates **Pattern A**.
+
+### Pattern A — Vite proxy
+
+`vite.config.ts` proxies `/api` to the BA server. To the browser everything is on `:5173`, so the BA cookie is auto-attached to `/api/insforge-token` with no CORS dance.
+
+```ts
+// vite.config.ts
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    port: 5173,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3030',          // your BA / bridge server
+        changeOrigin: true,
+        configure: (proxy) => {
+          // Rewrite Origin so BA's CSRF check (which compares the request's
+          // Origin against its `baseURL`) sees its own URL. Without this,
+          // sign-out (and any other state-changing endpoint that enforces
+          // Origin) returns 403 because the browser's Origin is :5173, not
+          // :3030. Sign-up has looser Origin handling, which is why this
+          // bug only shows up later in the flow and is easy to miss.
+          proxy.on('proxyReq', (proxyReq) => {
+            proxyReq.setHeader('origin', 'http://localhost:3030');
+          });
+        },
+      },
+    },
+  },
+});
+```
+
+Equivalent without the rewrite: add `trustedOrigins: ['http://localhost:5173']` to `betterAuth({...})`. Either approach works; the proxy rewrite keeps `lib/auth.ts` unchanged.
+
+### The bridge route in non-Next servers
+
+The Next.js route handler from earlier maps directly. Hono on Bun:
+
+```ts
+// server.ts (Hono — also works on Node via @hono/node-server, or Bun.serve)
+import { Hono } from 'hono';
+import { auth } from './lib/auth';
+import jwt from 'jsonwebtoken';
+
+const app = new Hono();
+
+// 1. Better Auth catch-all — equivalent of toNextJsHandler
+app.on(['POST', 'GET'], '/api/auth/*', (c) => auth.handler(c.req.raw));
+
+// 2. Bridge route — exact same JWT shape as the Next version
+app.get('/api/insforge-token', async (c) => {
+  const session = await auth.api.getSession({ headers: c.req.raw.headers });
+  if (!session?.user) return c.json({ error: 'not signed in' }, 401);
+  const token = jwt.sign(
+    {
+      sub: session.user.id,
+      role: 'authenticated',
+      aud: 'insforge-api',
+      email: session.user.email,
+    },
+    process.env.INSFORGE_JWT_SECRET!,
+    { algorithm: 'HS256', expiresIn: '1h' },
+  );
+  return c.json({ token });
+});
+
+export default { port: 3030, fetch: app.fetch };
+```
+
+Express is the same shape — `app.all('/api/auth/*', toNodeHandler(auth))` (use `better-auth/node` instead of `better-auth/next-js`), then a regular `app.get('/api/insforge-token', ...)` handler. The JWT signing block is identical.
+
+### Env vars in Vite
+
+Vite exposes `import.meta.env.VITE_*` instead of `process.env.NEXT_PUBLIC_*`. Anything server-only (`DATABASE_URL`, `BETTER_AUTH_SECRET`, `INSFORGE_JWT_SECRET`) reads from `process.env` in the BA server process — same as Next.
+
+```bash
+# .env.local  (Vite project)
+VITE_BETTER_AUTH_URL=http://localhost:5173      # the SPA origin (or BA origin if cross-origin)
+VITE_INSFORGE_BASE_URL=http://localhost:7130
+VITE_INSFORGE_ANON_KEY=<from InsForge dashboard>
+```
+
+`lib/auth-client.ts` and `lib/insforge.ts` then read `import.meta.env.VITE_BETTER_AUTH_URL` etc. The Pattern A hook code shown earlier is otherwise identical.
+
+### Pattern B — true cross-origin (no proxy)
+
+If you really want the React app and the BA server on different origins (e.g., `app.example.com` and `auth.example.com`), four changes vs the same-origin path:
+
+1. **BA cookie config**: `advanced: { defaultCookieAttributes: { sameSite: 'none', secure: true } }` so the cookie crosses origins. `secure: true` requires HTTPS — `localhost` counts as a secure context in Chrome/Firefox/Safari, so this works in dev too.
+2. **`trustedOrigins`** on the BA config: `trustedOrigins: ['https://app.example.com']`. Without this, BA's CSRF check rejects POSTs from the SPA with 403 (sign-out, etc. — sign-up is more lenient and won't fail, masking the issue).
+3. **Bridge route CORS**: `Access-Control-Allow-Credentials: true` and an explicit `Access-Control-Allow-Origin: <app origin>` (not `*`). Plus a preflight `OPTIONS` handler.
+4. **Client fetch**: `fetch('/api/insforge-token', { credentials: 'include' })` — without it the BA cookie isn't sent.
+
+Forget any of the four and the bridge silently sees no session.
 
 ## Environment variables
 
-| Variable | Source | Notes |
-|----------|--------|-------|
-| `DATABASE_URL` | InsForge Postgres connection string | Server-only; what Better Auth's `Pool` reads |
-| `BETTER_AUTH_SECRET` | random — `openssl rand -base64 32` | Server-only; Better Auth's session secret. Distinct from InsForge's JWT secret. |
-| `BETTER_AUTH_URL` | your app URL | e.g. `http://localhost:3000` |
-| `NEXT_PUBLIC_BETTER_AUTH_URL` | same as above | Exposed to the browser for `authClient` |
-| `INSFORGE_JWT_SECRET` | `npx @insforge/cli secrets get JWT_SECRET` | Server-only; what the bridge route signs HS256 tokens with |
-| `NEXT_PUBLIC_INSFORGE_BASE_URL` | InsForge Dashboard | Exposed to the browser |
-| `NEXT_PUBLIC_INSFORGE_ANON_KEY` | InsForge Dashboard | Exposed to the browser |
+Server-only vars (read via `process.env` in the BA process) are the same across both setups. Browser-exposed vars use `NEXT_PUBLIC_*` in Next.js and `VITE_*` in Vite.
+
+| Variable | Source | Where read |
+|----------|--------|-----------|
+| `DATABASE_URL` | InsForge Postgres connection string | Server (BA's `Pool`) |
+| `BETTER_AUTH_SECRET` | random — `openssl rand -base64 32` | Server (BA session signing) |
+| `BETTER_AUTH_URL` | your BA server URL | Server (`baseURL` in `betterAuth()`) |
+| `INSFORGE_JWT_SECRET` | `npx @insforge/cli secrets get JWT_SECRET` | Server (bridge route HS256 signing) |
+| `NEXT_PUBLIC_BETTER_AUTH_URL` *(Next.js)* / `VITE_BETTER_AUTH_URL` *(Vite)* | same as `BETTER_AUTH_URL` (or the SPA origin if proxying) | Browser (`authClient` baseURL) |
+| `NEXT_PUBLIC_INSFORGE_BASE_URL` / `VITE_INSFORGE_BASE_URL` | InsForge dashboard | Browser (SDK baseUrl) |
+| `NEXT_PUBLIC_INSFORGE_ANON_KEY` / `VITE_INSFORGE_ANON_KEY` | InsForge dashboard | Browser (SDK anonKey) |
 
 ## Common Mistakes
 
@@ -494,5 +609,7 @@ Forget any of the three and the bridge silently sees no session.
 | ❌ Cross-origin without `sameSite: 'none'; secure` on the BA cookie | ✅ The browser drops the cookie on cross-origin requests by default. Configure Better Auth's cookies for cross-origin explicitly. |
 | ❌ Missing `Origin` header on direct `fetch`/`curl` to Better Auth POSTs | ✅ Better Auth requires `Origin` for CSRF. Browsers send it automatically; server-side clients must add `'Origin: <baseURL>'`. |
 | ❌ Connecting Better Auth as `anon` or `authenticated` after REVOKE | ✅ The connection-pool role must retain privileges. Use `postgres` (or another fully-granted role) in `DATABASE_URL`. |
-| ❌ Realtime client shows `senderId` as the anon UUID instead of the user's BA id (Pattern A only) | ✅ `getHttpClient().setAuthToken()` doesn't propagate to realtime's `TokenManager`. Also call `client.realtime['tokenManager'].setAccessToken(token)` (private API at runtime). Pattern B's `edgeFunctionToken` doesn't need this. |
+| ❌ Realtime client shows `senderId` as the anon UUID instead of the user's BA id (Pattern A only) | ✅ Use `client.setAccessToken(token)` (SDK ≥ 1.3.0) — it updates HTTP and realtime in one call. On older SDKs the workaround is `client.getHttpClient().setAuthToken(token)` plus `client.realtime['tokenManager'].setAccessToken(token)`. Pattern B's `edgeFunctionToken` already does both. |
 | ❌ Realtime publish silently fails for authenticated users (`UNAUTHORIZED`) | ✅ `realtime.messages.sender_id` is `uuid` in core InsForge; Better Auth IDs are strings. One-time fix: `ALTER TABLE realtime.messages ALTER COLUMN sender_id TYPE text;` |
+| ❌ Vite SPA proxying to a separate BA server, sign-out (or any state-changing endpoint) returns 403 | ✅ BA's CSRF check compares the request's `Origin` against its `baseURL`. Either rewrite the proxy's `Origin` header to BA's URL (Vite `proxy.configure`) or add the SPA origin to BA's `trustedOrigins`. Sign-up has looser handling and won't trip this — the bug shows up later. |
+| ❌ Cross-origin missing `trustedOrigins` even with `sameSite: 'none'; secure: true` | ✅ Cookie config alone isn't enough — BA's CSRF gate also reads `trustedOrigins`. Add the SPA's full origin (no trailing slash) to the array. |

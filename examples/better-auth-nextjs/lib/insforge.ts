@@ -8,8 +8,9 @@ const REFRESH_INTERVAL_MS = 50 * 60 * 1000; // 50 min for the 1h bridge JWT
 
 // Pattern A — long-lived InsForge client + imperative refresh from the BA session.
 // Fetches /api/insforge-token (same-origin, BA cookie auto-attached), pipes the
-// resulting HS256 JWT into the SDK's HttpClient + TokenManager so that database
-// AND realtime both see the bridged identity. Mirrors the existing Clerk integration.
+// resulting HS256 JWT into the SDK via client.setAccessToken — which updates
+// HTTP (database/storage/functions/AI/emails) and realtime (WebSocket auth)
+// in one call. Mirrors the existing Clerk integration.
 export function useInsforgeClient(): { client: InsForgeClient; isReady: boolean } {
   const session = authClient.useSession();
   const [isReady, setIsReady] = useState(false);
@@ -26,7 +27,7 @@ export function useInsforgeClient(): { client: InsForgeClient; isReady: boolean 
 
   useEffect(() => {
     if (!session.data?.user) {
-      setBridgeToken(client, null);
+      client.setAccessToken(null);
       setIsReady(false);
       return;
     }
@@ -38,11 +39,11 @@ export function useInsforgeClient(): { client: InsForgeClient; isReady: boolean 
         if (!res.ok) throw new Error(`bridge ${res.status}`);
         const { token } = (await res.json()) as { token: string };
         if (cancelled) return;
-        setBridgeToken(client, token);
+        client.setAccessToken(token);
         setIsReady(true);
       } catch {
         if (cancelled) return;
-        setBridgeToken(client, null);
+        client.setAccessToken(null);
         setIsReady(false);
       }
     };
@@ -56,14 +57,4 @@ export function useInsforgeClient(): { client: InsForgeClient; isReady: boolean 
   }, [client, session.data?.user]);
 
   return { client, isReady };
-}
-
-// Sets the JWT on BOTH the HTTP client (for database/storage/functions/AI/emails)
-// AND the realtime TokenManager (for the WebSocket auth handshake).
-// The SDK's setAuthToken only updates HTTP; realtime reads from TokenManager.
-// tokenManager is `private` in TS but accessible at runtime.
-function setBridgeToken(client: InsForgeClient, token: string | null) {
-  client.getHttpClient().setAuthToken(token);
-  // @ts-expect-error: tokenManager is private at compile-time, accessible at runtime
-  client.realtime.tokenManager.setAccessToken(token);
 }
