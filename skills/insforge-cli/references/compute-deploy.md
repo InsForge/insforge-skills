@@ -54,7 +54,8 @@ npx @insforge/cli compute deploy --image <url> --name <name> [options]
 | `--cpu <tier>` | CPU tier in Fly.io standard format `<kind>-<N>x` (see [CPU tier section](#cpu-tier-flyio-standard-format)) | `shared-1x` |
 | `--memory <mb>` | Memory in MB (any positive integer; Fly enforces per-tier bounds) | `512` |
 | `--region <region>` | Fly.io region | `iad` |
-| `--env <json>` | Environment variables as JSON object | none |
+| `--env <json>` | Env vars as JSON object. Mutually exclusive with `--env-file`. | none |
+| `--env-file <path>` | Standard `.env` file (KEY=VALUE per line; `#` comments, blank lines, quoted values supported). Mutually exclusive with `--env`. | none |
 
 Exactly one of `[dir]` or `--image` must be provided.
 
@@ -81,6 +82,29 @@ npx @insforge/cli compute deploy ./worker \
   --name batch \
   --port 8080 \
   --cpu performance-8x --memory 4096
+
+# Env vars from a .env file (preferred for >1 secret)
+npx @insforge/cli compute deploy \
+  --image ghcr.io/your-org/your-app:v1 \
+  --name my-api \
+  --port 8000 \
+  --env-file ./.env.production
+```
+
+### Rotating env vars after deploy
+
+The `GET` path never returns env values (encrypted at rest, no decrypt endpoint). To rotate **one** secret without wiping the others, use partial-merge flags on `compute update` instead of `--env`:
+
+```bash
+# Partial merge — keeps untouched keys intact (repeatable flags)
+npx @insforge/cli compute update <id> \
+  --env-set DATABASE_URL=postgres://new-host \
+  --env-set API_KEY=sk-... \
+  --env-unset OLD_DEBUG_TOKEN
+
+# Wholesale replace — clears anything not in the JSON. Mutually exclusive
+# with --env-set / --env-unset.
+npx @insforge/cli compute update <id> --env '{"NODE_ENV":"production","DATABASE_URL":"..."}'
 ```
 
 ## Source mode — worked example
@@ -253,4 +277,5 @@ A: After `flyctl` pushes your image, Fly asynchronously aliases the digest from 
 - The user never needs to handle a Fly token. The InsForge cloud holds the org token; per deploy it mints an app-scoped, attenuated token (~20 min, `else: deny`) and the CLI exports it as `FLY_API_TOKEN` only for the duration of the flyctl subprocess.
 - Source mode requires `flyctl` on PATH but **no local Docker daemon** (build runs on Fly's remote builder). Image mode requires neither.
 - The machine starts immediately on first deploy. Subsequent deploys to the same `--name` update the existing machine in place. Use `compute stop` to pause without destroying.
-- Env vars set via `--env` are encrypted at rest in the InsForge database.
+- Env vars are encrypted at rest. See [Rotating env vars after deploy](#rotating-env-vars-after-deploy) for partial-merge usage on running services.
+- `compute delete` is **permanent**: Fly app + image are destroyed and the registry GCs the image shortly after. The audit log captures the full config (encrypted env blob included) on delete for after-the-fact reconstruction. Dashboard adds a type-to-confirm gate; the CLI does not.

@@ -154,14 +154,14 @@ For frontend hosting see **Frontend Deployments** above.
 
 - `npx @insforge/cli compute list` — list all compute services (name, status, image, CPU, memory, endpoint)
 - `npx @insforge/cli compute get <id>` — get service details
-- `npx @insforge/cli compute deploy [dir] --name <name> [--port] [--cpu] [--memory] [--region] [--env]` — **source mode**: requires `flyctl` on PATH; **no local Docker daemon needed**. CLI shells out to `flyctl deploy --remote-only --build-only` using a short-lived per-app deploy token minted by InsForge cloud (the user never sees a Fly token). Build runs on Fly's remote builder; image is pushed to `registry.fly.io`; cloud launches the machine.
-- `npx @insforge/cli compute deploy --image <url> --name <name> [--port] [--cpu] [--memory] [--region] [--env]` — **image mode**: deploys a pre-built image from any registry. **Nothing needed locally** beyond the InsForge CLI. Best for CI/CD pipelines and off-the-shelf images like `nginx:alpine`.
+- `npx @insforge/cli compute deploy [dir] --name <name> [--port] [--cpu] [--memory] [--region] [--env <json> | --env-file <path>]` — **source mode**: requires `flyctl` on PATH; **no local Docker daemon needed**. CLI shells out to `flyctl deploy --remote-only --build-only` using a short-lived per-app deploy token minted by InsForge cloud (the user never sees a Fly token). Build runs on Fly's remote builder; image is pushed to `registry.fly.io`; cloud launches the machine.
+- `npx @insforge/cli compute deploy --image <url> --name <name> [--port] [--cpu] [--memory] [--region] [--env <json> | --env-file <path>]` — **image mode**: deploys a pre-built image from any registry. **Nothing needed locally** beyond the InsForge CLI. Best for CI/CD pipelines and off-the-shelf images like `nginx:alpine`. Prefer `--env-file <path>` over inline `--env <json>` for >1 secret.
 - See [references/compute-deploy.md](references/compute-deploy.md) for both modes.
-- `npx @insforge/cli compute update <id> [--image] [--port] [--cpu] [--memory] [--region]` — update service config
+- `npx @insforge/cli compute update <id> [--image] [--port] [--cpu] [--memory] [--region] [--env <json> | --env-set KEY=VALUE | --env-unset KEY]` — update service config. `--env-set`/`--env-unset` are **repeatable** and merge with existing env — use these to rotate one secret without restating the rest. `--env <json>` replaces wholesale and is mutually exclusive with the merge flags.
 - `npx @insforge/cli compute stop <id>` — stop a running service
 - `npx @insforge/cli compute start <id>` — start a stopped service
-- `npx @insforge/cli compute logs <id> [--limit 50]` — view machine event logs
-- `npx @insforge/cli compute delete <id>` — delete service and destroy Fly.io resources
+- `npx @insforge/cli compute logs <id> [--limit 50]` — Fly machine **lifecycle events only** (start/stop/restart). Container stdout/stderr is NOT surfaced in v1. To debug a crash-looping container, reproduce locally with the same image.
+- `npx @insforge/cli compute delete <id>` — destroy the service and its Fly.io resources. **Permanent.** Audit log captures the full config (incl. encrypted env blob) on delete for reconstruction. Dashboard adds a type-to-confirm gate; the CLI does not — guard scripted deletes carefully.
 
 ### Secrets — `npx @insforge/cli secrets`
 - `npx @insforge/cli secrets list [--all]` — list secrets (values hidden; `--all` includes deleted)
@@ -395,7 +395,7 @@ npx @insforge/cli compute delete <id>     # destroy everything
 **Memory options:** 256, 512 (default), 1024, 2048, 4096, 8192 MB
 **Regions:** `iad` (default), `sin`, `lax`, `lhr`, `nrt`, `ams`, `syd`
 
-> Source mode requires `flyctl` on PATH (no Docker). The CLI never asks the user for `FLY_API_TOKEN` — the cloud mints a short-lived, app-scoped token per deploy and the CLI passes it through env. Tokens auto-expire after ~20 min and cannot be used to deploy or read any other app, even within InsForge's Fly org.
+> **Source mode** requires `flyctl` on PATH (no Docker). The CLI never asks the user for `FLY_API_TOKEN` — the cloud mints a short-lived, app-scoped token per deploy (~20 min, `else: deny`) and passes it through env to the flyctl subprocess. Tokens cannot deploy or read any other app, even within InsForge's Fly org. **Image mode** (the examples above) needs neither flyctl nor a token.
 
 ### Backup and restore database
 
@@ -557,6 +557,7 @@ npx @insforge/cli logs postgrest.logs --limit 50
 | Security / config issues | `diagnose advisor --category security` |
 | Compute service not starting | `compute logs <id>`, check Fly machine events |
 | Compute source-mode deploy failed | Verify `flyctl` is on PATH (`flyctl version`); the per-app deploy token has a 20-min TTL — re-run if expired. Use `--image <url>` with a pre-built image to skip flyctl entirely. |
+| Compute image-mode deploy failed | Confirm the image is publicly pullable (private registries need per-project credential setup) |
 
 ### Non-interactive CI/CD
 
