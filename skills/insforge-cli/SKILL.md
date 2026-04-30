@@ -1,7 +1,7 @@
 ---
 name: insforge-cli
 description: >-
-  Use this skill whenever the user needs backend infrastructure management — creating database tables, running SQL, managing database migration files, deploying serverless functions, managing storage buckets, deploying frontend apps, adding secrets, setting up cron jobs, checking logs, or running backend diagnostics — especially if the project uses InsForge. Trigger on any of these contexts: creating or altering database tables/schemas, fetching or applying database migrations, writing RLS policies via SQL, deploying or invoking edge functions, creating storage buckets, deploying frontends to hosting, managing secrets/env vars, setting up scheduled tasks/cron, viewing backend logs, diagnosing backend health or performance issues, or exporting/importing database backups. If the user asks for these operations generically (e.g., "create a users table", "apply a migration", "deploy my app", "set up a cron job", "check backend health") and you're unsure whether they use InsForge, consult this skill and ask. For writing frontend application code with the InsForge SDK (@insforge/sdk), use the insforge skill instead.
+  Use this skill whenever the user needs backend infrastructure management — creating database tables, running SQL, managing database migration files, deploying serverless functions, managing storage buckets, deploying frontend apps, adding secrets, setting up cron jobs, checking logs, running backend diagnostics, or **managing backend branches** (creating a branch project to test risky schema/auth/RLS changes, merging a branch back to prod, resolving merge conflicts) — especially if the project uses InsForge. Trigger on any of these contexts: creating or altering database tables/schemas, fetching or applying database migrations, writing RLS policies via SQL, deploying or invoking edge functions, creating storage buckets, deploying frontends to hosting, managing secrets/env vars, setting up scheduled tasks/cron, viewing backend logs, diagnosing backend health or performance issues, exporting/importing database backups, or anything related to **backend branching** ("create a branch", "branch project", "merge branch", "schema diff", "test this without affecting prod"). If the user asks for these operations generically (e.g., "create a users table", "apply a migration", "deploy my app", "set up a cron job", "check backend health") and you're unsure whether they use InsForge, consult this skill and ask. For writing frontend application code with the InsForge SDK (@insforge/sdk), use the insforge skill instead.
 license: Apache-2.0
 metadata:
   author: insforge
@@ -162,6 +162,31 @@ For frontend hosting see **Frontend Deployments** above.
 - `npx @insforge/cli schedules update <id> [--name] [--cron] [--url] [--method] [--headers] [--body] [--active]` — update schedule
 - `npx @insforge/cli schedules delete <id>` — delete schedule (with confirmation)
 - `npx @insforge/cli schedules logs <id> [--limit] [--offset]` — view execution logs
+
+### Branching — `npx @insforge/cli branch`
+
+Test risky schema, RLS, auth, or function changes in an isolated branch project before applying them to prod. A branch shares the parent's `JWT_SECRET` (so the same users authenticate) but gets a fresh EC2 + database + `API_KEY` / `ANON_KEY`. See [`references/branch-when-to-use.md`](references/branch-when-to-use.md) for the decision guide.
+
+| Command | Description |
+|---------|-------------|
+| `npx @insforge/cli branch create <name> [--mode full\|schema-only] [--no-switch]` | Create a branch from the linked project. Auto-switches the directory's context to the new branch by default. See [branch-create](references/branch-create.md). |
+| `npx @insforge/cli branch list` | List active branches of the parent project (or the parent of the currently-switched-to branch). See [branch-list](references/branch-list.md). |
+| `npx @insforge/cli branch switch <name>` / `--parent` | Repoint `.insforge/project.json` at the branch (or back at parent). See [branch-switch](references/branch-switch.md). |
+| `npx @insforge/cli branch merge <name> [--dry-run] [--save-sql <path>] [-y]` | Compute (and optionally apply) the 3-way merge to parent. Conflict path exits with code 2. See [branch-merge](references/branch-merge.md). |
+| `npx @insforge/cli branch delete <name> [-y]` | Delete a branch and reclaim its EC2. Auto-switches back to parent if currently on the deleted branch. See [branch-delete](references/branch-delete.md). |
+
+**Typical flow:**
+
+```bash
+npx @insforge/cli branch create feat-rls --mode schema-only
+# context now points at the branch — re-source .env if your dev server caches it
+# ... apply your schema / RLS / auth changes via db migrations / SQL ...
+npx @insforge/cli branch merge feat-rls --dry-run --save-sql /tmp/diff.sql
+# review /tmp/diff.sql; on conflict CLI exits 2
+npx @insforge/cli branch merge feat-rls
+# parent now has the changes — redeploy functions / website / compute as needed
+npx @insforge/cli branch delete feat-rls
+```
 
 ### Diagnostics — `npx @insforge/cli diagnose`
 
