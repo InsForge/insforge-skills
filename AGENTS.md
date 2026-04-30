@@ -15,6 +15,7 @@ agent-skills/
 │       ├── functions/      # Serverless functions
 │       ├── ai/             # AI/ML operations
 │       ├── realtime/       # Real-time messaging
+│       ├── payments/       # Stripe payments
 │       └── deployments/    # App deployment
 │   └── insforge-cli/       # InsForge CLI project management
 │       ├── SKILL.md        # Skill manifest and command reference
@@ -26,6 +27,7 @@ agent-skills/
 │           ├── db-export.md
 │           ├── db-import.md
 │           ├── functions-deploy.md
+│           ├── payments.md
 │           └── deployments-deploy.md
 ├── AGENTS.md               # This file
 ├── CONTRIBUTING.md         # Contribution guidelines
