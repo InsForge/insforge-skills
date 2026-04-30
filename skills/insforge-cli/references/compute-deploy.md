@@ -44,8 +44,8 @@ npx @insforge/cli compute deploy --image <url> --name <name> [options]
 | `--cpu <tier>` | CPU tier in Fly.io standard format `<kind>-<N>x` (see [CPU tier section](#cpu-tier-flyio-standard-format)) | `shared-1x` |
 | `--memory <mb>` | Memory in MB (any positive integer; Fly enforces per-tier bounds) | `512` |
 | `--region <region>` | Fly.io region | `iad` |
-| `--env <json>` | Environment variables as JSON object. Mutually exclusive with `--env-file`. | none |
-| `--env-file <path>` | Path to a standard `.env` file (KEY=VALUE per line, `#` comments, blank lines, quoted values, trailing inline comments). Mutually exclusive with `--env`. | none |
+| `--env <json>` | Env vars as JSON object. Mutually exclusive with `--env-file`. | none |
+| `--env-file <path>` | Standard `.env` file (KEY=VALUE per line; `#` comments, blank lines, quoted values supported). Mutually exclusive with `--env`. | none |
 
 ## Quick examples
 
@@ -77,25 +77,21 @@ npx @insforge/cli compute deploy \
   --env-file ./.env.production
 ```
 
-### Updating env vars after deploy
+### Rotating env vars after deploy
 
-`compute update` supports two env modes:
+The `GET` path never returns env values (encrypted at rest, no decrypt endpoint). To rotate **one** secret without wiping the others, use partial-merge flags on `compute update` instead of `--env`:
 
 ```bash
-# Wholesale replace (clears any keys not listed)
-npx @insforge/cli compute update <id> --env '{"NODE_ENV":"production","DATABASE_URL":"..."}'
-
-# Partial merge — rotate one secret without restating the rest
-npx @insforge/cli compute update <id> --env-set DATABASE_URL=postgres://new-host
-
-# Repeat --env-set / --env-unset for multiple keys
+# Partial merge — keeps untouched keys intact (repeatable flags)
 npx @insforge/cli compute update <id> \
-  --env-set FEATURE_FLAG_X=on \
+  --env-set DATABASE_URL=postgres://new-host \
   --env-set API_KEY=sk-... \
   --env-unset OLD_DEBUG_TOKEN
-```
 
-The `GET` path never returns env values (encrypted at rest, no decrypt endpoint), so partial merge is the only safe way to rotate one secret without losing the others.
+# Wholesale replace — clears anything not in the JSON. Mutually exclusive
+# with --env-set / --env-unset.
+npx @insforge/cli compute update <id> --env '{"NODE_ENV":"production","DATABASE_URL":"..."}'
+```
 
 ## Producing the image
 
@@ -212,7 +208,7 @@ A: It's down. InsForge runs your containers on Fly's infrastructure — Fly's up
 
 ## Notes
 
-- This command does NOT require `flyctl`, Docker, or any other local tool. It just makes an HTTP call to the InsForge backend.
-- The machine starts immediately. Use `compute stop` to pause without destroying.
-- Env vars are encrypted at rest in the InsForge database. The `GET` path never returns values — to rotate one secret, use `compute update --env-set KEY=VALUE` (partial merge) rather than `--env` (wholesale replace).
-- `compute delete` is permanent: the Fly app + image are destroyed and the registry GCs the image shortly after. The audit log captures the full service config (encrypted env blob included) on delete, so an admin can reconstruct a service that was deleted by mistake. The dashboard requires type-to-confirm; the CLI does not — be careful in scripts.
+- No `flyctl` or Docker needed locally — pure HTTP to the InsForge backend.
+- Machine starts immediately. Use `compute stop` to pause without destroying.
+- Env vars are encrypted at rest. See [Rotating env vars after deploy](#rotating-env-vars-after-deploy) for partial-merge usage.
+- `compute delete` is **permanent**: Fly app + image are destroyed and the registry GCs the image shortly after. The audit log captures the full config (encrypted env blob included) on delete for after-the-fact reconstruction. Dashboard adds a type-to-confirm gate; the CLI does not.

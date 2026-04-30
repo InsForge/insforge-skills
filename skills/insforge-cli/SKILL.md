@@ -139,12 +139,12 @@ For frontend hosting see **Frontend Deployments** above.
 
 - `npx @insforge/cli compute list` — list all compute services (name, status, image, CPU, memory, endpoint)
 - `npx @insforge/cli compute get <id>` — get service details
-- `npx @insforge/cli compute deploy --image <url> --name <name> [--port] [--cpu] [--memory] [--region] [--env <json> | --env-file <path>]` — deploy a pre-built Docker image. `--env-file` accepts a standard `.env` (KEY=VALUE per line, `#` comments, blank lines, quoted values) and is mutually exclusive with `--env`. See [references/compute-deploy.md](references/compute-deploy.md).
-- `npx @insforge/cli compute update <id> [--image] [--port] [--cpu] [--memory] [--region] [--env <json> | --env-set KEY=VALUE | --env-unset KEY]` — update service config. `--env-set` and `--env-unset` are repeatable and merge with the existing env vars (the GET path doesn't return values, so the server decrypts existing env, applies set/unset, re-encrypts). Use these to rotate one secret without restating the others. `--env` (wholesale replace) is mutually exclusive with the merge flags.
+- `npx @insforge/cli compute deploy --image <url> --name <name> [--port] [--cpu] [--memory] [--region] [--env <json> | --env-file <path>]` — deploy a pre-built Docker image. Prefer `--env-file <path>` over inline `--env <json>` for >1 secret. See [references/compute-deploy.md](references/compute-deploy.md).
+- `npx @insforge/cli compute update <id> [--image] [--port] [--cpu] [--memory] [--region] [--env | --env-set KEY=VALUE | --env-unset KEY]` — update service config. `--env-set`/`--env-unset` are **repeatable** and merge with existing env — use these to rotate one secret without restating the rest. `--env` replaces wholesale and is mutually exclusive with the merge flags.
 - `npx @insforge/cli compute stop <id>` — stop a running service
 - `npx @insforge/cli compute start <id>` — start a stopped service
-- `npx @insforge/cli compute logs <id> [--limit 50]` — view Fly machine **lifecycle events** (start/stop/restart). NOT container stdout/stderr — that's not surfaced in v1. To see why your container is exiting, reproduce locally with the same image, or wire your container to ship logs to an external collector (Sentry, OTel, etc.).
-- `npx @insforge/cli compute delete <id>` — delete service and destroy Fly.io resources. **Permanent.** The dashboard requires type-to-confirm; the CLI does not, so be careful with scripts. The full service config is captured in the audit log on delete (`module=COMPUTE`, `action=DELETE_COMPUTE_SERVICE`) for reconstruction.
+- `npx @insforge/cli compute logs <id> [--limit 50]` — Fly machine **lifecycle events only** (start/stop/restart). Container stdout/stderr is NOT surfaced in v1. To debug a crash-looping container, reproduce locally with the same image.
+- `npx @insforge/cli compute delete <id>` — destroy the service and its Fly.io resources. **Permanent.** Audit log captures the full config (incl. encrypted env blob) on delete for reconstruction. Dashboard adds a type-to-confirm gate; the CLI does not — guard scripted deletes carefully.
 
 ### Secrets — `npx @insforge/cli secrets`
 - `npx @insforge/cli secrets list [--all]` — list secrets (values hidden; `--all` includes deleted)
