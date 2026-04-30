@@ -160,7 +160,7 @@ For frontend hosting see **Frontend Deployments** above.
 - `npx @insforge/cli compute update <id> [--image] [--port] [--cpu] [--memory] [--region] [--env <json> | --env-set KEY=VALUE | --env-unset KEY]` — update service config. `--env-set`/`--env-unset` are **repeatable** and merge with existing env — use these to rotate one secret without restating the rest. `--env <json>` replaces wholesale and is mutually exclusive with the merge flags.
 - `npx @insforge/cli compute stop <id>` — stop a running service
 - `npx @insforge/cli compute start <id>` — start a stopped service
-- `npx @insforge/cli compute logs <id> [--limit 50]` — Fly machine **lifecycle events only** (start/stop/restart). Container stdout/stderr is NOT surfaced in v1. To debug a crash-looping container, reproduce locally with the same image.
+- `npx @insforge/cli compute events <id> [--limit 50]` — Fly machine **lifecycle events** (start/stop/exit/restart). Container stdout/stderr is NOT surfaced in v1 — that's roadmap work and will reuse the freed-up `compute logs` command name when it lands. To debug a crash-looping container today, reproduce locally with the same image.
 - `npx @insforge/cli compute delete <id>` — destroy the service and its Fly.io resources. **Permanent.** Audit log captures the full config (incl. encrypted env blob) on delete for reconstruction. Dashboard adds a type-to-confirm gate; the CLI does not — guard scripted deletes carefully.
 
 ### Secrets — `npx @insforge/cli secrets`
@@ -387,7 +387,7 @@ npx @insforge/cli compute deploy --image ghcr.io/you/app:v1 --name my-api --port
 ```bash
 npx @insforge/cli compute stop <id>       # stop the machine
 npx @insforge/cli compute start <id>      # restart it
-npx @insforge/cli compute logs <id>       # check machine events
+npx @insforge/cli compute events <id>     # machine lifecycle events
 npx @insforge/cli compute delete <id>     # destroy everything
 ```
 
@@ -555,7 +555,7 @@ npx @insforge/cli logs postgrest.logs --limit 50
 | General health / performance | `diagnose` (full report) or `diagnose metrics` |
 | Database bloat / slow queries | `diagnose db` |
 | Security / config issues | `diagnose advisor --category security` |
-| Compute service not starting | `compute logs <id>`, check Fly machine events |
+| Compute service not starting | `compute events <id>` (machine lifecycle events) |
 | Compute source-mode deploy failed | Verify `flyctl` is on PATH (`flyctl version`); the per-app deploy token has a 20-min TTL — re-run if expired. Use `--image <url>` with a pre-built image to skip flyctl entirely. |
 | Compute image-mode deploy failed | Confirm the image is publicly pullable (private registries need per-project credential setup) |
 
