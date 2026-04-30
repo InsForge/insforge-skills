@@ -99,7 +99,7 @@ const insforge = createClient({
 | **Functions** | Invoke edge functions |
 | **AI** | Chat completions, image generation, embeddings |
 | **Email** | Send custom transactional HTML emails (welcome, newsletter, notifications) |
-| **Real-time** | Connect, subscribe, publish events |
+| **Real-time** | Connect, subscribe, publish events, and track presence snapshots plus join/leave deltas |
 
 ### Guides
 
