@@ -6,28 +6,62 @@ export default function SignInPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [err, setErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr(null);
-    const { data, error } = await authClient.signIn.email({ email, password });
-    if (error) {
-      setErr(error.message ?? 'sign-in failed');
-      return;
+    setBusy(true);
+    try {
+      const { data, error } = await authClient.signIn.email({ email, password });
+      if (error) {
+        setErr(error.message ?? 'sign-in failed');
+        return;
+      }
+      if (data?.user) window.location.href = '/';
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'sign-in failed');
+    } finally {
+      setBusy(false);
     }
-    if (data?.user) window.location.href = '/';
   };
 
   return (
-    <main style={{ padding: 24 }}>
-      <h1>Sign in</h1>
-      <form onSubmit={onSubmit}>
-        <p><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email" /></p>
-        <p><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="password" /></p>
-        <p><button type="submit">sign in</button></p>
-        {err && <p style={{ color: 'red' }}>{err}</p>}
-      </form>
-      <p>No account? <a href="/sign-up">Create one</a></p>
+    <main className="shell" style={{ maxWidth: 420 }}>
+      <div className="card" style={{ padding: 28 }}>
+        <h1 style={{ marginTop: 0 }}>Sign in</h1>
+        <form onSubmit={onSubmit}>
+          <div style={{ marginBottom: 12 }}>
+            <label htmlFor="email" style={{ fontSize: 12, color: 'var(--muted)' }}>Email</label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              required
+            />
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label htmlFor="password" style={{ fontSize: 12, color: 'var(--muted)' }}>Password</label>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              required
+            />
+          </div>
+          <button type="submit" disabled={busy} style={{ width: '100%' }}>
+            {busy ? 'signing in…' : 'sign in'}
+          </button>
+          {err && <p style={{ color: 'var(--danger)', marginTop: 12, fontSize: 12 }}>{err}</p>}
+        </form>
+        <p style={{ marginTop: 16, fontSize: 12, color: 'var(--muted)' }}>
+          No account? <a href="/sign-up">Create one</a>
+        </p>
+      </div>
     </main>
   );
 }

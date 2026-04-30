@@ -11,8 +11,9 @@ AS $$
 $$;
 
 -- 2. Example RLS-protected table — notes owned by Better Auth users.
-DROP TABLE IF EXISTS public.notes CASCADE;
-CREATE TABLE public.notes (
+-- Idempotent: `IF NOT EXISTS` on the table, `DROP POLICY IF EXISTS` before
+-- each `CREATE POLICY` so reruns don't error and don't drop user data.
+CREATE TABLE IF NOT EXISTS public.notes (
   id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
   user_id text NOT NULL DEFAULT public.requesting_user_id()
     REFERENCES public."user"(id) ON DELETE CASCADE,
@@ -22,19 +23,23 @@ CREATE TABLE public.notes (
 
 ALTER TABLE public.notes ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS notes_owner_select ON public.notes;
 CREATE POLICY notes_owner_select ON public.notes
   FOR SELECT TO authenticated
   USING (user_id = public.requesting_user_id());
 
+DROP POLICY IF EXISTS notes_owner_insert ON public.notes;
 CREATE POLICY notes_owner_insert ON public.notes
   FOR INSERT TO authenticated
   WITH CHECK (user_id = public.requesting_user_id());
 
+DROP POLICY IF EXISTS notes_owner_update ON public.notes;
 CREATE POLICY notes_owner_update ON public.notes
   FOR UPDATE TO authenticated
   USING (user_id = public.requesting_user_id())
   WITH CHECK (user_id = public.requesting_user_id());
 
+DROP POLICY IF EXISTS notes_owner_delete ON public.notes;
 CREATE POLICY notes_owner_delete ON public.notes
   FOR DELETE TO authenticated
   USING (user_id = public.requesting_user_id());

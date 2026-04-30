@@ -51,7 +51,7 @@ Sign up at `/sign-up`, then on the home page:
 
 ## What's not in this skeleton
 
-- OAuth providers (add in `lib/auth.ts` with `socialProviders: { github: { ... } }`)
+- OAuth providers — GitHub, Google, etc. (add in `lib/auth.ts` with `socialProviders: { github: { ... } }`; the key is lowercase, that's the Better Auth API)
 - Email verification (BA's `sendVerificationEmail` callback wired to `client.emails.send`)
 - The Organization plugin (adds `organization`, `member`, `team`, `invitation` tables — REVOKE those too)
 - Tests

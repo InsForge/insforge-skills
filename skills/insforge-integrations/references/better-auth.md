@@ -58,13 +58,22 @@ No SaaS dashboard. Better Auth runs entirely in your code + your Postgres.
 import { betterAuth } from 'better-auth';
 import { Pool } from 'pg';
 
+// Fail at module-load if a required var is missing. Better than `!`
+// because the error names the missing var instead of crashing on a
+// downstream undefined.
+function requireEnv(name: string): string {
+  const v = process.env[name];
+  if (!v) throw new Error(`Missing required env var: ${name}`);
+  return v;
+}
+
 export const auth = betterAuth({
   database: new Pool({
-    connectionString: process.env.DATABASE_URL!,   // your InsForge Postgres
+    connectionString: requireEnv('DATABASE_URL'),   // your InsForge Postgres
   }),
   emailAndPassword: { enabled: true },
-  secret: process.env.BETTER_AUTH_SECRET!,         // Better Auth's own session secret — different from InsForge's JWT_SECRET
-  baseURL: process.env.BETTER_AUTH_URL!,           // e.g. http://localhost:3000
+  secret: requireEnv('BETTER_AUTH_SECRET'),         // Better Auth's own session secret — different from InsForge's JWT_SECRET
+  baseURL: requireEnv('BETTER_AUTH_URL'),           // e.g. http://localhost:3000
 });
 ```
 
@@ -128,17 +137,22 @@ export async function GET() {
   if (!session?.user) {
     return NextResponse.json({ error: 'not signed in' }, { status: 401 });
   }
+  // Mint the smallest claim set InsForge needs. Don't add email or other PII —
+  // RLS reads sub via auth.jwt() ->> 'sub' and that's all that matters.
   const token = jwt.sign(
     {
       sub: session.user.id,
       role: 'authenticated',
       aud: 'insforge-api',
-      email: session.user.email,
     },
     process.env.INSFORGE_JWT_SECRET!,
     { algorithm: 'HS256', expiresIn: '1h' },
   );
-  return NextResponse.json({ token });
+  // no-store: bridge tokens are short-lived and per-session — never cache.
+  return NextResponse.json(
+    { token },
+    { headers: { 'Cache-Control': 'no-store' } },
+  );
 }
 ```
 
@@ -247,11 +261,19 @@ export async function createInsForgeClient() {
 
 ### Sign-out
 
-Better Auth sign-out doesn't clear the InsForge SDK's in-memory token. Pattern A handles this automatically via the `useEffect` cleanup; if you sign out outside of React, do it explicitly:
+Better Auth sign-out doesn't clear the InsForge SDK's in-memory token. Pattern A handles this automatically via the `useEffect` cleanup; if you sign out outside of React, do it explicitly. `client.setAccessToken(null)` clears **both** the HTTP token and the realtime token in one call (SDK ≥ 1.3.0):
 
 ```ts
 await authClient.signOut();
 client.setAccessToken(null);   // clears HTTP + realtime; SDK ≥ 1.3.0
+```
+
+On older SDKs (< 1.3.0), do the dual-update yourself:
+
+```ts
+await authClient.signOut();
+client.getHttpClient().setAuthToken(null);
+client.realtime['tokenManager'].setAccessToken(null);   // private at compile-time, accessible at runtime
 ```
 
 ## Database setup
@@ -268,7 +290,9 @@ AS $$
 $$;
 
 -- 2. example: a notes table owned by Better Auth users
-CREATE TABLE public.notes (
+-- All statements below are rerun-safe so this script can be applied repeatedly
+-- (Postgres has no CREATE POLICY IF NOT EXISTS through PG17, so DROP IF EXISTS first).
+CREATE TABLE IF NOT EXISTS public.notes (
   id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
   user_id text NOT NULL DEFAULT public.requesting_user_id()
     REFERENCES public."user"(id) ON DELETE CASCADE,
@@ -278,19 +302,23 @@ CREATE TABLE public.notes (
 
 ALTER TABLE public.notes ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS notes_owner_select ON public.notes;
 CREATE POLICY notes_owner_select ON public.notes
   FOR SELECT TO authenticated
   USING (user_id = public.requesting_user_id());
 
+DROP POLICY IF EXISTS notes_owner_insert ON public.notes;
 CREATE POLICY notes_owner_insert ON public.notes
   FOR INSERT TO authenticated
   WITH CHECK (user_id = public.requesting_user_id());
 
+DROP POLICY IF EXISTS notes_owner_update ON public.notes;
 CREATE POLICY notes_owner_update ON public.notes
   FOR UPDATE TO authenticated
   USING (user_id = public.requesting_user_id())
   WITH CHECK (user_id = public.requesting_user_id());
 
+DROP POLICY IF EXISTS notes_owner_delete ON public.notes;
 CREATE POLICY notes_owner_delete ON public.notes
   FOR DELETE TO authenticated
   USING (user_id = public.requesting_user_id());
@@ -319,23 +347,9 @@ INSERT INTO realtime.channels (pattern, description, enabled)
 
 The channel pattern uses SQL `LIKE` syntax — `chat:%` matches `chat:lobby`, `chat:dm:user_xyz`, etc.
 
-In the client, when using **Pattern A**, you must update **both** the HTTP token and the realtime token (the SDK's `setAuthToken` only updates HTTP):
+`client.setAccessToken()` (used in Pattern A above) already propagates the token to the realtime `TokenManager` — that's why we call it on every refresh, not just when realtime is in use. Pattern B (`createClient({ edgeFunctionToken: ... })`) handles both automatically.
 
-```ts
-// helper that keeps both in sync
-function setBridgeToken(client, token) {
-  client.getHttpClient().setAuthToken(token);
-  // tokenManager is `private` in TypeScript but accessible at runtime;
-  // calling setAccessToken here also fires onTokenChange, which reconnects
-  // the realtime socket with the new bearer.
-  // @ts-expect-error: private at compile time, public at runtime
-  client.realtime.tokenManager.setAccessToken(token);
-}
-```
-
-Use `setBridgeToken(client, token)` everywhere the existing `useInsforgeClient` hook calls `setAuthToken`. Pattern B (`createClient({ edgeFunctionToken: ... })`) handles both automatically.
-
-After both fixes: a two-user realtime broadcast verifies end-to-end — `senderId` on the received message equals the publisher's Better Auth `id`.
+After the SQL fixes above: a two-user realtime broadcast verifies end-to-end — `senderId` on the received message equals the publisher's Better Auth `id`.
 
 ## Email transport (verification + password reset)
 
