@@ -116,9 +116,7 @@ If no project linked: `npx @insforge/cli create` (new) or `npx @insforge/cli lin
 - `npx @insforge/cli payments history --environment <env>` — admin/debug payment history reads
 
 > ⚠️ **Private preview.** Payments are a new feature; older backends may not expose `/api/payments`.
->
 > **Availability:** If the CLI says `Payments are not available on this backend`, stop and ask the developer/admin to enable payments or upgrade the self-hosted InsForge instance. Do not work around this by storing Stripe secret keys with generic secrets or embedding Stripe secret keys in app code.
-
 > Agents should default to `--environment test` while building. Only use `live` after the developer explicitly approves production Stripe changes.
 
 ### Frontend Deployments (Vercel) — `npx @insforge/cli deployments`

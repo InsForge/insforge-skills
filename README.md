@@ -123,6 +123,9 @@ skills/
 │   ├── realtime/
 │   │   ├── sdk-integration.md
 │   │   └── backend-configuration.md
+│   ├── payments/
+│   │   ├── sdk-integration.md
+│   │   └── backend-configuration.md
 │   └── deployments/
 │       └── workflow.md
 ├── insforge-cli/
@@ -134,6 +137,7 @@ skills/
 │       ├── db-export.md
 │       ├── db-import.md
 │       ├── functions-deploy.md
+│       ├── payments.md
 │       └── deployments-deploy.md
 ├── insforge-debug/
 │   └── SKILL.md              # Debug & diagnostics skill
