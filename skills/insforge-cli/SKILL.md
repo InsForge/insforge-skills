@@ -1,13 +1,13 @@
 ---
 name: insforge-cli
 description: >-
-  Use this skill whenever the user needs backend infrastructure management — creating database tables, running SQL, managing database migration files, deploying serverless functions, managing storage buckets, deploying frontend apps, adding secrets, setting up cron jobs, checking logs, or running backend diagnostics — especially if the project uses InsForge. Trigger on any of these contexts: creating or altering database tables/schemas, fetching or applying database migrations, writing RLS policies via SQL, deploying or invoking edge functions, creating storage buckets, deploying frontends to hosting, managing secrets/env vars, setting up scheduled tasks/cron, viewing backend logs, diagnosing backend health or performance issues, or exporting/importing database backups. If the user asks for these operations generically (e.g., "create a users table", "apply a migration", "deploy my app", "set up a cron job", "check backend health") and you're unsure whether they use InsForge, consult this skill and ask. For writing frontend application code with the InsForge SDK (@insforge/sdk), use the insforge skill instead.
+  Use this skill when managing InsForge infrastructure with the CLI: projects, SQL, migrations, RLS policies, functions, storage buckets, frontend deployments, compute services, secrets/env vars, Stripe payment keys/catalog/products/prices/webhooks, schedules, logs, diagnostics, or import/export. For app code with @insforge/sdk, use the insforge skill instead.
 license: Apache-2.0
 metadata:
   author: insforge
-  version: "1.1.0"
+  version: "1.2.0"
   organization: InsForge
-  date: February 2026
+  date: April 2026
 ---
 
 # InsForge CLI
@@ -103,6 +103,21 @@ If no project linked: `npx @insforge/cli create` (new) or `npx @insforge/cli lin
 - `npx @insforge/cli storage list-objects <bucket> [--prefix] [--search] [--limit] [--sort]` — list objects
 - `npx @insforge/cli storage upload <file> --bucket <name> [--key <objectKey>]` — upload file
 - `npx @insforge/cli storage download <objectKey> --bucket <name> [--output <path>]` — download file
+
+### Payments — `npx @insforge/cli payments`
+- `npx @insforge/cli payments status` — show Stripe key, account, sync, and webhook status
+- `npx @insforge/cli payments config / config set / config remove` — manage Stripe test/live secret keys. See [references/payments.md](references/payments.md)
+- `npx @insforge/cli payments sync [--environment test|live|all]` — sync products, prices, and subscriptions from Stripe
+- `npx @insforge/cli payments webhooks configure <environment>` — create or recreate the managed Stripe webhook endpoint
+- `npx @insforge/cli payments catalog [--environment]` — inspect mirrored products and prices together
+- `npx @insforge/cli payments products list/get/create/update/delete` — manage Stripe products
+- `npx @insforge/cli payments prices list/get/create/update/archive` — manage Stripe prices
+- `npx @insforge/cli payments subscriptions --environment <env>` — admin/debug subscription reads
+- `npx @insforge/cli payments history --environment <env>` — admin/debug payment history reads
+
+> ⚠️ **Private preview.** Payments are a new feature; older backends may not expose `/api/payments`.
+> **Availability:** If the CLI says `Payments are not available on this backend`, stop and ask the developer/admin to enable payments or upgrade the self-hosted InsForge instance. Do not work around this by storing Stripe secret keys with generic secrets or embedding Stripe secret keys in app code.
+> Agents should default to `--environment test` while building. Only use `live` after the developer explicitly approves production Stripe changes.
 
 ### Frontend Deployments (Vercel) — `npx @insforge/cli deployments`
 
@@ -219,6 +234,8 @@ Run with no subcommand for a full health report across all checks.
 **Compute endpoints use .fly.dev**: Services get a public URL at `https://{name}-{projectId}.fly.dev`. Custom domains require DNS configuration.
 
 **Schedules accept two cron formats**: 5-field cron (`minute hour day month day-of-week`, e.g. `*/5 * * * *`) **or** pg_cron interval syntax for sub-minute cadence (e.g. `30 seconds`). 6-field cron with seconds (Quartz/Spring's `*/2 * * * * *`) is **not** supported — use the interval form for sub-minute work. Headers can reference secrets with `${{secrets.KEY_NAME}}`.
+
+**Payments use Stripe as source of truth**: use `payments config set` for Stripe keys, `payments sync` before relying on existing catalog data, and create a new Stripe price instead of editing amount/currency. Runtime checkout and customer portal integration belongs in the `insforge` SDK skill.
 
 ---
 
