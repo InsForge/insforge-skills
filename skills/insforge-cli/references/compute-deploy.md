@@ -44,7 +44,8 @@ npx @insforge/cli compute deploy --image <url> --name <name> [options]
 | `--cpu <tier>` | CPU tier in Fly.io standard format `<kind>-<N>x` (see [CPU tier section](#cpu-tier-flyio-standard-format)) | `shared-1x` |
 | `--memory <mb>` | Memory in MB (any positive integer; Fly enforces per-tier bounds) | `512` |
 | `--region <region>` | Fly.io region | `iad` |
-| `--env <json>` | Environment variables as JSON object | none |
+| `--env <json>` | Environment variables as JSON object. Mutually exclusive with `--env-file`. | none |
+| `--env-file <path>` | Path to a standard `.env` file (KEY=VALUE per line, `#` comments, blank lines, quoted values, trailing inline comments). Mutually exclusive with `--env`. | none |
 
 ## Quick examples
 
@@ -67,7 +68,34 @@ npx @insforge/cli compute deploy \
   --name batch \
   --port 8080 \
   --cpu performance-8x --memory 4096
+
+# Env vars from a .env file (preferred for >1 secret)
+npx @insforge/cli compute deploy \
+  --image ghcr.io/your-org/your-app:v1 \
+  --name my-api \
+  --port 8000 \
+  --env-file ./.env.production
 ```
+
+### Updating env vars after deploy
+
+`compute update` supports two env modes:
+
+```bash
+# Wholesale replace (clears any keys not listed)
+npx @insforge/cli compute update <id> --env '{"NODE_ENV":"production","DATABASE_URL":"..."}'
+
+# Partial merge — rotate one secret without restating the rest
+npx @insforge/cli compute update <id> --env-set DATABASE_URL=postgres://new-host
+
+# Repeat --env-set / --env-unset for multiple keys
+npx @insforge/cli compute update <id> \
+  --env-set FEATURE_FLAG_X=on \
+  --env-set API_KEY=sk-... \
+  --env-unset OLD_DEBUG_TOKEN
+```
+
+The `GET` path never returns env values (encrypted at rest, no decrypt endpoint), so partial merge is the only safe way to rotate one secret without losing the others.
 
 ## Producing the image
 
@@ -186,4 +214,5 @@ A: It's down. InsForge runs your containers on Fly's infrastructure — Fly's up
 
 - This command does NOT require `flyctl`, Docker, or any other local tool. It just makes an HTTP call to the InsForge backend.
 - The machine starts immediately. Use `compute stop` to pause without destroying.
-- Env vars set via `--env` are encrypted at rest in the InsForge database.
+- Env vars are encrypted at rest in the InsForge database. The `GET` path never returns values — to rotate one secret, use `compute update --env-set KEY=VALUE` (partial merge) rather than `--env` (wholesale replace).
+- `compute delete` is permanent: the Fly app + image are destroyed and the registry GCs the image shortly after. The audit log captures the full service config (encrypted env blob included) on delete, so an admin can reconstruct a service that was deleted by mistake. The dashboard requires type-to-confirm; the CLI does not — be careful in scripts.
