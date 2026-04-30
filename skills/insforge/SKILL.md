@@ -101,7 +101,7 @@ const insforge = createClient({
 | **AI** | Chat completions, image generation, embeddings |
 | **Email** | Send custom transactional HTML emails (welcome, newsletter, notifications) |
 | **Payments** | Stripe Checkout Sessions, subscriptions, and Billing Portal redirects |
-| **Real-time** | Connect, subscribe, publish events |
+| **Real-time** | Connect, subscribe, publish events, and track presence snapshots plus join/leave deltas |
 
 ### Guides
 
