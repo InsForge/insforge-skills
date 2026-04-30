@@ -1,18 +1,18 @@
 ---
 name: insforge
 description: >-
-  Use this skill whenever writing frontend code that talks to a backend for database queries, authentication, file uploads, AI features, real-time messaging, edge function calls, or sending custom transactional email — especially if the project uses InsForge or @insforge/sdk. Trigger on any of these contexts: querying/inserting/updating/deleting database rows from frontend code, adding login/signup/OAuth/password-reset flows, uploading or downloading files to storage, invoking serverless functions, calling AI chat completions or image generation, subscribing to real-time WebSocket channels, sending welcome/newsletter/notification emails via insforge.emails.send, or writing RLS policies. If the user asks for these features generically (e.g., "add auth to my React app", "fetch data from my database", "upload files", "send a welcome email") and you're unsure whether they use InsForge, consult this skill and ask. For backend infrastructure (creating tables via SQL, deploying functions, CLI commands), use insforge-cli instead.
+  Use this skill when writing app code with InsForge or @insforge/sdk: database CRUD, auth, storage uploads/storage RLS, functions, AI, realtime, emails, Stripe checkout, subscriptions, or customer portal flows. Trigger on requests like add auth, fetch data, upload files, make a bucket public, add checkout, sell subscriptions, or send email. For infrastructure, SQL migrations, CLI commands, or Stripe key/catalog setup, use insforge-cli instead.
 license: MIT
 metadata:
   author: insforge
-  version: "1.2.0"
+  version: "1.3.0"
   organization: InsForge
-  date: February 2026
+  date: April 2026
 ---
 
 # InsForge SDK Skill
 
-This skill covers **client-side SDK integration** using `@insforge/sdk`. For backend infrastructure operations (creating tables, inspecting schema, deploying functions, secrets, managing storage buckets, website deployments, cron job and schedules, logs, etc.), use the **insforge-cli** skill.
+This skill covers **client-side SDK integration** using `@insforge/sdk`. For backend infrastructure operations (creating tables, inspecting schema, deploying functions, secrets, managing storage buckets, configuring Stripe keys/catalog, website deployments, cron job and schedules, logs, etc.), use the **insforge-cli** skill.
 
 ## Quick Setup
 
@@ -88,6 +88,7 @@ const insforge = createClient({
 | **AI** | [ai/sdk-integration.md](ai/sdk-integration.md) |
 | **Real-time** | [realtime/sdk-integration.md](realtime/sdk-integration.md) |
 | **Email** | [email/sdk-integration.md](email/sdk-integration.md) |
+| **Payments** | [payments/sdk-integration.md](payments/sdk-integration.md) |
 
 ### What Each Module Covers
 
@@ -95,19 +96,22 @@ const insforge = createClient({
 |--------|---------|
 | **Database** | CRUD operations, filters, pagination, RPC calls |
 | **Auth** | Sign up/in, OAuth, sessions, profiles, password reset |
-| **Storage** | Upload, download, delete files |
+| **Storage** | Upload, download, delete files; write RLS policies for buckets |
 | **Functions** | Invoke edge functions |
 | **AI** | Chat completions, image generation, embeddings |
 | **Email** | Send custom transactional HTML emails (welcome, newsletter, notifications) |
-| **Real-time** | Connect, subscribe, publish events |
+| **Payments** | Stripe Checkout Sessions, subscriptions, and Billing Portal redirects |
+| **Real-time** | Connect, subscribe, publish events, and track presence snapshots plus join/leave deltas |
 
 ### Guides
 
 | Guide | When to Use |
 |-------|-------------|
 | [database/postgres-rls.md](database/postgres-rls.md) | Writing or reviewing RLS policies — covers infinite recursion prevention, `SECURITY DEFINER` patterns, performance tips, and common InsForge RLS patterns |
+| [storage/postgres-rls.md](storage/postgres-rls.md) | Writing RLS policies for `storage.objects` — owner-only, public-read, path-scoped, team-shared, and the `NULL uploaded_by` caveat for mixed REST + S3 buckets |
 | [database/pgvector.md](database/pgvector.md) | Building semantic search, recommendations, or RAG — covers the `vector` extension, schema/dimensions, distance operators, HNSW/IVFFlat indexes, and RPC similarity search |
 | [ai/embeddings-and-rag.md](ai/embeddings-and-rag.md) | Generating embeddings through the InsForge AI gateway, storing them in pgvector, and wiring up a basic RAG pipeline with chat completions |
+| [payments/backend-configuration.md](payments/backend-configuration.md) | Configuring Stripe keys, syncing catalog, creating products/prices, webhooks, and portal RLS before app integration |
 
 ### Real-time Configuration
 
@@ -266,6 +270,7 @@ All SDK methods return `{ data, error }`.
 | `insforge.ai` | `.chat.completions.create()`, `.images.generate()`, `.embeddings.create()` |
 | `insforge.realtime` | `.connect()`, `.subscribe()`, `.publish()`, `.on()`, `.disconnect()` |
 | `insforge.emails` | `.send({ to, subject, html, cc?, bcc?, from?, replyTo? })` |
+| `insforge.payments` | `.createCheckoutSession()`, `.createCustomerPortalSession()` |
 
 ## Important Notes
 
@@ -273,6 +278,8 @@ All SDK methods return `{ data, error }`.
 - **Next.js / SSR auth**: Use `createClient({ isServerMode: true })`, keep tokens in httpOnly cookies, and perform auth flows on the server. See [auth/sdk-integration.md](auth/sdk-integration.md)
 - **Storage**: Save both `url` AND `key` to database for download/delete operations
 - **Functions invoke URL**: `/functions/{slug}` (without `/api` prefix)
+- **Payments**: Configure Stripe keys/catalog with `npx @insforge/cli payments ...` first; frontend code only creates Checkout/Portal sessions.
+- **Payment RLS**: Before subscription checkout or Billing Portal UI, add app-specific RLS on `payments.checkout_sessions` and `payments.customer_portal_sessions`.
 - **Use Tailwind CSS v3.4** (do not upgrade to v4)
 - **Always local build before deploy**: Prevents wasted build resources and faster debugging
 - **Deprecated packages**: `@insforge/react`, `@insforge/nextjs`, and `@insforge/react-router` are **deprecated**. Do NOT install or use them. Use `@insforge/sdk` directly for all features including authentication.

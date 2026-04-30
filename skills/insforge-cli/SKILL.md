@@ -1,13 +1,13 @@
 ---
 name: insforge-cli
 description: >-
-  Use this skill whenever the user needs backend infrastructure management — creating database tables, running SQL, managing database migration files, deploying serverless functions, managing storage buckets, deploying frontend apps, adding secrets, setting up cron jobs, checking logs, or running backend diagnostics — especially if the project uses InsForge. Trigger on any of these contexts: creating or altering database tables/schemas, fetching or applying database migrations, writing RLS policies via SQL, deploying or invoking edge functions, creating storage buckets, deploying frontends to hosting, managing secrets/env vars, setting up scheduled tasks/cron, viewing backend logs, diagnosing backend health or performance issues, or exporting/importing database backups. If the user asks for these operations generically (e.g., "create a users table", "apply a migration", "deploy my app", "set up a cron job", "check backend health") and you're unsure whether they use InsForge, consult this skill and ask. For writing frontend application code with the InsForge SDK (@insforge/sdk), use the insforge skill instead.
+  Use this skill when managing InsForge infrastructure with the CLI: projects, SQL, migrations, RLS policies, functions, storage buckets, frontend deployments, compute services, secrets/env vars, Stripe payment keys/catalog/products/prices/webhooks, schedules, logs, diagnostics, or import/export. For app code with @insforge/sdk, use the insforge skill instead.
 license: Apache-2.0
 metadata:
   author: insforge
-  version: "1.1.0"
+  version: "1.2.0"
   organization: InsForge
-  date: February 2026
+  date: April 2026
 ---
 
 # InsForge CLI
@@ -104,6 +104,21 @@ If no project linked: `npx @insforge/cli create` (new) or `npx @insforge/cli lin
 - `npx @insforge/cli storage upload <file> --bucket <name> [--key <objectKey>]` — upload file
 - `npx @insforge/cli storage download <objectKey> --bucket <name> [--output <path>]` — download file
 
+### Payments — `npx @insforge/cli payments`
+- `npx @insforge/cli payments status` — show Stripe key, account, sync, and webhook status
+- `npx @insforge/cli payments config / config set / config remove` — manage Stripe test/live secret keys. See [references/payments.md](references/payments.md)
+- `npx @insforge/cli payments sync [--environment test|live|all]` — sync products, prices, and subscriptions from Stripe
+- `npx @insforge/cli payments webhooks configure <environment>` — create or recreate the managed Stripe webhook endpoint
+- `npx @insforge/cli payments catalog [--environment]` — inspect mirrored products and prices together
+- `npx @insforge/cli payments products list/get/create/update/delete` — manage Stripe products
+- `npx @insforge/cli payments prices list/get/create/update/archive` — manage Stripe prices
+- `npx @insforge/cli payments subscriptions --environment <env>` — admin/debug subscription reads
+- `npx @insforge/cli payments history --environment <env>` — admin/debug payment history reads
+
+> ⚠️ **Private preview.** Payments are a new feature; older backends may not expose `/api/payments`.
+> **Availability:** If the CLI says `Payments are not available on this backend`, stop and ask the developer/admin to enable payments or upgrade the self-hosted InsForge instance. Do not work around this by storing Stripe secret keys with generic secrets or embedding Stripe secret keys in app code.
+> Agents should default to `--environment test` while building. Only use `live` after the developer explicitly approves production Stripe changes.
+
 ### Frontend Deployments (Vercel) — `npx @insforge/cli deployments`
 
 Deploy a frontend application (static site / SPA / Next.js / etc.) to Vercel,
@@ -139,7 +154,9 @@ For frontend hosting see **Frontend Deployments** above.
 
 - `npx @insforge/cli compute list` — list all compute services (name, status, image, CPU, memory, endpoint)
 - `npx @insforge/cli compute get <id>` — get service details
-- `npx @insforge/cli compute deploy --image <url> --name <name> [--port] [--cpu] [--memory] [--region] [--env <json> | --env-file <path>]` — deploy a pre-built Docker image. Prefer `--env-file <path>` over inline `--env <json>` for >1 secret. See [references/compute-deploy.md](references/compute-deploy.md).
+- `npx @insforge/cli compute deploy [dir] --name <name> [--port] [--cpu] [--memory] [--region] [--env <json> | --env-file <path>]` — **source mode**: requires `flyctl` on PATH; **no local Docker daemon needed**. CLI shells out to `flyctl deploy --remote-only --build-only` using a short-lived per-app deploy token minted by InsForge cloud (the user never sees a Fly token). Build runs on Fly's remote builder; image is pushed to `registry.fly.io`; cloud launches the machine.
+- `npx @insforge/cli compute deploy --image <url> --name <name> [--port] [--cpu] [--memory] [--region] [--env <json> | --env-file <path>]` — **image mode**: deploys a pre-built image from any registry. **Nothing needed locally** beyond the InsForge CLI. Best for CI/CD pipelines and off-the-shelf images like `nginx:alpine`. Prefer `--env-file <path>` over inline `--env <json>` for >1 secret.
+- See [references/compute-deploy.md](references/compute-deploy.md) for both modes.
 - `npx @insforge/cli compute update <id> [--image] [--port] [--cpu] [--memory] [--region] [--env <json> | --env-set KEY=VALUE | --env-unset KEY]` — update service config. `--env-set`/`--env-unset` are **repeatable** and merge with existing env — use these to rotate one secret without restating the rest. `--env <json>` replaces wholesale and is mutually exclusive with the merge flags.
 - `npx @insforge/cli compute stop <id>` — stop a running service
 - `npx @insforge/cli compute start <id>` — start a stopped service
@@ -212,11 +229,13 @@ Run with no subcommand for a full health report across all checks.
 
 **The live database schema is the source of truth**: before writing a migration, and again if a migration fails, inspect the current database state first (`db tables / indexes / policies / triggers / functions`, plus `db migrations list`) and then adjust the migration statements to match reality. Do not assume local files are still current.
 
-**⚠️ v1 limitation — image-only.** `compute deploy --image <url>` deploys a pre-built image. It does NOT build from source. Build locally with Docker, push to any registry, then deploy via `--image`. Server-side build is roadmap, not v1. Don't reach for `flyctl deploy` as a workaround — it 401s because the Fly account is InsForge's, not yours.
+**Compute deploy has two modes.** `compute deploy [dir]` shells out to `flyctl deploy --remote-only --build-only` against your source dir using a short-lived per-app token the cloud mints for that one deploy — **requires `flyctl` on PATH** but **no local Docker daemon** (the build runs remotely on Fly's builder). The token is attenuated to one app + builder/wg with `else: deny` so it cannot reach any other app or org-level endpoint, and it auto-expires after ~20 min. `compute deploy --image <url>` deploys a pre-built image from any registry — **nothing needed locally**, best for CI or off-the-shelf images like `nginx:alpine`. Don't use `flyctl` outside this CLI flow with your own credentials — the Fly account is InsForge's, you'd 401.
 
 **Compute endpoints use .fly.dev**: Services get a public URL at `https://{name}-{projectId}.fly.dev`. Custom domains require DNS configuration.
 
 **Schedules accept two cron formats**: 5-field cron (`minute hour day month day-of-week`, e.g. `*/5 * * * *`) **or** pg_cron interval syntax for sub-minute cadence (e.g. `30 seconds`). 6-field cron with seconds (Quartz/Spring's `*/2 * * * * *`) is **not** supported — use the interval form for sub-minute work. Headers can reference secrets with `${{secrets.KEY_NAME}}`.
+
+**Payments use Stripe as source of truth**: use `payments config set` for Stripe keys, `payments sync` before relying on existing catalog data, and create a new Stripe price instead of editing amount/currency. Runtime checkout and customer portal integration belongs in the `insforge` SDK skill.
 
 ---
 
@@ -331,9 +350,26 @@ npx @insforge/cli deployments deploy .
 
 ### Deploy a Docker container (compute service)
 
-InsForge deploys pre-built Docker images. Build the image with your own toolchain, then deploy.
+Two modes — pick by what you have. Both deploy to the same Fly.io infrastructure.
 
-**Off-the-shelf image:**
+**Source mode (you have a Dockerfile; needs `flyctl` on PATH but NO local Docker daemon):**
+```bash
+# Install flyctl once: curl -L https://fly.io/install.sh | sh
+
+# Project layout: Dockerfile + your app code
+$ ls
+Dockerfile  app.py  requirements.txt
+
+# One command:
+npx @insforge/cli compute deploy . --name my-api --port 8000
+# CLI mints a per-app, attenuated Fly deploy token from InsForge cloud
+# (~20 min TTL, scoped to one app, else: deny blocks org-wide reads), then
+# shells out to `flyctl deploy --remote-only --build-only` so the build runs
+# on Fly's remote builder and is pushed to registry.fly.io. Cloud launches
+# the machine and returns the URL. NO local Docker daemon needed.
+```
+
+**Off-the-shelf image (no Docker required):**
 ```bash
 npx @insforge/cli compute deploy --image nginx:alpine --name my-api --port 80 --region iad
 npx @insforge/cli compute list
@@ -341,10 +377,9 @@ npx @insforge/cli compute list
 # No flyctl, no FLY_API_TOKEN, no local Docker required.
 ```
 
-**Your own image (local Docker):**
+**Pre-built image you pushed yourself (CI/CD, custom registry — no Docker required locally):**
 ```bash
-docker build -t ghcr.io/you/app:v1 .
-docker push ghcr.io/you/app:v1
+# Built + pushed elsewhere (GitHub Actions, your CI, etc.)
 npx @insforge/cli compute deploy --image ghcr.io/you/app:v1 --name my-api --port 8000
 ```
 
@@ -360,7 +395,7 @@ npx @insforge/cli compute delete <id>     # destroy everything
 **Memory options:** 256, 512 (default), 1024, 2048, 4096, 8192 MB
 **Regions:** `iad` (default), `sin`, `lax`, `lhr`, `nrt`, `ams`, `syd`
 
-> **Source mode** (`compute deploy <dir>` without `--image`) requires `flyctl` on PATH — no local Docker daemon, no user-set `FLY_API_TOKEN` (the cloud mints a per-app deploy token automatically). See [references/compute-deploy.md](references/compute-deploy.md). **Image mode** (the examples above) needs none of that.
+> **Source mode** requires `flyctl` on PATH (no Docker). The CLI never asks the user for `FLY_API_TOKEN` — the cloud mints a short-lived, app-scoped token per deploy (~20 min, `else: deny`) and passes it through env to the flyctl subprocess. Tokens cannot deploy or read any other app, even within InsForge's Fly org. **Image mode** (the examples above) needs neither flyctl nor a token.
 
 ### Backup and restore database
 
@@ -521,7 +556,8 @@ npx @insforge/cli logs postgrest.logs --limit 50
 | Database bloat / slow queries | `diagnose db` |
 | Security / config issues | `diagnose advisor --category security` |
 | Compute service not starting | `compute logs <id>`, check Fly machine events |
-| Compute deploy failed | Image mode: confirm image is publicly pullable. Source mode: confirm `flyctl` is on PATH |
+| Compute source-mode deploy failed | Verify `flyctl` is on PATH (`flyctl version`); the per-app deploy token has a 20-min TTL — re-run if expired. Use `--image <url>` with a pre-built image to skip flyctl entirely. |
+| Compute image-mode deploy failed | Confirm the image is publicly pullable (private registries need per-project credential setup) |
 
 ### Non-interactive CI/CD
 

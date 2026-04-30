@@ -29,9 +29,10 @@ Build full-stack applications with InsForge. This skill provides comprehensive g
 - **Functions**: Serverless function deployment and invocation
 - **AI**: Chat completions, image generation, embeddings
 - **Real-time**: WebSocket connections, subscriptions, event publishing
+- **Payments**: Stripe Checkout Sessions, subscriptions, and Billing Portal redirects
 - **Deployments**: Frontend app deployment to InsForge hosting
 
-**Key distinction**: Backend configuration uses HTTP API calls to the InsForge project URL. Client integration uses the `@insforge/sdk` in application code.
+**Key distinction**: Backend infrastructure uses the CLI skill. Client integration uses the `@insforge/sdk` in application code.
 
 </details>
 
@@ -46,6 +47,7 @@ Create and manage InsForge projects from the command line. This skill provides c
 - **Edge Functions**: Deploy, invoke, and view function source
 - **Storage**: Bucket and object management (upload, download, list)
 - **Deployments**: Frontend app deployment and status tracking
+- **Payments**: Stripe key setup, catalog sync, products/prices, webhooks
 - **Secrets**: Create, update, and manage project secrets
 - **CI/CD**: Non-interactive workflows using environment variables
 
@@ -121,6 +123,9 @@ skills/
 │   ├── realtime/
 │   │   ├── sdk-integration.md
 │   │   └── backend-configuration.md
+│   ├── payments/
+│   │   ├── sdk-integration.md
+│   │   └── backend-configuration.md
 │   └── deployments/
 │       └── workflow.md
 ├── insforge-cli/
@@ -132,6 +137,7 @@ skills/
 │       ├── db-export.md
 │       ├── db-import.md
 │       ├── functions-deploy.md
+│       ├── payments.md
 │       └── deployments-deploy.md
 ├── insforge-debug/
 │   └── SKILL.md              # Debug & diagnostics skill
