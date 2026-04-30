@@ -140,7 +140,7 @@ For frontend hosting see **Frontend Deployments** above.
 - `npx @insforge/cli compute list` — list all compute services (name, status, image, CPU, memory, endpoint)
 - `npx @insforge/cli compute get <id>` — get service details
 - `npx @insforge/cli compute deploy --image <url> --name <name> [--port] [--cpu] [--memory] [--region] [--env <json> | --env-file <path>]` — deploy a pre-built Docker image. Prefer `--env-file <path>` over inline `--env <json>` for >1 secret. See [references/compute-deploy.md](references/compute-deploy.md).
-- `npx @insforge/cli compute update <id> [--image] [--port] [--cpu] [--memory] [--region] [--env | --env-set KEY=VALUE | --env-unset KEY]` — update service config. `--env-set`/`--env-unset` are **repeatable** and merge with existing env — use these to rotate one secret without restating the rest. `--env` replaces wholesale and is mutually exclusive with the merge flags.
+- `npx @insforge/cli compute update <id> [--image] [--port] [--cpu] [--memory] [--region] [--env <json> | --env-set KEY=VALUE | --env-unset KEY]` — update service config. `--env-set`/`--env-unset` are **repeatable** and merge with existing env — use these to rotate one secret without restating the rest. `--env <json>` replaces wholesale and is mutually exclusive with the merge flags.
 - `npx @insforge/cli compute stop <id>` — stop a running service
 - `npx @insforge/cli compute start <id>` — start a stopped service
 - `npx @insforge/cli compute logs <id> [--limit 50]` — Fly machine **lifecycle events only** (start/stop/restart). Container stdout/stderr is NOT surfaced in v1. To debug a crash-looping container, reproduce locally with the same image.
@@ -360,7 +360,7 @@ npx @insforge/cli compute delete <id>     # destroy everything
 **Memory options:** 256, 512 (default), 1024, 2048, 4096, 8192 MB
 **Regions:** `iad` (default), `sin`, `lax`, `lhr`, `nrt`, `ams`, `syd`
 
-> The `deploy` command requires `flyctl` CLI and `FLY_API_TOKEN` env var. It backs up any existing `fly.toml`, generates one for the deploy, then restores the original.
+> **Source mode** (`compute deploy <dir>` without `--image`) requires `flyctl` on PATH — no local Docker daemon, no user-set `FLY_API_TOKEN` (the cloud mints a per-app deploy token automatically). See [references/compute-deploy.md](references/compute-deploy.md). **Image mode** (the examples above) needs none of that.
 
 ### Backup and restore database
 
@@ -521,7 +521,7 @@ npx @insforge/cli logs postgrest.logs --limit 50
 | Database bloat / slow queries | `diagnose db` |
 | Security / config issues | `diagnose advisor --category security` |
 | Compute service not starting | `compute logs <id>`, check Fly machine events |
-| Compute deploy failed | Check `FLY_API_TOKEN` is set, `flyctl` installed |
+| Compute deploy failed | Image mode: confirm image is publicly pullable. Source mode: confirm `flyctl` is on PATH |
 
 ### Non-interactive CI/CD
 
