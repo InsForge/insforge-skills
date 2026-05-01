@@ -9,11 +9,26 @@ This guide covers two framework setups in detail:
 
 The auth/bridge primitives are framework-agnostic — `lib/auth.ts`, the REVOKE block, RLS policies, plugins, and the `useInsforgeClient` hook are identical across both. Only the route-handler shape and a few env-var prefixes differ.
 
-> **Don't have Better Auth set up yet?** Two options:
-> - **Fastest** — `npx @insforge/cli link --auth better-auth` scaffolds `lib/auth.ts`, the bridge route, REVOKE SQL, and RLS init in one shot. Pre-wires every choice this guide assumes (Postgres adapter, App Router, InsForge JWT secret).
-> - **Manual / non-CLI** — install [better-auth/skills](https://github.com/better-auth/skills) for the canonical BA scaffolder (`create-auth` walks you through framework, DB adapter, OAuth providers). Once BA is running, return here for the InsForge bridge layer (REVOKE block + `requesting_user_id()` RLS + bridge route + client hook).
->
-> This skill assumes Better Auth already exists in the project — it covers the InsForge-specific layer, not generic BA setup.
+## Recommended Workflow
+
+For Next.js apps, the InsForge CLI scaffolds every file in this guide in one command:
+
+```bash
+npx @insforge/cli link --auth better-auth   # or create --auth better-auth for a fresh dir
+npm install
+npm run setup    # better-auth migrate + 01-init.sql + 02-revoke.sql
+npm run dev
+```
+
+The scaffold is overlay-safe — existing files are preserved, `package.json` is deep-merged, and env collisions are auto-resolved.
+
+The rest of this guide is the **reference layer**: what each scaffolded file looks like, why it's shaped that way, how to extend it (plugins, custom claims, magic-link, two-factor), and how to run on non-Next stacks. Read the section that matches what you're customizing — you don't need to read top-to-bottom unless you're integrating manually.
+
+> **Integrating manually** (no CLI, or non-Next stack)? Sequence: (1) `npx @insforge/cli create` or `link`, (2) `npx @insforge/cli secrets get JWT_SECRET`, (3) install deps and fill `.env.local`, (4) write `lib/auth.ts`, (5) `npx @better-auth/cli migrate`, (6) `REVOKE` block, (7) BA route handler, (8) bridge route, (9) `requesting_user_id()` + RLS, (10) `useInsforgeClient` (or server-side `createInsForgeClient`), (11) feature pages. Each numbered step has its own section below.
+
+Two runnable skeletons live alongside this guide:
+- `examples/better-auth-nextjs/` — Next.js App Router, same-origin
+- `examples/better-auth-react/` — Vite + React, same-origin via proxy
 
 ## Key packages
 
@@ -22,29 +37,6 @@ The auth/bridge primitives are framework-agnostic — `lib/auth.ts`, the REVOKE 
 - `pg` — Postgres driver (Better Auth wraps this)
 - `jsonwebtoken` + `@types/jsonwebtoken` — server-side JWT signing for the bridge
 - `@insforge/sdk` — InsForge client
-
-## Recommended Workflow
-
-```text
-1. Create/link InsForge project          → npx @insforge/cli create or link
-2. Get InsForge JWT secret + Postgres URL → npx @insforge/cli secrets get JWT_SECRET / DATABASE_URL
-3. Install deps + configure env          → npm install, .env.local
-4. Configure Better Auth                  → lib/auth.ts pointed at InsForge Postgres
-5. Create Better Auth tables              → npx @better-auth/cli migrate
-6. Lock down PostgREST exposure          → REVOKE block (REQUIRED — see below)
-7. Wire Better Auth route handlers        → Next: app/api/auth/[...all]/route.ts
-                                            Vite: server.ts (Hono/Express) on a side port
-8. Add the bridge route                   → Next: app/api/insforge-token/route.ts
-                                            Vite: same server.ts as step 7
-9. Set up requesting_user_id() + RLS      → SQL block
-10. Initialize InsForge client            → useInsforgeClient hook (Pattern A)
-                                              or createInsForgeClient() (Pattern B, RSC only)
-11. Build features                        → CRUD pages using InsForge client
-```
-
-Two runnable skeletons live alongside this guide:
-- `examples/better-auth-nextjs/` — Next.js App Router, same-origin
-- `examples/better-auth-react/` — Vite + React, same-origin via proxy
 
 ## Dashboard setup (manual, cannot be automated)
 
