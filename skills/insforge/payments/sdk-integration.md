@@ -39,6 +39,8 @@ Do not expose UI that accepts arbitrary `subject.type` or `subject.id` until the
 
 Use `mode: 'payment'` for one-time purchases. Anonymous checkout is allowed, but include `customerEmail` when available.
 
+If the payment should fulfill an app record such as an order, credit grant, download, or booking, create that app record first and pass its ID in checkout metadata. Do not mark it paid from the success URL.
+
 ```typescript
 const { data, error } = await insforge.payments.createCheckoutSession({
   environment: 'test',
@@ -47,6 +49,7 @@ const { data, error } = await insforge.payments.createCheckoutSession({
   successUrl: `${window.location.origin}/checkout/success`,
   cancelUrl: `${window.location.origin}/pricing`,
   customerEmail: user?.email ?? null,
+  metadata: { order_id: order.id },
   idempotencyKey: `cart:${cartId}`
 })
 
@@ -58,6 +61,22 @@ if (data?.checkoutSession.url) {
   window.location.assign(data.checkoutSession.url)
 }
 ```
+
+### One-Time Frontend Fulfillment Flow
+
+Stripe redirects are user navigation only. The success page can say "processing" and poll or subscribe to an app-owned table, but the durable fulfillment signal should come from InsForge's webhook-backed payment projection.
+
+Frontend pattern:
+
+1. Insert a pending row in an app table, for example `public.orders`.
+2. Create Checkout with `metadata: { order_id: order.id }`.
+3. Redirect to the returned Stripe Checkout URL.
+4. On the success route, read the app-owned order/entitlement table and show `pending`, `paid`, or `fulfilled`.
+5. Optionally subscribe to the app-owned table with Realtime for immediate UI updates.
+
+Do not let users supply arbitrary `order_id` metadata. Create or select the pending order through app logic/RLS first, then pass that trusted row ID into Checkout.
+
+The backend fulfillment migration should be implemented separately before relying on the success page. See [backend-configuration.md#fulfillment-business-logic](backend-configuration.md#fulfillment-business-logic) for the trigger/source-table guidance.
 
 ## Subscription Checkout
 
@@ -113,7 +132,7 @@ Do not assume frontend users can read `payments.subscriptions` or `payments.paym
 - `public.user_entitlements`
 - `public.orders`
 
-Protect those tables with app-specific RLS. Populate them from a trusted server path or edge function that validates the current user before reading admin payment state.
+Protect those tables with app-specific RLS. Backend fulfillment should populate them from InsForge payment projections or a trusted server path; see [backend-configuration.md#fulfillment-business-logic](backend-configuration.md#fulfillment-business-logic).
 
 ## Live/Test Environment
 
@@ -129,6 +148,7 @@ Do not put Stripe secret keys in frontend code. Stripe keys are configured throu
 4. **Treat Stripe as source of truth** for catalog data. Use the CLI/dashboard to sync before relying on product or price IDs.
 5. **Use subjects consistently**. If subscriptions bill teams, always use `subject: { type: 'team', id: teamId }`.
 6. **Create payment-session RLS before subscription UI**. Checkout and portal creation are gated by app-specific permissions. See [backend-configuration.md](backend-configuration.md).
+7. **Do not treat redirects as fulfillment**. Success pages should read app-owned fulfilled state.
 
 ## Common Mistakes
 
@@ -139,6 +159,8 @@ Do not put Stripe secret keys in frontend code. Stripe keys are configured throu
 | Letting users submit arbitrary subject IDs | Add RLS on `payments.checkout_sessions` and `payments.customer_portal_sessions` based on membership/ownership |
 | Reading payment admin tables from the browser | Create app-specific entitlement tables or a trusted edge function |
 | Using live environment during development | Use `test` until the developer approves production |
+| Marking an order paid on the success URL | Add backend fulfillment first, then read the app-owned order state |
+| Using `payments.checkout_sessions` as proof of payment | Treat checkout sessions as attempts; read app-owned fulfilled state instead |
 
 ## Recommended Workflow
 
@@ -149,6 +171,7 @@ Do not put Stripe secret keys in frontend code. Stripe keys are configured throu
 4. Create Checkout Session             -> SDK createCheckoutSession
 5. Redirect to Stripe                  -> window.location.assign(url)
 6. Return to success/cancel URL        -> App route
-7. Manage subscription later           -> SDK createCustomerPortalSession
-8. Render app entitlement              -> App-specific table or trusted edge function
+7. Fulfill payment/subscription        -> Backend updates app-owned tables
+8. Manage subscription later           -> SDK createCustomerPortalSession
+9. Render app entitlement              -> App-specific table or trusted edge function
 ```

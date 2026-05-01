@@ -195,6 +195,71 @@ After keys and catalog are ready, use the SDK from app code:
 - `npx @insforge/cli payments subscriptions --environment test` for admin debugging.
 - `npx @insforge/cli payments history --environment test` for admin debugging.
 
+## Fulfillment Business Logic
+
+InsForge mirrors Stripe webhook state into payment projection tables, but it cannot know the app's business rules. Agents should add app-specific migrations that copy payment state into app-owned tables with app-specific RLS.
+
+Use these source tables:
+
+| App need | Source table | Signal |
+|----------|--------------|--------|
+| One-time fulfillment | `payments.payment_history` | `type = 'one_time_payment'` and `status = 'succeeded'` |
+| Refund handling | `payments.payment_history` | `type = 'refund'`, or original payment rows with refunded amount |
+| Subscription access | `payments.subscriptions` | Status and billing subject columns |
+| Checkout debugging | `payments.checkout_sessions` | Attempt state only, not final payment proof |
+
+Do not fulfill from the success redirect URL. The success page can show a pending state and read an app-owned table, but payment completion should come from webhook-backed projection rows.
+
+Simple one-time order pattern:
+
+```sql
+-- The app creates public.orders(status = 'pending') before Checkout.
+-- Checkout metadata includes: { "order_id": "<orders.id>" }.
+CREATE OR REPLACE FUNCTION public.fulfill_paid_order()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, payments
+AS $$
+DECLARE
+  order_id_text text;
+  order_id uuid;
+BEGIN
+  IF NEW.type <> 'one_time_payment' OR NEW.status <> 'succeeded' THEN
+    RETURN NEW;
+  END IF;
+
+  SELECT cs.metadata->>'order_id'
+  INTO order_id_text
+  FROM payments.checkout_sessions cs
+  WHERE cs.stripe_checkout_session_id = NEW.stripe_checkout_session_id;
+
+  IF order_id_text IS NULL
+    OR order_id_text !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+  THEN
+    RETURN NEW;
+  END IF;
+
+  order_id := order_id_text::uuid;
+
+  UPDATE public.orders
+  SET status = 'paid',
+      paid_at = COALESCE(paid_at, now())
+  WHERE id = order_id
+    AND status = 'pending';
+
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER fulfill_paid_order
+AFTER INSERT OR UPDATE ON payments.payment_history
+FOR EACH ROW
+EXECUTE FUNCTION public.fulfill_paid_order();
+```
+
+Keep triggers idempotent. Stripe can retry webhooks, and projection rows may be updated multiple times. For external side effects such as sending email, calling a fulfillment API, or provisioning a third-party service, write an app-owned outbox row from the trigger and process it from an edge function or worker.
+
 ## Best Practices
 
 1. **Default to test** while agents build and verify payment flows.
@@ -203,6 +268,7 @@ After keys and catalog are ready, use the SDK from app code:
 4. **Never expose Stripe secret keys** in app code or deployed frontend env vars.
 5. **Define payment-session RLS before subscription UI** on `payments.checkout_sessions` and `payments.customer_portal_sessions`.
 6. **Use app-specific tables for entitlements** if the user-facing UI needs billing status.
+7. **Use payment projections as trigger sources** for fulfillment, not as the user-facing read model.
 
 ## Common Mistakes
 
@@ -213,3 +279,5 @@ After keys and catalog are ready, use the SDK from app code:
 | Editing prices for amount/currency | Create a new price and archive the old one |
 | Using live keys during development | Use `--environment test` until production is explicitly approved |
 | Adding subscription checkout or portal UI without RLS | Add policies on `payments.checkout_sessions` and `payments.customer_portal_sessions` for the app subject model |
+| Marking orders paid from the success URL | Add an idempotent trigger from `payments.payment_history` |
+| Exposing `payments.payment_history` directly to frontend users | Copy the needed state into app-owned tables with app RLS |
