@@ -9,6 +9,12 @@ This guide covers two framework setups in detail:
 
 The auth/bridge primitives are framework-agnostic — `lib/auth.ts`, the REVOKE block, RLS policies, plugins, and the `useInsforgeClient` hook are identical across both. Only the route-handler shape and a few env-var prefixes differ.
 
+> **Don't have Better Auth set up yet?** Two options:
+> - **Fastest** — `npx @insforge/cli link --auth better-auth` scaffolds `lib/auth.ts`, the bridge route, REVOKE SQL, and RLS init in one shot. Pre-wires every choice this guide assumes (Postgres adapter, App Router, InsForge JWT secret).
+> - **Manual / non-CLI** — install [better-auth/skills](https://github.com/better-auth/skills) for the canonical BA scaffolder (`create-auth` walks you through framework, DB adapter, OAuth providers). Once BA is running, return here for the InsForge bridge layer (REVOKE block + `requesting_user_id()` RLS + bridge route + client hook).
+>
+> This skill assumes Better Auth already exists in the project — it covers the InsForge-specific layer, not generic BA setup.
+
 ## Key packages
 
 - `better-auth` — Better Auth core
