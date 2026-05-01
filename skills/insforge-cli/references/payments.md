@@ -154,6 +154,30 @@ npx @insforge/cli payments history --environment test --limit 20 --json
 
 These are admin/debug reads over InsForge's payment projections. They are not the runtime frontend read surface for end users.
 
+## Fulfillment Migrations
+
+The CLI manages Stripe keys, catalog, sync, and webhook setup. App-specific business logic still belongs in app migrations because only the app knows what a paid order, active team, credit grant, or subscription entitlement means.
+
+Recommended migration pattern:
+
+- Create app-owned tables such as `public.orders`, `public.team_billing_status`, or `public.user_entitlements`.
+- Protect those app-owned tables with app-specific RLS.
+- For one-time purchases, trigger from `payments.payment_history` where `type = 'one_time_payment'` and `status = 'succeeded'`.
+- For subscription access, trigger from `payments.subscriptions` status changes.
+- Use `payments.checkout_sessions` metadata only for correlation/debugging. Do not treat a completed checkout session or success redirect as final fulfillment.
+- Do not let users supply arbitrary app IDs in checkout metadata. Create/select the app-owned row through app logic/RLS first, then pass that trusted row ID.
+- Keep SQL triggers idempotent. For external side effects, write an app-owned outbox row and process it from an edge function or worker.
+
+Example flow:
+
+```text
+1. App inserts public.orders(status = 'pending')
+2. App creates Checkout Session with metadata.order_id
+3. Stripe webhook updates payments.payment_history
+4. App trigger marks public.orders.status = 'paid'
+5. Frontend reads public.orders through app RLS or realtime
+```
+
 ## Recommended Agent Workflow
 
 ```text
@@ -165,8 +189,9 @@ These are admin/debug reads over InsForge's payment projections. They are not th
 6. Create one-time/recurring price -> payments prices create ...
 7. Configure webhook if public URL -> payments webhooks configure test
 8. Add payment-session RLS         -> checkout_sessions and customer_portal_sessions
-9. Build app checkout UI           -> use @insforge/sdk payments methods
-10. Repeat for live only when approved by developer
+9. Add fulfillment migrations      -> app-owned tables + payment projection triggers
+10. Build app checkout UI          -> use @insforge/sdk payments methods
+11. Repeat for live only when approved by developer
 ```
 
 ## Common Mistakes
@@ -179,3 +204,4 @@ These are admin/debug reads over InsForge's payment projections. They are not th
 | Trying to update price amount/currency | Create a new price and archive the old one |
 | Using CLI for runtime checkout | Use `insforge.payments.createCheckoutSession` in app code |
 | Shipping subscription UI before RLS | Add policies on `payments.checkout_sessions` and `payments.customer_portal_sessions` first |
+| Marking app orders paid from success URL | Fulfill from webhook-backed `payments.payment_history` or `payments.subscriptions` |
