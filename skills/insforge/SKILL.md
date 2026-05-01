@@ -40,6 +40,8 @@ Before using the SDK, create a `.env` file (or `.env.local` for Next.js) in your
 
 4. **Write both values** to the `.env` file using the correct framework prefix (see table below).
 
+> **Important:** Use the anon key in client apps. InsForge API keys are full-access admin keys, equivalent to service role keys on other platforms, and must stay in trusted server code.
+
 Use the correct environment variable prefix and access pattern for your framework:
 
 | Framework | `.env` file | Variables | Access Pattern |
