@@ -7,7 +7,7 @@ A SPA can't host Better Auth's `/api/auth/*` routes by itself — those need a s
 ## What it shows
 
 - **`lib/auth-client.ts`** — `createAuthClient()` from `better-auth/react`; identical to the Next skeleton.
-- **`lib/insforge.ts`** — the framework-agnostic `useInsforgeClient` hook. Uses the new `client.setAccessToken()` (SDK ≥ 1.3.0) so HTTP and realtime stay in sync without reaching into private state.
+- **`lib/insforge.ts`** — the framework-agnostic `useInsforgeClient` hook. Uses the new `client.setAccessToken()` (SDK ≥ 1.2.6) so HTTP and realtime stay in sync without reaching into private state.
 - **`vite.config.ts`** — proxies `/api` to the BA server AND rewrites the `Origin` header to `http://localhost:3030` so BA's CSRF check (which compares `Origin` against its `baseURL`) doesn't 403 on sign-out. See the integration guide's "Vite / React-only setups" section for why this is needed.
 - **`src/App.tsx`** — single-component SPA: sign-up / sign-in form when signed out, notes panel when signed in.
 

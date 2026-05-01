@@ -224,7 +224,7 @@ export function useInsforgeClient(): { client: InsForgeClient; isReady: boolean 
 }
 ```
 
-> `client.setAccessToken(token)` is a public SDK method (≥1.3.0) that updates the HTTP client AND the realtime TokenManager in one call. On older SDKs you had to call `client.getHttpClient().setAuthToken(token)` plus reach into the private `client.realtime.tokenManager.setAccessToken(token)` separately — forgetting the second one made `senderId` show up as the anon UUID in realtime broadcasts.
+> `client.setAccessToken(token)` is a public SDK method (≥1.2.6) that updates the HTTP client AND the realtime TokenManager in one call. On older SDKs you had to call `client.getHttpClient().setAuthToken(token)` plus reach into the private `client.realtime.tokenManager.setAccessToken(token)` separately — forgetting the second one made `senderId` show up as the anon UUID in realtime broadcasts.
 
 ### Pattern B — per-request client construction (server components, route handlers)
 
@@ -260,14 +260,14 @@ export async function createInsForgeClient() {
 
 ### Sign-out
 
-Better Auth sign-out doesn't clear the InsForge SDK's in-memory token. Pattern A handles this automatically via the `useEffect` cleanup; if you sign out outside of React, do it explicitly. `client.setAccessToken(null)` clears **both** the HTTP token and the realtime token in one call (SDK ≥ 1.3.0):
+Better Auth sign-out doesn't clear the InsForge SDK's in-memory token. Pattern A handles this automatically via the `useEffect` cleanup; if you sign out outside of React, do it explicitly. `client.setAccessToken(null)` clears **both** the HTTP token and the realtime token in one call (SDK ≥ 1.2.6):
 
 ```ts
 await authClient.signOut();
-client.setAccessToken(null);   // clears HTTP + realtime; SDK ≥ 1.3.0
+client.setAccessToken(null);   // clears HTTP + realtime; SDK ≥ 1.2.6
 ```
 
-On older SDKs (< 1.3.0), do the dual-update yourself:
+On older SDKs (< 1.2.6), do the dual-update yourself:
 
 ```ts
 await authClient.signOut();
@@ -625,7 +625,7 @@ Server-only vars (read via `process.env` in the BA process) are the same across 
 | ❌ Cross-origin without `sameSite: 'none'; secure` on the BA cookie | ✅ The browser drops the cookie on cross-origin requests by default. Configure Better Auth's cookies for cross-origin explicitly. |
 | ❌ Missing `Origin` header on direct `fetch`/`curl` to Better Auth POSTs | ✅ Better Auth requires `Origin` for CSRF. Browsers send it automatically; server-side clients must add `'Origin: <baseURL>'`. |
 | ❌ Connecting Better Auth as `anon` or `authenticated` after REVOKE | ✅ The connection-pool role must retain privileges. Use `postgres` (or another fully-granted role) in `DATABASE_URL`. |
-| ❌ Realtime client shows `senderId` as the anon UUID instead of the user's BA id (Pattern A only) | ✅ Use `client.setAccessToken(token)` (SDK ≥ 1.3.0) — it updates HTTP and realtime in one call. On older SDKs the workaround is `client.getHttpClient().setAuthToken(token)` plus `client.realtime['tokenManager'].setAccessToken(token)`. Pattern B's `edgeFunctionToken` already does both. |
+| ❌ Realtime client shows `senderId` as the anon UUID instead of the user's BA id (Pattern A only) | ✅ Use `client.setAccessToken(token)` (SDK ≥ 1.2.6) — it updates HTTP and realtime in one call. On older SDKs the workaround is `client.getHttpClient().setAuthToken(token)` plus `client.realtime['tokenManager'].setAccessToken(token)`. Pattern B's `edgeFunctionToken` already does both. |
 | ❌ Realtime publish silently fails for authenticated users (`UNAUTHORIZED`) | ✅ `realtime.messages.sender_id` is `uuid` in core InsForge; Better Auth IDs are strings. One-time fix: `ALTER TABLE realtime.messages ALTER COLUMN sender_id TYPE text;` |
 | ❌ Vite SPA proxying to a separate BA server, sign-out (or any state-changing endpoint) returns 403 | ✅ BA's CSRF check compares the request's `Origin` against its `baseURL`. Either rewrite the proxy's `Origin` header to BA's URL (Vite `proxy.configure`) or add the SPA origin to BA's `trustedOrigins`. Sign-up has looser handling and won't trip this — the bug shows up later. |
 | ❌ Cross-origin missing `trustedOrigins` even with `sameSite: 'none'; secure: true` | ✅ Cookie config alone isn't enough — BA's CSRF gate also reads `trustedOrigins`. Add the SPA's full origin (no trailing slash) to the array. |
