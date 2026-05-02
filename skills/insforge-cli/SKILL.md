@@ -5,9 +5,9 @@ description: >-
 license: Apache-2.0
 metadata:
   author: insforge
-  version: "1.2.0"
+  version: "1.3.0"
   organization: InsForge
-  date: April 2026
+  date: May 2026
 ---
 
 # InsForge CLI
@@ -190,6 +190,7 @@ Test risky schema, RLS, auth, or function changes in an isolated branch project 
 | `npx @insforge/cli branch list` | List active branches of the parent project (or the parent of the currently-switched-to branch). See [branch-list](references/branch-list.md). |
 | `npx @insforge/cli branch switch <name>` / `--parent` | Repoint `.insforge/project.json` at the branch (or back at parent). See [branch-switch](references/branch-switch.md). |
 | `npx @insforge/cli branch merge <name> [--dry-run] [--save-sql <path>] [-y]` | Compute (and optionally apply) the 3-way merge to parent. Conflict path exits with code 2. See [branch-merge](references/branch-merge.md). |
+| `npx @insforge/cli branch reset <name> [-y]` | Wipe all changes on the branch and restore its database to T0 (parent's snapshot at branch creation). Same EC2 / `appkey` / `API_KEY` — only DB content rewinds. Works from `ready` **or** `merged`. See [branch-reset](references/branch-reset.md). |
 | `npx @insforge/cli branch delete <name> [-y]` | Delete a branch and reclaim its EC2. Auto-switches back to parent if currently on the deleted branch. See [branch-delete](references/branch-delete.md). |
 
 **Typical flow:**
@@ -204,6 +205,8 @@ npx @insforge/cli branch merge feat-rls
 # parent now has the changes — redeploy functions / website / compute as needed
 npx @insforge/cli branch delete feat-rls
 ```
+
+> **Got into a bad state on the branch?** `npx @insforge/cli branch reset <name>` rewinds the branch's database back to T0 (the parent snapshot at branch creation) without touching the EC2 or API keys — cheaper than delete + recreate and the SDK's `INSFORGE_URL` / `ANON_KEY` stay valid. Works from both `ready` and `merged` (a merged branch reset re-opens the same slot for another round of changes).
 
 ### Diagnostics — `npx @insforge/cli diagnose`
 

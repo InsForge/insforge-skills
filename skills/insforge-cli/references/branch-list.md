@@ -39,7 +39,9 @@ shape.
 | State | Meaning |
 |-------|---------|
 | `creating` | Provisioning EC2 + restoring pg_dump. Usually 30–120 s. |
-| `ready` | Usable. Can be switched, modified, merged. |
+| `ready` | Usable. Can be switched, modified, merged, or reset. |
 | `merging` | Merge in progress (rare; usually < 30 s). |
-| `merged` | Merge succeeded. Branch is read-only post-merge. |
-| `conflicted` | Last merge attempt hit a conflict — branch is back to a usable state, retry merge after resolving. |
+| `merged` | Last merge succeeded. The branch is **dormant**, not destroyed — `branch reset` will rewind it to T0 and flip it back to `ready` so the same slot can be reused. |
+| `resetting` | `branch reset` is restoring the T0 dump in place. Lands back at `ready` on success, or rolls back to the entry state (`ready` or `merged`) on failure. |
+| `conflicted` | Reserved for future use. **Not produced by v1** — a conflicted merge leaves the branch in `ready` and surfaces the conflict via the merge response. The DB enum carries the value (added in migration 058) so a future runtime can promote merge to write it without a new migration. |
+| `deleted` | Soft-delete tombstone. Listing already filters these out; you'll only see this in raw `--json` against `GET /branches/:id`. |

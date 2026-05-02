@@ -80,19 +80,30 @@ The CLI exits with code **2** (distinct from the generic error exit 1).
 
 ## What gets auto-applied
 
-| Diff type | Auto-applied? |
-|-----------|---------------|
-| `migration` (entries in `system.custom_migrations`) | ✅ — statements[] replayed verbatim on parent |
-| `config_row` (any of the 13 mergeable tables) | ✅ — UPSERT keyed on the table's logical key, with matrix exclude rules |
-| `edge_function` (`functions.definitions`) | ✅ — UPSERT keyed on `slug` |
-| `table` / `policy` / `function` DDL diffs *without* a corresponding migration | ❌ — recorded but skipped. Capture the change in a migration on branch instead. |
-| Row deletions (branch removed a row that parent still has) | ❌ — too risky to auto-propagate; do it manually if intended. |
+The full v1 matrix, by `(diff type, action)`. The user-schema DDL paths (`table` / `policy` / `function`) replay introspected SQL — you don't have to wrap every change in a `system.custom_migrations` entry, though doing so is still the safest option for complex changes.
 
-Skipped items appear in the `unsupported` log line on apply.
+| Type | `add` | `modify` | `drop` |
+|------|-------|----------|--------|
+| `config_row` (13 mergeable tables) | ✅ UPSERT keyed on the matrix conflict column, respecting `excludeColumns` / `excludeKeys` (e.g. OAuth `client_secret` is filtered out) | ✅ same as `add` — UPSERT replaces the row | ❌ **skip** — never auto-`DELETE` from parent. Drop it manually if intended. |
+| `edge_function` (`functions.definitions`) | ✅ UPSERT keyed on `slug` | ✅ same as `add` | ❌ **skip** — delete the function on parent via dashboard or `cli functions delete` |
+| `migration` (`system.custom_migrations`) | ✅ replays `statements[]` verbatim, then UPSERTs the migration row | — | ❌ **skip** — append-only by design |
+| `table` (user schemas only) | ✅ replays the introspected `CREATE TABLE IF NOT EXISTS …` (columns + inline constraints) plus `CREATE INDEX` for any captured indexes | ❌ **skip** — column-level diff isn't implemented in v1. Workaround: write an `ALTER TABLE` in a `system.custom_migrations` entry on the branch — it lands via the `migration:add` path. | ✅ `DROP TABLE IF EXISTS schema.table CASCADE` |
+| `policy` (user-defined RLS) | ✅ `DROP POLICY IF EXISTS … ; CREATE POLICY …` (the leading drop keeps it idempotent against the OSS `create_policies_on_table_create` event trigger) | ✅ same as `add` — rebuilds to the branch's current spec | ✅ `DROP POLICY IF EXISTS …` |
+| `function` (user-defined PG functions) | ✅ replays `pg_get_functiondef` (`CREATE OR REPLACE FUNCTION …`) — idempotent for both add and modify | ✅ same as `add` | ✅ `DROP FUNCTION IF EXISTS schema.fn(arg-types)` — uses `pg_get_function_identity_arguments` so overloads resolve precisely |
+
+**Row data on user tables is never auto-merged** — branches are not the source of truth for parent's user data. If you seeded rows into `public.*` tables on the branch and want them on parent, copy them manually after the merge (e.g. via `db query` or a one-off `db import`).
+
+**All auto-apply SQL is idempotent** (`IF EXISTS` / `CREATE OR REPLACE` / UPSERT). This matters because OSS event triggers like `create_policies_on_table_create` will rebuild policies after the table:add step lands — the subsequent `policy:add` step then overwrites them with the branch's exact spec. You should not see drift after merge, but if you do, re-running merge is safe.
+
+**Schemas covered by the DDL paths:** `public` and any user-defined schema. System schemas (`auth`, `storage`, `functions`, `email`, `ai`, `realtime`, `schedules`, `system`, `deployments`, `cron`) are gated by the mergeable matrix — DDL on them propagates only via `system.custom_migrations` append, never via `table` / `policy` / `function` diffs.
+
+Skipped items are recorded in the `unsupported` line on the apply response.
 
 ## Post-merge actions
 
-The branch enters `merged` state (read-only). The parent has the new schema/config. **You still need to redeploy** anything that runs outside the merge:
+The branch enters `merged` state — dormant, but not destroyed. The parent has the new schema/config. If you want to layer further changes onto the same branch slot for a second merge, run `npx @insforge/cli branch reset <name>` first to rewind the database to T0 and flip the state back to `ready`. Otherwise, treat a `merged` branch as effectively read-only until you delete it.
+
+**You still need to redeploy** anything that runs outside the merge:
 
 - `npx @insforge/cli functions deploy <slug>` for each modified edge function
 - `npx @insforge/cli deployments deploy` if the website consumes the schema

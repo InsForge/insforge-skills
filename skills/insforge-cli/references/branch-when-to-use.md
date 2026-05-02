@@ -46,6 +46,10 @@ isolation actually pays off.
 | `full` (default) | You need realistic data to validate the change. RLS testing, query plan tuning, large-table migrations. |
 | `schema-only` | You can verify with synthetic seed rows. Faster to create. User-data tables (auth.users, storage.objects, etc.) start empty. |
 
+## When the branch goes sideways
+
+If the experiment dead-ends — broken migration, schema you no longer want, RLS policy that locked you out — `npx @insforge/cli branch reset <name>` rewinds the branch's database to T0 (parent's snapshot at branch creation) without touching the EC2, `appkey`, or API keys. Cheaper than `branch delete` + `branch create` because the dev server's `INSFORGE_URL` / `ANON_KEY` stay valid. Reset works from both `ready` and `merged`, so a previously-merged branch can be re-opened for a second round of changes against the same parent T0 anchor. See [branch-reset](branch-reset.md).
+
 ## After the merge
 
 The merge does **not** auto-redeploy compute / functions / website. Re-run:
