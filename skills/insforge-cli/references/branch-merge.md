@@ -99,17 +99,11 @@ The full v1 matrix, by `(diff type, action)`. The user-schema DDL paths (`table`
 
 Skipped items are recorded in the `unsupported` line on the apply response.
 
-## Post-merge actions
+## After the merge
 
-The branch enters `merged` state — dormant, but not destroyed. The parent has the new schema/config. If you want to layer further changes onto the same branch slot for a second merge, run `npx @insforge/cli branch reset <name>` first to rewind the database to T0 and flip the state back to `ready`. Otherwise, treat a `merged` branch as effectively read-only until you delete it.
+The branch enters `merged` state — dormant, not destroyed. To layer further changes onto the same branch slot, [`branch reset`](branch-reset.md) rewinds it to T0 and flips state back to `ready`.
 
-**You still need to redeploy** anything that runs outside the merge:
-
-- `npx @insforge/cli functions deploy <slug>` for each modified edge function
-- `npx @insforge/cli deployments deploy` if the website consumes the schema
-- `npx @insforge/cli compute update` for fly.io services
-
-The merge does **not** trigger these.
+**The merge does not redeploy code.** Re-run `functions deploy`, `deployments deploy`, and `compute update` for anything outside the database that depends on the new schema.
 
 ## Example
 
@@ -131,5 +125,5 @@ $ npx @insforge/cli branch merge feat-rls-fix
 
 ## See also
 
-- [branch-when-to-use](branch-when-to-use.md)
-- [branch-create](branch-create.md), [branch-switch](branch-switch.md), [branch-delete](branch-delete.md)
+- [branch](branch.md) — lifecycle commands and decision guide
+- [branch-reset](branch-reset.md) — rewinding a branch to T0

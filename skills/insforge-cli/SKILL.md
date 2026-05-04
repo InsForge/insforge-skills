@@ -182,16 +182,16 @@ For frontend hosting see **Frontend Deployments** above.
 
 ### Branching — `npx @insforge/cli branch`
 
-Test risky schema, RLS, auth, or function changes in an isolated branch project before applying them to prod. A branch shares the parent's `JWT_SECRET` (so the same users authenticate) but gets a fresh EC2 + database + `API_KEY` / `ANON_KEY`. See [`references/branch-when-to-use.md`](references/branch-when-to-use.md) for the decision guide.
+Test risky schema, RLS, auth, or function changes in an isolated branch project before applying them to prod. A branch shares the parent's `JWT_SECRET` (so the same users authenticate) but gets a fresh EC2 + database + `API_KEY` / `ANON_KEY`. See [`references/branch.md`](references/branch.md) for the decision guide and lifecycle command details.
 
 | Command | Description |
 |---------|-------------|
-| `npx @insforge/cli branch create <name> [--mode full\|schema-only] [--no-switch]` | Create a branch from the linked project. Auto-switches the directory's context to the new branch by default. See [branch-create](references/branch-create.md). |
-| `npx @insforge/cli branch list` | List active branches of the parent project (or the parent of the currently-switched-to branch). See [branch-list](references/branch-list.md). |
-| `npx @insforge/cli branch switch <name>` / `--parent` | Repoint `.insforge/project.json` at the branch (or back at parent). See [branch-switch](references/branch-switch.md). |
+| `npx @insforge/cli branch create <name> [--mode full\|schema-only] [--no-switch]` | Create a branch from the linked project. Auto-switches the directory's context to the new branch by default. |
+| `npx @insforge/cli branch list` | List active branches of the parent project (or the parent of the currently-switched-to branch). |
+| `npx @insforge/cli branch switch <name>` / `--parent` | Repoint `.insforge/project.json` at the branch (or back at parent). |
 | `npx @insforge/cli branch merge <name> [--dry-run] [--save-sql <path>] [-y]` | Compute (and optionally apply) the 3-way merge to parent. Conflict path exits with code 2. See [branch-merge](references/branch-merge.md). |
 | `npx @insforge/cli branch reset <name> [-y]` | Wipe all changes on the branch and restore its database to T0 (parent's snapshot at branch creation). Same EC2 / `appkey` / `API_KEY` — only DB content rewinds. Works from `ready` **or** `merged`. See [branch-reset](references/branch-reset.md). |
-| `npx @insforge/cli branch delete <name> [-y]` | Delete a branch and reclaim its EC2. Auto-switches back to parent if currently on the deleted branch. See [branch-delete](references/branch-delete.md). |
+| `npx @insforge/cli branch delete <name> [-y]` | Delete a branch and reclaim its EC2. Auto-switches back to parent if currently on the deleted branch. |
 
 **Typical flow:**
 

@@ -55,14 +55,7 @@ Same `BUSY` set as merge: only one of `creating` / `merging` / `resetting` can b
 | Reset polled out at 5 min | SSM job is still running on a large DB | Re-run `branch list` periodically; the backend will eventually settle the state |
 | Branch lands at entry state instead of `ready` | The async restore rolled back. PG content is indeterminate | Retry reset, or restore from a project backup |
 
-## When to reach for reset vs. delete + recreate
-
-| Want to… | Reach for |
-|----------|-----------|
-| Rerun the same experiment from a clean T0, keep the same `API_KEY` / URL so dev-server config is unchanged | `branch reset` |
-| Need a different `--mode` (e.g. switch from `schema-only` to `full`) | `branch delete` + `branch create` (mode is fixed at create time and reset uses the original dump) |
-| Want a fresh `appkey` / API key so callers definitely can't talk to the old branch | `branch delete` + `branch create` |
-| Re-merging a branch that was already merged, with new changes layered on T0 | `branch reset` from the `merged` state, then make the new changes, then `branch merge` again |
+> See [branch.md](branch.md) for the reset-vs-delete decision matrix.
 
 ## Example
 
@@ -75,16 +68,9 @@ $ npx @insforge/cli branch reset feat-rls-fix
 ⚠ Reminder: edge functions, website, and compute aren’t touched by reset; redeploy if needed.
 ```
 
-Resetting a previously-merged branch:
-
-```bash
-$ npx @insforge/cli branch reset feat-rls-fix
-? Reset branch 'feat-rls-fix' back to T0? … (Branch is currently merged — reset will reopen it for further work.) › yes
-✓ Reset enqueued for branch 'feat-rls-fix'. Restoring T0…
-✓ Branch 'feat-rls-fix' is back to T0 and ready.
-```
+Reset works the same on a `merged` branch — it lands at `ready` and the slot is reusable for another round of changes.
 
 ## See also
 
-- [branch-when-to-use](branch-when-to-use.md) — when branching pays off
-- [branch-create](branch-create.md), [branch-merge](branch-merge.md), [branch-delete](branch-delete.md)
+- [branch](branch.md) — lifecycle commands and decision guide
+- [branch-merge](branch-merge.md) — merging a branch back to parent

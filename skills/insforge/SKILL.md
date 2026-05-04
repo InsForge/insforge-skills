@@ -263,7 +263,7 @@ These modules still require HTTP API calls because the CLI does not yet support 
 
 When a code change in this skill depends on a **schema migration**, **new RLS policy**, **OAuth provider config change**, or any other backend change that could brick prod, create a backend branch first instead of editing the live project. Branches share `JWT_SECRET` (existing user JWTs keep working) but get a fresh database + EC2 + `API_KEY` / `ANON_KEY`, so you can test the SDK + backend change end-to-end in isolation.
 
-The full branching workflow lives in the **insforge-cli** skill — start with [branch-when-to-use](../insforge-cli/references/branch-when-to-use.md), then [branch-create](../insforge-cli/references/branch-create.md). Typical loop:
+The full branching workflow lives in the **insforge-cli** skill — see [branch](../insforge-cli/references/branch.md) for the decision guide and lifecycle commands. Typical loop:
 
 ```bash
 npx @insforge/cli branch create feat-x --mode schema-only
@@ -302,4 +302,4 @@ All SDK methods return `{ data, error }`.
 - **Always local build before deploy**: Prevents wasted build resources and faster debugging
 - **Deprecated packages**: `@insforge/react`, `@insforge/nextjs`, and `@insforge/react-router` are **deprecated**. Do NOT install or use them. Use `@insforge/sdk` directly for all features including authentication.
 - **Deployment**: Include a `vercel.json` in the project root for SPA routing (React, React Router apps). The `download-template` tool includes this automatically.
-- **Branching for risky backend changes**: If your SDK code depends on a new schema, RLS policy, or auth config change, create a branch via `npx @insforge/cli branch create` first — see the **insforge-cli** skill's [branch-when-to-use](../insforge-cli/references/branch-when-to-use.md). After `branch create` / `branch switch`, **restart the dev server** so the SDK picks up the new `INSFORGE_URL` / `INSFORGE_ANON_KEY`.
+- **Branching for risky backend changes**: If your SDK code depends on a new schema, RLS policy, or auth config change, create a branch via `npx @insforge/cli branch create` first — see the **insforge-cli** skill's [branch](../insforge-cli/references/branch.md) reference. After `branch create` / `branch switch`, **restart the dev server** so the SDK picks up the new `INSFORGE_URL` / `INSFORGE_ANON_KEY`.
