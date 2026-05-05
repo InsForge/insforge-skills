@@ -81,7 +81,7 @@ See [branch-reset](branch-reset.md) for what reset does and does not touch.
 
 | Error | Meaning | Fix |
 |-------|---------|-----|
-| `branch.quota_exceeded` | Per-org cap (5 parents) or per-parent cap (3 branches) reached | Delete an old branch first |
+| `branch.quota_exceeded` | Per-org cap (3 parents) or per-parent cap (2 branches) reached | Delete an old branch first |
 | `branch.parent_not_branchable` | Parent is itself a branch / not active / pre-2.x | Use a top-level 2.x project |
 | `branch.name_conflict` | Branch name already exists on this parent | Pick a different name |
 | `branch.not_found` | No branch with that name on the parent | Check `branch list` |
@@ -90,8 +90,8 @@ See [branch-reset](branch-reset.md) for what reset does and does not touch.
 
 ## Limits
 
-- Per-org: max 5 parent projects with active branches (configurable).
-- Per-parent: max 3 active branches (configurable).
+- Per-org: max 3 parent projects with active branches (configurable).
+- Per-parent: max 2 active branches (configurable).
 - Branches do not nest (no branch-of-a-branch).
 - Branches do not auto-resume when the parent resumes — resume manually.
 - Branches are deleted (cascade) when the parent project is deleted.
