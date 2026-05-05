@@ -142,6 +142,15 @@ Response:
    - Verification link flow should redirect to the sign-in page and show success/error from the query params
    - Reset link flow should redirect to the reset-password page and only render the form when `token` is present
 
+## OAuth Consent Screen Branding
+
+What end users see on Google's sign-in screen depends on which credentials the project uses:
+
+- **Shared keys → consent screen shows `insforge.dev`.** To rebrand, the project owner must create their own Google OAuth credentials and swap them into InsForge.
+- **Custom credentials → consent screen shows `insforge.app` (or whatever's in Google Cloud) until configured.** The project owner must go into Google Cloud Console and set the app name, logo, and authorized domains on the OAuth consent screen themselves.
+
+Setup-time decision, not a code change.
+
 ## Common Mistakes
 
 | Mistake | Solution |
@@ -150,6 +159,7 @@ Response:
 | Building wrong verification UI | Check `verifyEmailMethod` - code vs link |
 | Skipping email verification flow | Check `requireEmailVerification` flag |
 | Assuming all OAuth providers are available | Only providers in `oAuthProviders` array are configured |
+| Shipping with "insforge.dev" on the Google consent screen | Swap shared keys for the project's own Google credentials and configure the consent screen branding |
 
 ## Recommended Workflow
 
