@@ -6,7 +6,7 @@ description: >-
   RLS, or a payment facilitator (OKX x402) for onchain pay-per-use billing.
   Covers provider-specific dashboard setup, client/server code, database
   policies, and common gotchas for each supported integration.
-license: Apache-2.0
+license: MIT
 metadata:
   author: insforge
   version: "1.1.0"

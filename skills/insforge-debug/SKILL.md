@@ -11,7 +11,7 @@ description: >-
   This skill guides diagnostic command execution to locate problems.
   The manual scenarios surface logs/status only; the AI-assisted path
   (`diagnose --ai`) additionally returns suggested causes and solutions.
-license: Apache-2.0
+license: MIT
 metadata:
   author: insforge
   version: "1.0.0"
