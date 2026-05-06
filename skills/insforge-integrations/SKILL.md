@@ -10,7 +10,7 @@ description: >-
 license: Apache-2.0
 metadata:
   author: insforge
-  version: "1.1.0"
+  version: "1.2.0"
   organization: InsForge
   date: April 2026
 ---
@@ -107,7 +107,7 @@ Refer to the specific `references/<provider>.md` file for complete examples.
 - Use a `MOCK_OKX_FACILITATOR` env flag for local dev so the full flow can be exercised without real funds
 
 **Analytics providers**
-- Run the CLI from inside the app directory so the wizard step writes the SDK init code into the right project (`insforge posthog setup` reads `.insforge/project.json` from the current directory)
+- Run the CLI from inside the app directory so the templated install writes the SDK init code into the right project (`insforge posthog setup` reads `.insforge/project.json` from the current directory)
 - Only the `phc_` (project API key) ever goes into client code — `phx_` (personal API key) and OAuth tokens stay encrypted on the InsForge cloud-backend
 - One PostHog project per InsForge project on the Free plan; if reusing one PostHog project across multiple InsForge projects, set `insforge_project_id` as a `posthog.identify` super-property to disambiguate
 
