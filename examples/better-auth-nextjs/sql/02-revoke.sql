@@ -2,10 +2,14 @@
 -- Better Auth user emails through the data API. Run once after the first
 -- `npx @better-auth/cli migrate`. Survives subsequent migrations (Postgres
 -- only re-grants on CREATE TABLE, not ALTER TABLE).
+--
+-- Including `project_admin` is safe: InsForge Studio inspects tables through
+-- the backend admin pool (postgres superuser), not the project_admin Postgres
+-- role, so the dashboard keeps working.
 REVOKE ALL ON public."user", public.session, public.account, public.verification
-  FROM anon, authenticated;
+  FROM anon, authenticated, project_admin;
 
--- Verify (should show only postgres + project_admin retain access):
+-- Verify (should show only postgres retains access):
 -- \dp public.user
 
 -- ─────────────────────────────────────────────────────────────
@@ -20,6 +24,6 @@ REVOKE ALL ON public."user", public.session, public.account, public.verification
 --   REVOKE ALL ON
 --     public.organization, public.team, public.member,
 --     public."teamMember", public.invitation
---   FROM anon, authenticated;
+--   FROM anon, authenticated, project_admin;
 
 NOTIFY pgrst, 'reload schema';

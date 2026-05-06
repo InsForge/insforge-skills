@@ -98,12 +98,12 @@ Creates four tables in `public`: `user`, `session`, `account`, `verification`. I
 
 ```sql
 REVOKE ALL ON public."user", public.session, public.account, public.verification
-  FROM anon, authenticated;
+  FROM anon, authenticated, project_admin;
 
 NOTIFY pgrst, 'reload schema';
 ```
 
-The `REVOKE` survives subsequent `auth migrate` runs (Postgres only re-grants on `CREATE TABLE`, not `ALTER TABLE`). Better Auth itself connects as the `postgres` superuser via the connection string and is unaffected. `project_admin` retains access for InsForge Studio inspection — `REVOKE` from it too if you want full lockdown.
+The `REVOKE` survives subsequent `auth migrate` runs (Postgres only re-grants on `CREATE TABLE`, not `ALTER TABLE`). Better Auth itself connects as the `postgres` superuser via the connection string and is unaffected. Including `project_admin` is safe — InsForge Studio inspects tables through the backend admin pool (which connects as `postgres`), not via the `project_admin` Postgres role, so the dashboard keeps working.
 
 > **Enabling plugins later?** Every Better Auth plugin that adds tables (`organization`, `twoFactor`, `apiKey`, `passkey`, …) creates them in `public` with the same default grants. Re-run an analogous `REVOKE` for the plugin's tables. The Organization plugin specifically is covered in the [Better Auth plugins](#better-auth-plugins-optional) section below.
 
@@ -467,7 +467,7 @@ Re-run `npx @better-auth/cli migrate -y`, then **lock down the new tables exactl
 REVOKE ALL ON
   public.organization, public.team, public.member,
   public."teamMember", public.invitation
-FROM anon, authenticated;
+FROM anon, authenticated, project_admin;
 
 NOTIFY pgrst, 'reload schema';
 ```
@@ -496,9 +496,9 @@ Then in policies use `current_setting('request.jwt.claims', true)::json->>'org_i
 
 | Plugin | Tables added | REVOKE template |
 |--------|--------------|-----------------|
-| `twoFactor` | `twoFactor` | `REVOKE ALL ON public."twoFactor" FROM anon, authenticated;` |
-| `apiKey` | `apikey` | `REVOKE ALL ON public.apikey FROM anon, authenticated;` |
-| `passkey` | `passkey` | `REVOKE ALL ON public.passkey FROM anon, authenticated;` |
+| `twoFactor` | `twoFactor` | `REVOKE ALL ON public."twoFactor" FROM anon, authenticated, project_admin;` |
+| `apiKey` | `apikey` | `REVOKE ALL ON public.apikey FROM anon, authenticated, project_admin;` |
+| `passkey` | `passkey` | `REVOKE ALL ON public.passkey FROM anon, authenticated, project_admin;` |
 | `oidcProvider` | `oauthApplication`, `oauthAccessToken`, `oauthConsent` | quote each camelCase name |
 
 Rule of thumb: after every `auth migrate`, `\dt public.*` to see the diff, then REVOKE anything Better Auth created.
