@@ -52,6 +52,18 @@ If `allowedRedirectUrls` is empty, InsForge allows all redirects for smoother de
 
 ## Update Auth Configuration
 
+**Preferred**: use the CLI's declarative config flow rather than calling this endpoint directly. The CLI is version-aware and won't silently drop fields on older backends.
+
+```bash
+npx @insforge/cli config export        # pull current settings into insforge.toml
+# edit insforge.toml — e.g. add allowed_redirect_urls
+npx @insforge/cli --yes config apply   # apply (returns { applied[], skipped[] })
+```
+
+If `config apply` reports `skipped[]`, the user's backend doesn't support those fields yet — tell the user verbatim and ask them to upgrade. See the `Configuration` section in the **insforge-cli** skill.
+
+If you must call the API directly (e.g. flipping a single boolean inside a function the user is writing), the endpoint is:
+
 ```
 PUT /api/auth/config
 Authorization: Bearer {admin-token}

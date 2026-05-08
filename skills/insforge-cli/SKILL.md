@@ -173,6 +173,32 @@ For frontend hosting see **Frontend Deployments** above.
 - `npx @insforge/cli secrets update <key> [--value] [--active] [--reserved] [--expires]` — update secret
 - `npx @insforge/cli secrets delete <key>` — **soft delete** (marks inactive; restore with `--active true`)
 
+### Configuration — `npx @insforge/cli config`
+
+Manage declarative project configuration via `insforge.toml`. Use this for "settings page" knobs (auth redirect URLs today; SMTP, OAuth providers, and more later) instead of calling individual API endpoints. The CLI is **version-aware** — it probes the backend and skips sections an older project can't apply cleanly. Direct API calls (e.g. `PUT /api/auth/config`) bypass that check and can silently drop the body on older backends.
+
+- `npx @insforge/cli config export [--out insforge.toml] [--force]` — pull live config and write `insforge.toml`. Sections the backend doesn't expose are omitted; in `--json` mode they're reported as `skipped[]`.
+- `npx @insforge/cli config plan [--file insforge.toml]` — show diff between TOML and live state. Tags which changes will apply vs. skip on the connected backend.
+- `npx @insforge/cli config apply [--file insforge.toml] [--dry-run] [--auto-approve]` — apply the TOML. Per-change capability gate: supported changes apply, unsupported go to `skipped[]` with an upgrade message and **no PUT is issued** for them. `--json` returns `{ plan, applied[], skipped[] }`.
+
+> **TOML is for knobs only — never embed programs.** SQL → `db migrations`. Function code → `functions deploy`. Compute → `compute deploy`. Frontend → `deployments deploy`. The TOML carries booleans, strings, and arrays — anything bigger lives in its own file managed by a dedicated CLI command.
+
+> **If `apply` returns `skipped: [...]`, surface this to the user verbatim.** It means their project's backend doesn't yet support those sections. Tell them which sections were skipped and that they need to upgrade their backend; do not retry, do not bypass via `curl` or direct API calls (those will silently drop on the same older backend). Example:
+>
+> > "I tried to set `auth.allowed_redirect_urls` but your project's backend is on an older version that doesn't support this yet. Upgrade your backend (or contact your InsForge admin) and re-run."
+
+> **Sensitive values use `env(NAME)` references, never literal strings.** When a future TOML field carries a secret (OAuth `client_secret`, SMTP password, S3 secret key), store the actual value with `secrets add` first, then reference it from the TOML. This keeps the file safe to commit to git.
+>
+> ```toml
+> [email.smtp]
+> password = "env(SMTP_PASSWORD)"
+> ```
+>
+> ```bash
+> npx @insforge/cli secrets add SMTP_PASSWORD "<actual-value>"
+> npx @insforge/cli --yes config apply
+> ```
+
 ### Schedules — `npx @insforge/cli schedules`
 - `npx @insforge/cli schedules list` — list all scheduled tasks (shows ID, name, cron, URL, method, active, next run)
 - `npx @insforge/cli schedules get <id>` — get schedule details
