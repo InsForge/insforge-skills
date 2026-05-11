@@ -201,6 +201,47 @@ Authoritative current list and pricing: <https://fly.io/docs/about/pricing/#star
 | ML inference (CPU) | `performance-4x 8192` |
 | Heavy data processing | `performance-8x 16384` |
 
+## Scale-to-zero (default)
+
+Every compute service deploys with full scale-to-zero. The machine stops when traffic is idle and wakes on the next incoming request.
+
+The per-machine `services` block sent to Fly's Machines API includes:
+
+```json
+{
+  "auto_stop_machines": "stop",
+  "auto_start_machines": true,
+  "min_machines_running": 0
+}
+```
+
+These mirror [Fly.io's autostop/autostart fields](https://fly.io/docs/launch/autostop-autostart/) exactly:
+
+| Field | InsForge default | Fly's range | What it does |
+|---|---|---|---|
+| `auto_stop_machines` | `"stop"` | `"off" \| "stop" \| "suspend"` | `stop` = fully stop on idle (cheapest, ~1s cold start). `suspend` = pause RAM in place (faster wake, more $). `off` = never stop. |
+| `auto_start_machines` | `true` | `bool` | Wake the machine when a request arrives at its endpoint. |
+| `min_machines_running` | `0` | `int ≥ 0` | Minimum warm replicas. `0` = full scale-to-zero. |
+
+**Cold start:** ~1s on `shared-1x` for typical images (more for fat images, less for tiny ones). The first request after an idle period waits for the machine to boot; subsequent requests are warm until the next idle window.
+
+### What the CLI/skill can change
+
+**Only one direction: up (more warm capacity).** Scale-to-zero is already the floor — Fly doesn't have a setting "more aggressive than zero." The CLI can move a service toward always-on or `N` warm replicas, but cannot make it idle-stop faster than it already does.
+
+| Want | Equivalent Fly config | CLI flag |
+|---|---|---|
+| Scale-to-zero (default) | `auto_stop_machines: stop`, `min_machines_running: 0` | — (default) |
+| Faster wake from idle | `auto_stop_machines: suspend` | not yet exposed |
+| Always-on (one warm) | `auto_stop_machines: off`, `min_machines_running: 1` | not yet exposed |
+| N warm replicas | `min_machines_running: N` | not yet exposed |
+
+If you need always-on for a latency-sensitive service today, contact support — we can adjust the machine config directly while a CLI flag is in flight. **Do not run `flyctl machine update` against the service yourself** — same reason as the rest of this page: the Fly machine isn't yours to manage, and operating on it directly will drift state away from the InsForge cloud's view.
+
+### Already-deployed services
+
+Services deployed before this default landed are still running with the old (always-on) config. They won't pick up scale-to-zero until the next `compute deploy` / `compute update` against them — that's the call that pushes a fresh `services` block to Fly. To migrate an existing service, redeploy it (or run `compute update <id>` with no real changes; the config push happens regardless).
+
 ## What happens internally
 
 CLI → OSS instance → InsForge cloud backend → Fly.io. The cloud:
