@@ -201,9 +201,9 @@ Authoritative current list and pricing: <https://fly.io/docs/about/pricing/#star
 | ML inference (CPU) | `performance-4x 8192` |
 | Heavy data processing | `performance-8x 16384` |
 
-## Scale-to-zero (default)
+## Scale-to-zero (v1 — the only mode)
 
-Every compute service deploys with full scale-to-zero. The machine stops when traffic is idle and wakes on the next incoming request.
+Every compute service deploys with full scale-to-zero. The machine stops when traffic is idle and wakes on the next incoming request. **There's no flag to change this** — the CLI ships one mode, by design.
 
 The per-machine `services` block sent to Fly's Machines API includes:
 
@@ -217,26 +217,17 @@ The per-machine `services` block sent to Fly's Machines API includes:
 
 > Fly has **two field-name conventions** for the same settings: fly.toml uses the long form (`auto_stop_machines`, `auto_start_machines`); the Machines API uses the short form (`autostop`, `autostart`). InsForge hits the Machines API directly, so the body uses the short names — that's what `flyctl machines list --json` will show you, and that's what you'd look for if you're debugging. Authoritative schema: [`fly.MachineService` in the OpenAPI spec](https://docs.machines.dev/spec/openapi3.json). Conceptual docs at [Fly's autostop/autostart page](https://fly.io/docs/launch/autostop-autostart/) describe the same fields under the fly.toml names.
 
-| Field (Machines API) | fly.toml alias | InsForge default | Fly's range | What it does |
+| Field (Machines API) | fly.toml alias | InsForge value (fixed) | Fly's range | What it does |
 |---|---|---|---|---|
-| `autostop` | `auto_stop_machines` | `"stop"` | `"off" \| "stop" \| "suspend"` (also accepts `true`/`false` for backward compat) | `stop` = fully stop on idle (cheapest, ~1s cold start). `suspend` = pause RAM in place (faster wake, more $). `off` = never stop. |
+| `autostop` | `auto_stop_machines` | `"stop"` | `"off" \| "stop" \| "suspend"` | `stop` = fully stop on idle (cheapest, ~1s cold start). InsForge picks `stop` for v1. |
 | `autostart` | `auto_start_machines` | `true` | `bool` | Wake the machine when a request arrives at its endpoint. |
-| `min_machines_running` | `min_machines_running` | `0` | `int ≥ 0` | Minimum warm replicas. `0` = full scale-to-zero. Only honored in the app's primary region. |
+| `min_machines_running` | `min_machines_running` | `0` | `int ≥ 0` | Minimum warm replicas. `0` = full scale-to-zero. |
 
 **Cold start:** ~1s on `shared-1x` for typical images (more for fat images, less for tiny ones). The first request after an idle period waits for the machine to boot; subsequent requests are warm until the next idle window.
 
-### What the CLI/skill can change
+### Why no override flags
 
-**Only one direction: up (more warm capacity).** Scale-to-zero is already the floor — Fly doesn't have a setting "more aggressive than zero." The CLI can move a service toward always-on or `N` warm replicas, but cannot make it idle-stop faster than it already does.
-
-| Want | Equivalent Machines-API config | CLI flag |
-|---|---|---|
-| Scale-to-zero (default) | `autostop: "stop"`, `autostart: true`, `min_machines_running: 0` | — (default) |
-| Faster wake from idle | `autostop: "suspend"` | not yet exposed |
-| Always-on (one warm) | `autostop: "off"`, `min_machines_running: 1` | not yet exposed |
-| N warm replicas | `min_machines_running: N` | not yet exposed |
-
-If you need always-on for a latency-sensitive service today, contact support — we can adjust the machine config directly while a CLI flag is in flight. **Do not run `flyctl machine update` against the service yourself** — same reason as the rest of this page: the Fly machine isn't yours to manage, and operating on it directly will drift state away from the InsForge cloud's view.
+Less surface area to maintain, fewer footguns. Every service in the system behaves the same way, which means support and the dashboard don't have to reason about "is this one always-on or scale-to-zero?" If real demand for always-on or warm replicas shows up, we'll add `--autostop` / `--min-machines` flags then; until then, support can flip a specific service for you on request. **Do not ask the agent to "set autostop off" or "keep N warm" — there's no flag for it and nothing the skill can do.** **Do not run `flyctl machine update` against the service yourself** either; the Fly machine isn't yours to manage, and operating on it directly will drift state away from the InsForge cloud's view of the service.
 
 ### Already-deployed services
 
