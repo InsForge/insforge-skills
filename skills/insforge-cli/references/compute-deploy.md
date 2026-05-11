@@ -209,19 +209,19 @@ The per-machine `services` block sent to Fly's Machines API includes:
 
 ```json
 {
-  "auto_stop_machines": "stop",
-  "auto_start_machines": true,
+  "autostop": "stop",
+  "autostart": true,
   "min_machines_running": 0
 }
 ```
 
-These mirror [Fly.io's autostop/autostart fields](https://fly.io/docs/launch/autostop-autostart/) exactly:
+> Fly has **two field-name conventions** for the same settings: fly.toml uses the long form (`auto_stop_machines`, `auto_start_machines`); the Machines API uses the short form (`autostop`, `autostart`). InsForge hits the Machines API directly, so the body uses the short names — that's what `flyctl machines list --json` will show you, and that's what you'd look for if you're debugging. Authoritative schema: [`fly.MachineService` in the OpenAPI spec](https://docs.machines.dev/spec/openapi3.json). Conceptual docs at [Fly's autostop/autostart page](https://fly.io/docs/launch/autostop-autostart/) describe the same fields under the fly.toml names.
 
-| Field | InsForge default | Fly's range | What it does |
-|---|---|---|---|
-| `auto_stop_machines` | `"stop"` | `"off" \| "stop" \| "suspend"` | `stop` = fully stop on idle (cheapest, ~1s cold start). `suspend` = pause RAM in place (faster wake, more $). `off` = never stop. |
-| `auto_start_machines` | `true` | `bool` | Wake the machine when a request arrives at its endpoint. |
-| `min_machines_running` | `0` | `int ≥ 0` | Minimum warm replicas. `0` = full scale-to-zero. |
+| Field (Machines API) | fly.toml alias | InsForge default | Fly's range | What it does |
+|---|---|---|---|---|
+| `autostop` | `auto_stop_machines` | `"stop"` | `"off" \| "stop" \| "suspend"` (also accepts `true`/`false` for backward compat) | `stop` = fully stop on idle (cheapest, ~1s cold start). `suspend` = pause RAM in place (faster wake, more $). `off` = never stop. |
+| `autostart` | `auto_start_machines` | `true` | `bool` | Wake the machine when a request arrives at its endpoint. |
+| `min_machines_running` | `min_machines_running` | `0` | `int ≥ 0` | Minimum warm replicas. `0` = full scale-to-zero. Only honored in the app's primary region. |
 
 **Cold start:** ~1s on `shared-1x` for typical images (more for fat images, less for tiny ones). The first request after an idle period waits for the machine to boot; subsequent requests are warm until the next idle window.
 
@@ -229,11 +229,11 @@ These mirror [Fly.io's autostop/autostart fields](https://fly.io/docs/launch/aut
 
 **Only one direction: up (more warm capacity).** Scale-to-zero is already the floor — Fly doesn't have a setting "more aggressive than zero." The CLI can move a service toward always-on or `N` warm replicas, but cannot make it idle-stop faster than it already does.
 
-| Want | Equivalent Fly config | CLI flag |
+| Want | Equivalent Machines-API config | CLI flag |
 |---|---|---|
-| Scale-to-zero (default) | `auto_stop_machines: stop`, `min_machines_running: 0` | — (default) |
-| Faster wake from idle | `auto_stop_machines: suspend` | not yet exposed |
-| Always-on (one warm) | `auto_stop_machines: off`, `min_machines_running: 1` | not yet exposed |
+| Scale-to-zero (default) | `autostop: "stop"`, `autostart: true`, `min_machines_running: 0` | — (default) |
+| Faster wake from idle | `autostop: "suspend"` | not yet exposed |
+| Always-on (one warm) | `autostop: "off"`, `min_machines_running: 1` | not yet exposed |
 | N warm replicas | `min_machines_running: N` | not yet exposed |
 
 If you need always-on for a latency-sensitive service today, contact support — we can adjust the machine config directly while a CLI flag is in flight. **Do not run `flyctl machine update` against the service yourself** — same reason as the rest of this page: the Fly machine isn't yours to manage, and operating on it directly will drift state away from the InsForge cloud's view.
