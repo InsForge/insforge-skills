@@ -1,6 +1,8 @@
 # npx @insforge/cli config
 
-Manage declarative project configuration via `insforge.toml`. This is the path for "settings page" knobs — fields a user would edit on a dashboard form rather than write code for. Today the MVP scope is `auth.allowed_redirect_urls`; future sections cover SMTP, OAuth providers, custom subdomain, and similar.
+Manage `auth.allowed_redirect_urls` declaratively via `insforge.toml`. The path for "settings page" knobs a user would edit on a dashboard form rather than write code for.
+
+**Scope today:** only `auth.allowed_redirect_urls`. Other auth knobs (password policy, OAuth providers, SMTP, custom subdomain) will land in TOML later — for now, manage those via the dashboard.
 
 ## Commands
 
@@ -12,8 +14,8 @@ npx @insforge/cli config apply  [--file insforge.toml] [--dry-run] [--auto-appro
 
 | Command | What it does |
 |---|---|
-| `export` | Read live config from the backend, write to `insforge.toml`. **Sections the backend doesn't expose are omitted** — the file represents what THIS backend can do, not aspirational fields. |
-| `plan` | Diff the TOML against live state. Tags each change as pending-apply or pending-skip on the connected backend. Read-only. |
+| `export` | Read live config from the backend, write to `insforge.toml`. Sections the backend doesn't expose are omitted. |
+| `plan` | Diff the TOML against live state. Shows which changes will apply vs. be skipped on the connected backend. Read-only. |
 | `apply` | Apply the TOML. Per-change capability gate — supported changes apply, unsupported go to `skipped[]` with an upgrade message; **no PUT issued for unsupported sections**. |
 
 ## Why this exists
@@ -28,7 +30,7 @@ Per-project InsForge backends evolve independently. A user's CLI is always npm @
 
 ## File location
 
-`insforge.toml` lives at the **project root**, alongside `package.json` and `.insforge/project.json`. Same directory the user runs the CLI from. Commit it to git — sensitive values are `env(NAME)` references (see below), so the file is safe.
+`insforge.toml` lives at the **project root**, alongside `package.json` and `.insforge/project.json`. Same directory the user runs the CLI from. Safe to commit to git.
 
 ## Typical workflow
 
@@ -36,8 +38,7 @@ Per-project InsForge backends evolve independently. A user's CLI is always npm @
 # 1. Pull current config
 npx @insforge/cli --json config export
 
-# 2. Edit insforge.toml — add/change knobs
-# (e.g. update [auth] allowed_redirect_urls)
+# 2. Edit insforge.toml — add/remove [auth] allowed_redirect_urls entries
 
 # 3. Preview what apply would do
 npx @insforge/cli --json config plan
@@ -81,8 +82,8 @@ npx @insforge/cli --json --yes config apply
   "applied": [ /* DiffChange objects that were applied */ ],
   "skipped": [
     {
-      "key": "email.smtp",
-      "reason": "your backend doesn't expose email.smtp — upgrade the project to apply this section"
+      "key": "auth.allowed_redirect_urls",
+      "reason": "your backend doesn't expose auth.allowed_redirect_urls — upgrade the project to apply this section"
     }
   ]
 }
@@ -90,7 +91,7 @@ npx @insforge/cli --json --yes config apply
 
 ## Handling `skipped[]`
 
-When `apply` returns `skipped: [...]`, the user's project backend doesn't yet support those sections. **Surface this to the user verbatim.** Do not retry. Do not bypass with `curl` or direct API calls — those will silently drop on the same older backend. Sample agent response:
+When `apply` returns `skipped: [...]`, the user's project backend doesn't yet support that section. **Surface this to the user verbatim.** Do not retry. Do not bypass with `curl` or direct API calls — those will silently drop on the same older backend. Sample agent response:
 
 > "I tried to set `auth.allowed_redirect_urls` but your project's backend is on an older version that doesn't support this yet. Upgrade your backend (or contact your InsForge admin) and re-run `npx @insforge/cli config apply`."
 
@@ -100,33 +101,12 @@ Partial apply is intentional: supported sections still apply, unsupported ones s
 
 | Belongs in `insforge.toml` | Does NOT belong in `insforge.toml` |
 |---|---|
-| Booleans (`require_email_verification = true`) | SQL DDL — use `db migrations` |
-| Strings (`subdomain = "myapp"`) | Function source code — use `functions deploy` |
-| Arrays (`allowed_redirect_urls = ["..."]`) | Container images / Dockerfiles — use `compute deploy` |
-| `env()` references for secrets | Frontend builds — use `deployments deploy` |
+| Booleans, strings, arrays | SQL DDL — use `db migrations` |
+| `[auth] allowed_redirect_urls = [...]` | Function source — use `functions deploy` |
+| (future knobs as they land) | Container images — use `compute deploy` |
+|  | Frontend builds — use `deployments deploy` |
 
 If a value would naturally live in its own file (a `.sql`, `.ts`, `Dockerfile`, etc.), it doesn't go in TOML.
-
-## Sensitive values: `env(NAME)` references
-
-Forward-looking — current MVP scope has no sensitive fields. When a future TOML field carries a secret (OAuth `client_secret`, SMTP password, S3 secret key), use an `env(NAME)` reference, never a literal:
-
-```toml
-[email.smtp]
-host = "smtp.gmail.com"
-port = 587
-username = "noreply@app.com"
-password = "env(SMTP_PASSWORD)"
-```
-
-Store the actual value first:
-
-```bash
-npx @insforge/cli secrets add SMTP_PASSWORD "<actual-value>"
-npx @insforge/cli --yes config apply
-```
-
-The CLI validates that sensitive fields are `env(NAME)` references — pasting a literal value triggers a `ConfigValidationError` with the exact `secrets add` command to run. This makes `insforge.toml` unconditionally safe to commit to git.
 
 ## Non-interactive (`--json`) consent
 
@@ -140,15 +120,18 @@ npx @insforge/cli --json --yes config apply
 
 | Mistake | What to do instead |
 |---|---|
-| Calling `PUT /api/auth/config` directly to change auth settings | Use `config apply` — it's version-aware; direct PUTs can silently drop on older backends |
+| Calling `PUT /api/auth/config` directly to change `allowedRedirectUrls` | Use `config apply` — it's version-aware; direct PUTs can silently drop on older backends |
 | Putting SQL DDL in `insforge.toml` | SQL goes in `migrations/`, applied via `db migrations up` |
 | Treating `skipped[]` as an error to retry | It's intentional; surface to the user with the upgrade message and stop |
-| Pasting a literal secret in TOML for a sensitive field | Use `env(NAME)` ref + `secrets add` first |
 | Running `config apply` in `--json` mode without `--yes` | Add `--yes` (or `--auto-approve`); otherwise the command fails fast |
 | Re-running with `--force` to "fix" a skip | `--force` is only for `export`'s overwrite gate. Skips need a backend upgrade. |
+| Trying to set password policy / OAuth providers / SMTP via TOML today | Out of scope today; use the dashboard |
+
+## Coming soon
+
+Additional sections will land in TOML over time — password policy, OAuth providers, SMTP, custom subdomain. The same `export → plan → apply` flow applies; capability gating means you can adopt new sections as the backend exposes them, with no CLI upgrade required to keep working against an older backend.
 
 ## Related
 
 - `npx @insforge/cli metadata` — read-only view of all backend config slices
-- `npx @insforge/cli secrets` — store the actual values that `env()` references resolve
 - See **insforge** SDK skill `auth/sdk-integration.md` for how SDK code reads auth config at runtime
