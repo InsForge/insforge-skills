@@ -166,8 +166,6 @@ For frontend hosting see **Frontend Deployments** above.
 - `npx @insforge/cli compute events <id> [--limit 50]` — Fly machine **lifecycle events** (start/stop/exit/restart). Container stdout/stderr is NOT surfaced in v1 — that's roadmap work and will reuse the freed-up `compute logs` command name when it lands. To debug a crash-looping container today, reproduce locally with the same image.
 - `npx @insforge/cli compute delete <id>` — destroy the service and its Fly.io resources. **Permanent.** Audit log captures the full config (incl. encrypted env blob) on delete for reconstruction. Dashboard adds a type-to-confirm gate; the CLI does not — guard scripted deletes carefully.
 
-> 💤 **Scale-to-zero — v1 is the only mode.** Every compute service deploys with Fly's autostop fully on: `autostop: "stop"` + `autostart: true` + `min_machines_running: 0` (Machines API field names; fly.toml uses the longer `auto_stop_machines` / `auto_start_machines` for the same fields — InsForge hits the Machines API directly). When traffic is idle, Fly stops the machine; the next request wakes it (~1s cold start on `shared-1x`). **The CLI does not expose any override flags** — every service gets the same setting. If you need always-on for a latency-critical service, contact support: we can adjust the machine config directly while we gauge demand for CLI knobs. Don't ask agents to "set autostop to off" or "keep N warm" — there's no flag for it and nothing the skill can do.
-
 ### Secrets — `npx @insforge/cli secrets`
 - `npx @insforge/cli secrets list [--all]` — list secrets (values hidden; `--all` includes deleted)
 - `npx @insforge/cli secrets get <key>` — get decrypted value

@@ -201,38 +201,6 @@ Authoritative current list and pricing: <https://fly.io/docs/about/pricing/#star
 | ML inference (CPU) | `performance-4x 8192` |
 | Heavy data processing | `performance-8x 16384` |
 
-## Scale-to-zero (v1 — the only mode)
-
-Every compute service deploys with full scale-to-zero. The machine stops when traffic is idle and wakes on the next incoming request. **There's no flag to change this** — the CLI ships one mode, by design.
-
-The per-machine `services` block sent to Fly's Machines API includes:
-
-```json
-{
-  "autostop": "stop",
-  "autostart": true,
-  "min_machines_running": 0
-}
-```
-
-> Fly has **two field-name conventions** for the same settings: fly.toml uses the long form (`auto_stop_machines`, `auto_start_machines`); the Machines API uses the short form (`autostop`, `autostart`). InsForge hits the Machines API directly, so the body uses the short names — that's what `flyctl machines list --json` will show you, and that's what you'd look for if you're debugging. Authoritative schema: [`fly.MachineService` in the OpenAPI spec](https://docs.machines.dev/spec/openapi3.json). Conceptual docs at [Fly's autostop/autostart page](https://fly.io/docs/launch/autostop-autostart/) describe the same fields under the fly.toml names.
-
-| Field (Machines API) | fly.toml alias | InsForge value (fixed) | Fly's range | What it does |
-|---|---|---|---|---|
-| `autostop` | `auto_stop_machines` | `"stop"` | `"off" \| "stop" \| "suspend"` | `stop` = fully stop on idle (cheapest, ~1s cold start). InsForge picks `stop` for v1. |
-| `autostart` | `auto_start_machines` | `true` | `bool` | Wake the machine when a request arrives at its endpoint. |
-| `min_machines_running` | `min_machines_running` | `0` | `int ≥ 0` | Minimum warm replicas. `0` = full scale-to-zero. |
-
-**Cold start:** ~1s on `shared-1x` for typical images (more for fat images, less for tiny ones). The first request after an idle period waits for the machine to boot; subsequent requests are warm until the next idle window.
-
-### Why no override flags
-
-Less surface area to maintain, fewer footguns. Every service in the system behaves the same way, which means support and the dashboard don't have to reason about "is this one always-on or scale-to-zero?" If real demand for always-on or warm replicas shows up, we'll add `--autostop` / `--min-machines` flags then; until then, support can flip a specific service for you on request. **Do not ask the agent to "set autostop off" or "keep N warm" — there's no flag for it and nothing the skill can do.** **Do not run `flyctl machine update` against the service yourself** either; the Fly machine isn't yours to manage, and operating on it directly will drift state away from the InsForge cloud's view of the service.
-
-### Already-deployed services
-
-Services deployed before this default landed are still running with the old (always-on) config. They won't pick up scale-to-zero until the next `compute deploy` / `compute update` against them — that's the call that pushes a fresh `services` block to Fly. To migrate an existing service, redeploy it (or run `compute update <id>` with no real changes; the config push happens regardless).
-
 ## What happens internally
 
 CLI → OSS instance → InsForge cloud backend → Fly.io. The cloud:
@@ -300,6 +268,9 @@ A: Use `compute update <service-id> --image <new-image-url>`. The machine is res
 
 **Q: What happens to my service if Fly.io has an outage?**
 A: It's down. InsForge runs your containers on Fly's infrastructure — Fly's uptime is your uptime. For HA, you'd typically deploy multiple services in different regions (future feature).
+
+**Q: Why is the first request after idle slow?**
+A: v1 services scale to zero when idle and wake on the next request (~1s cold start on `shared-1x`). No flag to disable in v1; contact support if you need always-on.
 
 **Q: I see `MANIFEST_UNKNOWN` in a stack trace. What is it?**
 A: After `flyctl` pushes your image, Fly asynchronously aliases the digest from the builder's namespace to your app's namespace. Until that propagates (usually < 8 s) the Machines API returns `400 MANIFEST_UNKNOWN` even though the digest is correct. The InsForge cloud silently retries 4 times with backoff `[2s, 4s, 8s]`, so you almost never see it. If retries exhaust, you get a structured `COMPUTE_IMAGE_NOT_AVAILABLE` 400 with `nextActions` telling you to re-run — re-runs are idempotent and typically succeed instantly because the alias has had time to propagate.
