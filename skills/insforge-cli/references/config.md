@@ -64,7 +64,7 @@ npx @insforge/cli config apply  [--file insforge.toml] [--dry-run] [--auto-appro
 |---|---|
 | Calling `PUT /api/auth/config` directly to change `allowedRedirectUrls` | Use `config apply` — it's version-aware; direct PUTs can silently drop on older backends |
 | Treating `skipped[]` as an error to retry | It's intentional; surface verbatim with the upgrade ask and stop |
-| Running `config apply` in `--json` mode without `--yes` | Add `--yes` (or `--auto-approve`); otherwise the command fails fast with `CONFIRMATION_REQUIRED` |
+| Running `config apply` in `--json` mode without `--yes` | Add `-y`/`--yes` (global) or `--auto-approve` (subcommand alias — same effect); otherwise fails fast with `CONFIRMATION_REQUIRED` |
 | Re-running with `--force` to "fix" a skip | `--force` is only for `export`'s overwrite gate; skips need a backend upgrade |
 | Setting password policy / OAuth providers / SMTP via TOML | Out of scope today — dashboard-only |
 
