@@ -66,6 +66,26 @@ export const openai = new OpenAI({
 })
 ```
 
+## Usage Examples
+
+Use the configured `openai` client only from server-side code:
+
+```javascript
+const completion = await openai.chat.completions.create({
+  model: 'openai/gpt-5.5',
+  messages: [{ role: 'user', content: 'Summarize this project.' }],
+})
+
+console.log(completion.choices[0]?.message?.content)
+```
+
+## Best Practices
+
+1. Keep `OPENROUTER_API_KEY` server-side only.
+2. Restart the dev server after adding or changing the env var.
+3. Prefer OpenRouter over the deprecated `insforge.ai` endpoints for new work.
+4. Do not add project model configs or query `ai.configs` for new implementations.
+
 ## When the Key Is Missing
 
 If `OPENROUTER_API_KEY` is missing:

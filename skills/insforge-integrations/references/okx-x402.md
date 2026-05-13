@@ -91,6 +91,7 @@ export function txUrl(chain: string | null, hash: string) {
 | `NEXT_PUBLIC_INSFORGE_URL` | InsForge Dashboard → Project Settings | client + server |
 | `NEXT_PUBLIC_INSFORGE_ANON_KEY` | InsForge Dashboard → Project Settings | client |
 | `INSFORGE_SERVICE_KEY` | InsForge Dashboard → Project Settings (server-only) | server |
+| `OPENROUTER_API_KEY` | InsForge Dashboard → Model Gateway → Overview | server |
 | `MOCK_OKX_FACILITATOR` | `true` for local/demo; unset or `false` for production | server |
 | `NEXT_PUBLIC_MOCK_OKX_FACILITATOR` | Mirror of `MOCK_OKX_FACILITATOR` if you want the UI to show a "mock mode" badge | client |
 
@@ -321,8 +322,10 @@ NEXT_PUBLIC_MOCK_OKX_FACILITATOR=true
 
 **✓ Verify**
 
+This check uses Node 20+ `--env-file` support.
+
 ```bash
-node -e "require('dotenv').config({path: '.env'}); ['OKX_API_KEY','OKX_SECRET_KEY','OKX_PASSPHRASE','PAYMENT_RECIPIENT','NEXT_PUBLIC_INSFORGE_URL','INSFORGE_SERVICE_KEY','OPENROUTER_API_KEY'].forEach(k => console.log(k, process.env[k] ? 'ok' : 'MISSING'))"
+node --env-file=.env -e "['OKX_API_KEY','OKX_SECRET_KEY','OKX_PASSPHRASE','PAYMENT_RECIPIENT','NEXT_PUBLIC_INSFORGE_URL','NEXT_PUBLIC_INSFORGE_ANON_KEY','INSFORGE_SERVICE_KEY','OPENROUTER_API_KEY'].forEach(k => console.log(k, process.env[k] ? 'ok' : 'MISSING'))"
 # → every row 'ok'
 ```
 

@@ -130,7 +130,26 @@ console.log(job.id, job.status)
 ```
 
 Poll `job.polling_url` or `/api/v1/videos/{jobId}` until the status is
-`completed`, then download the content URL returned by OpenRouter.
+`completed`, then download the content URL returned by OpenRouter:
+
+```javascript
+let video = job
+
+while (video.status === 'pending' || video.status === 'processing') {
+  await new Promise((resolve) => setTimeout(resolve, 5000))
+
+  const pollUrl = new URL(video.polling_url, 'https://openrouter.ai')
+  const poll = await fetch(pollUrl, {
+    headers: {
+      Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+    },
+  })
+
+  video = await poll.json()
+}
+
+console.log(video.unsigned_urls?.[0])
+```
 
 ## Model Discovery
 

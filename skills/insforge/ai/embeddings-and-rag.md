@@ -53,6 +53,8 @@ const openai = new OpenAI({
 
 Do not expose `OPENROUTER_API_KEY` to the browser. For frontend apps, generate
 embeddings through a server route, server action, edge function, or backend.
+Use the standard `@insforge/sdk` client for database calls; see the main
+[SKILL.md](../SKILL.md) for framework-specific env var names and setup.
 
 ### Picking an Embedding Model
 
