@@ -87,8 +87,8 @@ insert into vec_demo (embedding) values ('[0.12, 0.34, 0.56]'::vector(3));
 select * from vec_demo order by embedding <=> '[0.10, 0.30, 0.55]'::vector(3);
 ```
 
-For a real 1536-d column, generate the literal via
-`insforge.ai.embeddings.create()` rather than writing it by hand.
+For a real 1536-d column, generate the vector through OpenRouter embeddings
+using the OpenAI SDK rather than writing it by hand.
 
 ### SDK Insert
 
@@ -97,7 +97,7 @@ From the SDK, pass a plain `number[]` — no cast needed:
 ```typescript
 await insforge.database.from('documents').insert([{
   content: 'example',
-  embedding,  // number[] of length 1536 from embeddings.create()
+  embedding,  // number[] of length 1536 from openai.embeddings.create()
 }]);
 ```
 

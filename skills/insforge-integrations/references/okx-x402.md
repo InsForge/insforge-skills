@@ -178,7 +178,7 @@ npx @insforge/cli db query "select tgname from pg_trigger where tgrelid = 'x402_
 Install deps and create three library files. These have zero coupling to your route handler; you reuse them from any endpoint you want to monetize.
 
 ```bash
-npm install @insforge/sdk viem
+npm install @insforge/sdk viem openai
 ```
 
 **`src/lib/okx-facilitator.ts`** — OKX HMAC-signed calls to `/verify` and `/settle`, with a MOCK branch for local dev.
@@ -311,6 +311,9 @@ NEXT_PUBLIC_INSFORGE_URL=
 NEXT_PUBLIC_INSFORGE_ANON_KEY=
 INSFORGE_SERVICE_KEY=
 
+# Model Gateway (dashboard → Model Gateway → Overview → Active OpenRouter key)
+OPENROUTER_API_KEY=
+
 # Demo mode — server skips on-chain calls, client still signs normally
 MOCK_OKX_FACILITATOR=true
 NEXT_PUBLIC_MOCK_OKX_FACILITATOR=true
@@ -319,7 +322,7 @@ NEXT_PUBLIC_MOCK_OKX_FACILITATOR=true
 **✓ Verify**
 
 ```bash
-node -e "require('dotenv').config({path: '.env'}); ['OKX_API_KEY','OKX_SECRET_KEY','OKX_PASSPHRASE','PAYMENT_RECIPIENT','NEXT_PUBLIC_INSFORGE_URL','INSFORGE_SERVICE_KEY'].forEach(k => console.log(k, process.env[k] ? 'ok' : 'MISSING'))"
+node -e "require('dotenv').config({path: '.env'}); ['OKX_API_KEY','OKX_SECRET_KEY','OKX_PASSPHRASE','PAYMENT_RECIPIENT','NEXT_PUBLIC_INSFORGE_URL','INSFORGE_SERVICE_KEY','OPENROUTER_API_KEY'].forEach(k => console.log(k, process.env[k] ? 'ok' : 'MISSING'))"
 # → every row 'ok'
 ```
 
@@ -351,6 +354,7 @@ Two server routes:
 
 ```typescript
 import { NextRequest } from "next/server";
+import OpenAI from "openai";
 import { verifyPayment, settlePayment } from "@/lib/okx-facilitator";
 import { createServiceClient } from "@/lib/insforge";
 import {
@@ -381,7 +385,10 @@ function generateMarketSnapshot(): Asset[] {
 }
 
 async function generateAIReport(assets: Asset[]): Promise<string> {
-  const insforge = createServiceClient();
+  const openai = new OpenAI({
+    baseURL: "https://openrouter.ai/api/v1",
+    apiKey: process.env.OPENROUTER_API_KEY,
+  });
   const marketTable = assets
     .map((a) => `- ${a.symbol}: $${a.price.toFixed(2)} (${a.change_24h > 0 ? "+" : ""}${a.change_24h}% 24h, signal: ${a.signal})`)
     .join("\n");
@@ -404,11 +411,11 @@ One-line actionable takeaway.
 Output ONLY the markdown. No preamble, no disclaimers.`;
 
   try {
-    const completion = await insforge.ai.chat.completions.create({
+    const completion = await openai.chat.completions.create({
       model: "anthropic/claude-sonnet-4.5",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.7,
-      maxTokens: 600,
+      max_tokens: 600,
     });
     return completion.choices[0]?.message?.content ?? "_AI response was empty._";
   } catch (err) {

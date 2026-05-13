@@ -1,111 +1,94 @@
 # AI Backend Configuration
 
-Check which AI models are configured for a project.
+InsForge's AI feature is now the Model Gateway backed by OpenRouter. New app
+code should call OpenRouter directly with the OpenAI SDK and an
+`OPENROUTER_API_KEY` copied from the InsForge Dashboard.
+
+The old `ai.configs` / `ai.usage` database tables and AI Settings model
+configuration flow are deprecated. Do not query them for new implementations.
 
 ## Setup
 
-Ensure you're authenticated and linked to a project:
+Ask the user to copy the active key:
+
+```text
+InsForge Dashboard -> Model Gateway -> Overview -> Active OpenRouter key -> copy
+```
+
+Then add it to the app's server-side environment:
 
 ```bash
-npx @insforge/cli whoami      # verify authentication
-npx @insforge/cli current     # verify linked project
+OPENROUTER_API_KEY=sk-or-v1-...
 ```
 
-If not set up, run `npx @insforge/cli login` and `npx @insforge/cli link`.
+For framework-specific placement:
 
-## Discovering Available Models
+| App type | Where to put it |
+|----------|-----------------|
+| Next.js | `.env.local` as `OPENROUTER_API_KEY` and use it only in server routes/actions |
+| Vite/React SPA | Backend/API server env, not `VITE_*` |
+| Node service/script | `.env` or deployment secret as `OPENROUTER_API_KEY` |
+| Edge function | Function secret/environment variable |
 
-### Option 1 — CLI (recommended)
+Never expose the key in browser-visible env vars.
+
+## Model Discovery
+
+Use OpenRouter rather than project-local AI config tables:
 
 ```bash
-npx @insforge/cli metadata --json
+# All OpenRouter models
+curl https://openrouter.ai/api/v1/models
+
+# Image output models
+curl "https://openrouter.ai/api/v1/models?output_modalities=image"
+
+# Embedding models
+curl https://openrouter.ai/api/v1/embeddings/models \
+  -H "Authorization: Bearer $OPENROUTER_API_KEY"
+
+# Video models
+curl https://openrouter.ai/api/v1/videos/models \
+  -H "Authorization: Bearer $OPENROUTER_API_KEY"
 ```
 
-The `ai.configurations` section lists all models with `modelId` and `enabled` status.
+The Dashboard Model Gateway model list is also suitable for browsing model IDs,
+modalities, release dates, and pricing.
 
-> **Note:** CLI metadata uses camelCase (`modelId`, `enabled`) while the database uses snake_case (`model_id`, `is_active`). They refer to the same fields.
-
-### Option 2 — Raw SQL
-
-Query the `ai.configs` table directly:
-
-```bash
-npx @insforge/cli db query "SELECT model_id, provider, is_active, input_modality, output_modality FROM ai.configs WHERE is_active = true"
-```
-
-**Table: `ai.configs`**
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `model_id` | VARCHAR(255) | Unique model identifier (use this in SDK calls) |
-| `provider` | VARCHAR(255) | AI provider (e.g., `openai`, `anthropic`, `google`) |
-| `is_active` | BOOLEAN | Whether the model is enabled |
-| `input_modality` | TEXT[] | Supported input types: `text`, `image`, `audio`, `video`, `file` |
-| `output_modality` | TEXT[] | Supported output types: `text`, `image`, `audio`, `video`, `file` |
-| `system_prompt` | TEXT | Optional default system prompt |
-
-### Option 3 — HTTP endpoint (requires admin auth)
-
-```http
-GET /api/ai/configurations
-Authorization: Bearer {admin-token}
-```
-
-## Usage Examples
-
-### Query models via CLI and use in SDK
-
-```bash
-# 1. Get available models
-npx @insforge/cli metadata --json
-# Response includes: ai.configurations[].modelId
-
-# 2. Use the returned modelId in your SDK code
-# e.g., if metadata returns modelId: "anthropic/claude-sonnet-4.5"
-```
+## OpenAI SDK Configuration
 
 ```javascript
-const completion = await insforge.ai.chat.completions.create({
-  model: 'anthropic/claude-sonnet-4.5', // exact modelId from metadata
-  messages: [{ role: 'user', content: 'Hello' }]
+import OpenAI from 'openai'
+
+export const openai = new OpenAI({
+  baseURL: 'https://openrouter.ai/api/v1',
+  apiKey: process.env.OPENROUTER_API_KEY,
 })
 ```
 
-### Query models via raw SQL
+## When the Key Is Missing
 
-```bash
-npx @insforge/cli db query "SELECT model_id FROM ai.configs WHERE is_active = true"
-# Use the returned model_id values in SDK calls
-```
+If `OPENROUTER_API_KEY` is missing:
 
-## Best Practices
+1. Stop before implementing AI calls that would fail.
+2. Ask the user to copy the active OpenRouter key from the InsForge Dashboard.
+3. Add the key as a server-side env var.
+4. Restart the dev server so the env var is loaded.
 
-1. **Always check available models first** before implementing AI features
-2. **Use exact `model_id`** from the query response — do not shorten or guess
-3. Each project has its own configured models — do not assume availability
+## Deprecated Backend Proxy
+
+The old InsForge backend chat completion and image generation endpoints are
+still supported for compatibility, but they are deprecated. Use them only when
+maintaining existing code that already depends on `insforge.ai`.
+
+For new work, do not add project model configuration, do not query `ai.configs`,
+and do not depend on the old AI Settings flow.
 
 ## Common Mistakes
 
 | Mistake | Solution |
 |---------|----------|
-| Hardcoding model IDs (e.g., `claude-haiku`) | Query `ai.configs` or CLI metadata first, use exact `model_id` |
-| Using shortened model names | Use the full `model_id` value (e.g., `anthropic/claude-sonnet-4.5`) |
-| Assuming all models are available | Each project has its own configured models — always check |
-| Calling AI features with no models configured | Check first, instruct user to configure on Dashboard if empty |
-
-## When No Models Are Configured
-
-If the query returns no results:
-
-1. **Do not attempt to use AI features** — they will fail
-2. **Instruct the user** to configure AI models on the InsForge Dashboard → AI Settings
-3. **After configuration**, verify by querying again
-
-## Recommended Workflow
-
-```text
-1. Check available models    → npx @insforge/cli metadata --json
-                               OR query ai.configs table
-2. If empty or missing model → Instruct user to configure on Dashboard
-3. If model exists           → Use exact model_id in SDK calls
-```
+| Asking the user to configure models in AI Settings | Ask them to copy the OpenRouter key from Model Gateway |
+| Querying `ai.configs` or `ai.usage` | Use OpenRouter model APIs and activity APIs |
+| Putting the key in public frontend env vars | Keep `OPENROUTER_API_KEY` server-side |
+| Using the deprecated InsForge SDK AI module for new code | Use OpenRouter with the OpenAI SDK |

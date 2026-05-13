@@ -1,188 +1,197 @@
-# AI SDK Integration
+# AI Integration
 
-Use InsForge SDK to access AI capabilities (chat, images, embeddings) in your frontend application.
+Use OpenRouter through the OpenAI SDK for new AI features. The legacy
+`insforge.ai` SDK module still exists for older apps, but it is deprecated and
+should only be used as a fallback.
 
-## 🚨 Discover Available Models First
+Official OpenRouter references:
 
-**Do not hardcode model IDs.** Each project has its own configured models. Check what's available before writing AI code:
+- [OpenAI SDK with OpenRouter](https://openrouter.ai/docs/guides/community/openai-sdk)
+- [Image generation](https://openrouter.ai/docs/guides/overview/multimodal/image-generation)
+- [Embeddings](https://openrouter.ai/docs/api/reference/embeddings)
+- [Video generation](https://openrouter.ai/docs/guides/overview/multimodal/video-generation)
+- [Models](https://openrouter.ai/models)
 
-```bash
-# Option 1: CLI metadata
-npx @insforge/cli metadata --json
+## First: Get the API Key
 
-# Option 2: Query ai.configs table directly
-npx @insforge/cli db query "SELECT model_id, provider, is_active, input_modality, output_modality FROM ai.configs WHERE is_active = true"
+Ask the user to copy the active OpenRouter key from the InsForge Dashboard:
+
+```text
+InsForge Dashboard -> Model Gateway -> Overview -> Active OpenRouter key -> copy
 ```
 
-Use the exact `model_id` from the response in SDK calls. If no models are configured, instruct the user to add them via InsForge Dashboard → AI Settings.
+Store it as a server-side environment variable:
 
----
+```bash
+OPENROUTER_API_KEY=sk-or-v1-...
+```
+
+Never put this key in public browser env vars such as `NEXT_PUBLIC_*`,
+`VITE_*`, `PUBLIC_*`, or `REACT_APP_*`. For browser apps, create a server API
+route, server action, edge function, or backend endpoint that calls OpenRouter.
 
 ## Setup
 
-First, ensure your `.env` file is configured with your InsForge URL and anon key. Get the anon key with `npx @insforge/cli secrets get ANON_KEY`. See the main [SKILL.md](../SKILL.md) for framework-specific variable names and full setup steps.
+```bash
+npm install openai
+```
+
+For a local script, also install dotenv:
+
+```bash
+npm install dotenv
+```
 
 ```javascript
-import { createClient } from '@insforge/sdk'
+import OpenAI from 'openai'
 
-const insforge = createClient({
-  baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL,       // adjust prefix for your framework
-  anonKey: process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY   // adjust prefix for your framework
+export const openai = new OpenAI({
+  baseURL: 'https://openrouter.ai/api/v1',
+  apiKey: process.env.OPENROUTER_API_KEY,
 })
 ```
 
-## Usage Examples
-
-### Chat Completions
-
-#### Basic Usage
+## Text Generation
 
 ```javascript
-// Use the exact model_id from: npx @insforge/cli metadata --json
-// or: npx @insforge/cli db query "SELECT model_id FROM ai.configs WHERE is_active = true"
-const completion = await insforge.ai.chat.completions.create({
-  model: MODEL_ID, // e.g., 'anthropic/claude-sonnet-4.5' — from metadata, NOT hardcoded
+const completion = await openai.chat.completions.create({
+  model: 'openai/gpt-5.5',
   messages: [
-    { role: 'user', content: 'What is the capital of France?' }
-  ]
-})
-console.log(completion.choices[0].message.content)
-```
-
-#### With Parameters
-
-```javascript
-const completion = await insforge.ai.chat.completions.create({
-  model: MODEL_ID, // from metadata or ai.configs query
-  messages: [
-    { role: 'system', content: 'You are a helpful assistant.' },
-    { role: 'user', content: 'Explain quantum computing.' }
+    { role: 'system', content: 'You are a concise assistant.' },
+    { role: 'user', content: 'Explain pgvector in one paragraph.' },
   ],
-  temperature: 0.7,
-  maxTokens: 1000
 })
+
+console.log(completion.choices[0]?.message?.content)
 ```
 
-#### With Images
+## Image Generation
+
+OpenRouter image generation uses chat completions with image output
+modalities. Pick a model with `image` in `output_modalities`.
 
 ```javascript
-// Verify model supports image input_modality via metadata before using
-const completion = await insforge.ai.chat.completions.create({
-  model: MODEL_ID, // must have 'image' in input_modality
-  messages: [{
-    role: 'user',
-    content: [
-      { type: 'text', text: 'What is in this image?' },
-      { type: 'image_url', image_url: { url: 'https://...' } }
-    ]
-  }]
+const completion = await openai.chat.completions.create({
+  model: 'google/gemini-2.5-flash-image',
+  modalities: ['image', 'text'],
+  messages: [
+    { role: 'user', content: 'Generate a clean product mockup on a white desk.' },
+  ],
 })
+
+const message = completion.choices[0]?.message
+console.log(message?.content)
+console.log(message?.images?.[0]?.image_url?.url)
 ```
 
-#### With File Parsing and Web Search
+If TypeScript types reject OpenRouter-specific fields like `modalities` or
+`images`, use a narrow local cast or call the OpenRouter endpoint with `fetch`.
+Do not remove the OpenRouter parameters.
+
+## Embeddings
+
+OpenRouter exposes embeddings at the OpenAI-compatible `/embeddings` endpoint.
 
 ```javascript
-const completion = await insforge.ai.chat.completions.create({
-  model: MODEL_ID, // from metadata or ai.configs query
-  messages: [{
-    role: 'user',
-    content: [
-      { type: 'text', text: 'Analyze this PDF' },
-      { type: 'file', file: { filename: 'doc.pdf', file_data: 'https://...' } }
-    ]
-  }],
-  fileParser: { enabled: true },
-  webSearch: { enabled: true, maxResults: 5 }
+const response = await openai.embeddings.create({
+  model: 'openai/text-embedding-3-small',
+  input: 'InsForge is a backend-as-a-service platform.',
 })
+
+const embedding = response.data[0].embedding
 ```
 
-### Embeddings
-
-```javascript
-// Use embedding model_id from metadata (e.g., 'openai/text-embedding-3-small')
-const response = await insforge.ai.embeddings.create({
-  model: EMBEDDING_MODEL_ID, // from metadata or ai.configs query
-  input: 'Hello world'
-})
-console.log(response.data[0].embedding) // number[]
-
-// Store in database with pgvector
-await insforge.database.from('documents').insert([{
-  content: 'Important document',
-  embedding: response.data[0].embedding
-}])
-```
-
-For end-to-end embedding + RAG patterns (batching, similarity search RPCs, full
-retrieval-augmented generation flow), see [embeddings-and-rag.md](./embeddings-and-rag.md).
-For the pgvector schema, distance operators, and indexes, see
+Store the returned `number[]` in an InsForge Postgres `vector(N)` column. See
+[embeddings-and-rag.md](./embeddings-and-rag.md) and
 [../database/pgvector.md](../database/pgvector.md).
 
-### Image Generation
+## Video Generation
+
+Video generation is asynchronous and uses OpenRouter's video endpoint directly,
+not the OpenAI SDK.
 
 ```javascript
-// Use image generation model_id from metadata — must have 'image' in output_modality
-const response = await insforge.ai.images.generate({
-  model: IMAGE_MODEL_ID, // from metadata or ai.configs query
-  prompt: 'A mountain landscape at sunset',
-  size: '1024x1024'
+const response = await fetch('https://openrouter.ai/api/v1/videos', {
+  method: 'POST',
+  headers: {
+    Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    model: 'google/veo-3.1',
+    prompt: 'A golden retriever playing fetch on a sunny beach.',
+    duration: 5,
+    resolution: '720p',
+  }),
 })
 
-// Upload to storage
-const base64 = response.data[0].b64_json
-const binary = atob(base64)
-const bytes = new Uint8Array(binary.length)
-for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
-const blob = new Blob([bytes], { type: 'image/png' })
-
-const { data } = await insforge.storage.from('ai-images').uploadAuto(blob)
+const job = await response.json()
+console.log(job.id, job.status)
 ```
 
----
+Poll `job.polling_url` or `/api/v1/videos/{jobId}` until the status is
+`completed`, then download the content URL returned by OpenRouter.
+
+## Model Discovery
+
+Do not use the old `ai.configs` table. It is deprecated.
+
+Use OpenRouter model discovery instead:
+
+```bash
+# All models
+curl https://openrouter.ai/api/v1/models
+
+# Image-capable models
+curl "https://openrouter.ai/api/v1/models?output_modalities=image"
+
+# Embedding models
+curl https://openrouter.ai/api/v1/embeddings/models \
+  -H "Authorization: Bearer $OPENROUTER_API_KEY"
+
+# Video models
+curl https://openrouter.ai/api/v1/videos/models \
+  -H "Authorization: Bearer $OPENROUTER_API_KEY"
+```
+
+The InsForge Dashboard Model Gateway model list is also a good place for the
+user to browse supported model IDs and copy the active key.
+
+## Deprecated Fallback: InsForge SDK AI Module
+
+Use this only when maintaining existing code or when the user explicitly asks
+to keep using InsForge SDK AI calls. For new features, prefer OpenRouter
+directly.
+
+```javascript
+const completion = await insforge.ai.chat.completions.create({
+  model: 'openai/gpt-5.5',
+  messages: [{ role: 'user', content: 'Hello' }],
+})
+```
+
+```javascript
+const image = await insforge.ai.images.generate({
+  model: 'google/gemini-2.5-flash-image',
+  prompt: 'A mountain landscape at sunset',
+})
+```
 
 ## Best Practices
 
-1. **Always discover models first**
-   - Run `npx @insforge/cli metadata --json` or query `ai.configs` table before writing AI code
-   - Only use `model_id` values that exist and are active
-
-2. **Use exact model IDs from configurations**
-   - Model IDs must match exactly what's in `ai.configs`
-   - Example: `anthropic/claude-sonnet-4.5` not `claude-sonnet` or `sonnet-4.5`
-
-3. **Handle errors gracefully**
-   - Always check for errors in the response
-   - Provide meaningful feedback to users when AI requests fail
-
-4. **Never store base64 images in the database**
-   - Generated images return base64 data - do not save this directly to the database
-   - Always upload to storage first, then save the storage URL/key to the database
-   - Base64 strings are large and will bloat your database
+1. Use OpenRouter with the OpenAI SDK for new text, image, and embedding code.
+2. Keep `OPENROUTER_API_KEY` server-side only.
+3. Ask the user to copy the key from the InsForge Dashboard if it is missing.
+4. Check OpenRouter model capabilities before using image, embedding, audio, or video features.
+5. Upload generated images/videos to storage before saving references in the database.
+6. Treat the InsForge SDK AI module as deprecated fallback code.
 
 ## Common Mistakes
 
-| Mistake | Solution |
-|---------|----------|
-| ❌ Using unconfigured model IDs | ✅ Check `ai.configs` table or CLI metadata first |
-| ❌ Hardcoding model IDs without verification | ✅ Query available models, use exact `model_id` from response |
-| ❌ Ignoring errors | ✅ Always handle `error` in response |
-| ❌ Storing base64 image data in database | ✅ Upload to storage, save URL/key to database |
-
-## When AI Requests Fail
-
-If AI requests fail with model-related errors:
-
-1. **Check if the model is configured** for this project
-2. **If not configured**, instruct the user:
-   > "The AI model is not configured for this project. Please go to the InsForge Dashboard → AI Settings to add and enable the required model."
-3. **Do not retry** with guessed model IDs
-
-## Recommended Workflow
-
-```text
-1. Discover available models → npx @insforge/cli metadata --json
-                               OR: npx @insforge/cli db query "SELECT model_id, provider, input_modality, output_modality FROM ai.configs WHERE is_active = true"
-2. Confirm model is active   → Use only model_id values from the response
-3. Implement SDK calls       → Use exact model_id string in SDK calls
-4. Handle errors             → Show user-friendly messages
-```
+| Mistake | Fix |
+|---------|-----|
+| Querying `ai.configs` for supported models | Use OpenRouter models or the Dashboard Model Gateway model list |
+| Putting `OPENROUTER_API_KEY` in `NEXT_PUBLIC_*` or `VITE_*` | Keep it server-side and proxy through an API route |
+| Using the legacy `insforge.ai` module for new features | Use OpenRouter through the OpenAI SDK |
+| Guessing model capabilities | Check OpenRouter model metadata and modality docs |
+| Storing base64 image output in Postgres | Upload to storage, save the URL/key |

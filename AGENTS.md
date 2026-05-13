@@ -52,7 +52,7 @@ InsForge skill modules use a two-file pattern:
 
 | File | Purpose | When to Use |
 |------|---------|-------------|
-| `sdk-integration.md` | Frontend SDK usage with `@insforge/sdk` | Implementing features in user's app code |
+| `sdk-integration.md` | App-facing SDK/API usage. Most modules use `@insforge/sdk`; AI uses OpenRouter through the OpenAI SDK | Implementing features in user's app code |
 | `backend-configuration.md` | Backend HTTP API configuration | Setting up infrastructure before app can use it |
 
 ## Working with This Repository
