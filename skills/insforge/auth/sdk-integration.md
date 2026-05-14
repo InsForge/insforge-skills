@@ -4,7 +4,7 @@ User authentication, registration, and session management via `insforge.auth`.
 
 > **⚠️ Deprecated Packages**: The packages `@insforge/react`, `@insforge/nextjs`, and `@insforge/react-router` are **deprecated** and should NOT be used. Use `@insforge/sdk` directly for all authentication flows. Build your own auth UI components using the SDK methods documented below.
 
-> **📧 Auth emails ship by default — no SMTP setup required.** Signup verification, password reset, magic links, and team invites are sent automatically by the InsForge platform. **Do NOT install `nodemailer` / `resend` / `sendgrid` / `mailgun` or ask the user for SMTP credentials** to wire up auth emails. The verification flow below works on every project out of the box. For custom transactional email (welcome messages, newsletters), see [email/sdk-integration.md](../email/sdk-integration.md) — also no SMTP needed.
+> **📧 No SMTP for auth emails.** Signup verification, password reset, magic links, and invites ship on **every plan** (free included) — sent by the InsForge platform. **Never install `nodemailer` / `resend` / `sendgrid` / `mailgun` / `postmark` or ask the user for SMTP credentials.** For custom transactional email, see [email/sdk-integration.md](../email/sdk-integration.md) — also no SMTP.
 
 ## Setup
 
