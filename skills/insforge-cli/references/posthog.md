@@ -1,36 +1,22 @@
 # npx @insforge/cli posthog setup
 
-One-shot CLI command that connects an InsForge project to PostHog (provisioning a PostHog account if needed) and installs the PostHog SDK into the current directory's app via deterministic per-framework templates.
+One-shot command that ensures the InsForge dashboard has a PostHog connection, then runs the official PostHog setup wizard to wire PostHog into the app code.
 
 ## Availability
 
-PostHog integration is in private beta. Currently rolling out to early-access partners on InsForge Cloud — older cloud projects and self-hosted backends may not expose `/integrations/posthog/v1/*` yet.
-
-Always start with:
-
-```bash
-npx @insforge/cli posthog setup
-```
-
-If the CLI fails with `PostHog connect flow unavailable (HTTP 404)` or a similar "endpoint not found" error, your project doesn't have PostHog integration enabled yet — wait for the rollout or ask the InsForge team for early access. Do not work around this by manually pulling a `phc_` key from a separate PostHog account and embedding it: the InsForge dashboard will not surface analytics until the OAuth-backed connection is established server-side.
-
-Self-hosted InsForge backends do not currently include PostHog integration. To use PostHog with a self-hosted project, follow PostHog's standard SDK installation docs and configure your own PostHog account directly — InsForge Analytics will not render in this case.
+PostHog integration is in private beta. If `cli-start` returns `PostHog connect flow unavailable (HTTP 404)`, this project doesn't have PostHog enabled yet — wait for the rollout or ask the InsForge team for early access. Self-hosted backends don't currently expose `/integrations/posthog/v1/*` and this command won't work there; users on self-hosted should install PostHog directly per [PostHog's docs](https://posthog.com/docs/libraries).
 
 ## Usage
 
 ```bash
 cd /path/to/your/app
 npx @insforge/cli link --project-id <insforge-project-id>   # if not already linked
-npx @insforge/cli posthog setup                             # one shot: connect + install SDK
+npx @insforge/cli posthog setup
 ```
-
-## Flags
 
 | Flag | Description |
 |------|-------------|
-| `--framework <name>` | Force framework instead of auto-detect (`next-app` / `next-pages` / `vite-react` / `sveltekit` / `astro`) |
-| `--skip-install` | Do not run the package manager install step (you'll need to install `posthog-js` yourself) |
-| `--skip-browser` | Do not auto-open the browser; only print the URL (useful for headless / SSH sessions) |
+| `--skip-browser` | Don't auto-open the browser for InsForge's OAuth step; only print the URL (useful for headless / SSH sessions). Does **not** affect the wizard, which always opens a browser. |
 
 Inherited global flags (e.g. `--json`, `--api-url`) work too — see the main CLI skill.
 
@@ -38,55 +24,34 @@ Inherited global flags (e.g. `--json`, `--api-url`) work too — see the main CL
 
 1. Reads `.insforge/project.json` from the current directory to find your InsForge project ID
 2. Calls cloud-backend `/integrations/posthog/v1/cli-start`. Two outcomes:
-   - **New PostHog account** (your InsForge email isn't yet in PostHog): an account + project are auto-provisioned server-side, no browser hop. PostHog sends a welcome email so you can later set a password and log in to PostHog directly
-   - **Existing PostHog account**: the CLI prints a URL and opens the browser to PostHog's consent page; after you click Authorize, the CLI's polling picks up the connection
-3. Calls cloud-backend `/integrations/posthog/v1/connection` to fetch the `phc_` ingestion key and PostHog host
-4. Detects the project's framework from `package.json` + filesystem layout (or uses `--framework` if set). Supported: Next.js App Router, Next.js Pages Router, Vite + React, SvelteKit, Astro
-5. Installs `posthog-js` via the project's package manager (npm / yarn / pnpm / bun, auto-detected from lockfile)
-6. Renders the per-framework template into the right entry file:
-   - **Next.js App Router**: writes `app/posthog-provider.tsx` (or `src/app/...`); emits a printable note instructing the caller to wrap `<body>{children}</body>` in `app/layout.tsx` with `<PostHogProvider>` (left as a manual or agent-applied step because layout files vary too much to safely auto-edit)
-   - **Next.js Pages Router**: writes `pages/_app.tsx` if missing; emits a note if the file already exists
-   - **Vite + React**: emits a snippet to add to `src/main.tsx` (too many variants — providers, custom roots — to auto-edit)
-   - **SvelteKit**: writes `src/hooks.client.ts` if missing; emits a note if it exists
-   - **Astro**: writes `src/lib/posthog.ts` and emits a note instructing the caller to import it from a layout `<script>` tag
-7. Writes the framework-appropriate env vars to `.env` (or `.env.local` for Next.js): `*_POSTHOG_KEY` and `*_POSTHOG_HOST`
+   - **Already connected**: dashboard already has a PostHog connection → skip OAuth, go straight to step 4
+   - **Not connected**: cloud-backend returns an authorize URL. CLI opens it in the browser (unless `--skip-browser`) and polls `/connection` until the dashboard receives the OAuth callback
+3. (If step 2 needed OAuth) Confirms the InsForge dashboard now has a PostHog connection
+4. Spawns `npx -y @posthog/wizard@latest` with stdio inherited. The wizard:
+   - Opens its own browser for PostHog OAuth (this is independent of step 2)
+   - Lets the user pick a PostHog project
+   - Detects the app's framework, installs the SDK, writes env vars, and adds the SDK init / provider code
+5. After the wizard exits cleanly, prints a "Open Analytics in your dashboard" outro
 
-> The CLI writes the SDK provider component automatically but leaves the **layout integration** as a printed note. AI coding agents (Cursor / Claude Code / Windsurf) typically apply the note automatically; in plain terminal usage you copy the snippet from the CLI output into `app/layout.tsx` (or equivalent) yourself.
+## Two OAuths, briefly explained
 
-## Environment variables written
+The command does two OAuths in sequence, both targeting PostHog but for different consumers:
 
-| Framework | Env file | Vars |
-|-----------|----------|------|
-| Next.js (App / Pages) | `.env.local` | `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST` |
-| Vite + React | `.env` | `VITE_PUBLIC_POSTHOG_KEY`, `VITE_PUBLIC_POSTHOG_HOST` |
-| SvelteKit | `.env` | `PUBLIC_POSTHOG_KEY`, `PUBLIC_POSTHOG_HOST` |
-| Astro | `.env` | `PUBLIC_POSTHOG_KEY`, `PUBLIC_POSTHOG_HOST` |
+| Step | What it sets up | What it writes |
+|------|-----------------|----------------|
+| 2 — InsForge cli-start | Server-side connection so the InsForge dashboard Analytics page can query PostHog on the user's behalf | `posthog_connections` row in cloud-backend |
+| 4 — `@posthog/wizard` | Client-side instrumentation so events flow from the app to PostHog | Env vars + SDK init in the app code |
 
-Existing matching keys are left alone (the CLI never overwrites — if a value differs, it logs a warning and keeps the existing).
+Practically the user signs in with the same PostHog account both times and ends up on the same PostHog project. The CLI doesn't try to deduplicate — the wizard's OAuth is the source of truth for which project the app sends events to.
 
-## Verify events are flowing
+## Web Analytics ingestion delay
 
-After install, run your dev server and trigger a page view. The first event arrives at PostHog within seconds. To verify without launching the app, send a test event:
-
-```bash
-curl -X POST https://us.i.posthog.com/i/v0/e/ \
-  -H "Content-Type: application/json" \
-  -d '{
-    "api_key": "phc_...",
-    "event": "$pageview",
-    "distinct_id": "test_user_1",
-    "properties": { "$current_url": "https://example.com" }
-  }'
-```
-
-Returns `{"status": 1}` on success. The InsForge Analytics dashboard updates within a minute.
+PostHog's `sessions` materialized view (which powers Web Analytics queries) has multi-hour ingestion lag for new projects. Events show in PostHog's Activity page within seconds, but `visitors / views / sessions` on Web Analytics and the InsForge Analytics page can return 0 for the first 24h. This is not a CLI bug — wait it out.
 
 ## Common Mistakes
 
 | Mistake | Solution |
 |---------|----------|
 | Running `npx @insforge/cli posthog setup` outside the linked project directory | The CLI reads `.insforge/project.json` from cwd. Run it from the project root after `npx @insforge/cli link --project-id <id>` |
-| Framework not auto-detected (Bun, Deno, Solid, custom setups) | The CLI prints the `phc_` key + host and a link to PostHog's docs for that framework — install posthog-js manually following PostHog's guide |
-| Next.js App Router setup leaves PostHog "uninitialised" at runtime | The CLI writes `posthog-provider.tsx` but does **not** auto-edit `app/layout.tsx`. Wrap `<body>{children}</body>` with `<PostHogProvider>` from the printed note, or have your AI coding agent apply the change |
-| `posthog-provider.tsx` already exists from a prior setup | The CLI skips overwriting the file (logs `already calls posthog.init — leaving it alone`). Either delete the file and re-run, or hand-edit it |
-| `.env.local` already has a different `NEXT_PUBLIC_POSTHOG_KEY` | The CLI keeps the existing value and logs a warning — manually reconcile if you intended to switch projects |
+| Headless environment, browser doesn't open for the InsForge OAuth step | Pass `--skip-browser` and copy the printed URL onto a machine with a browser. The wizard step also needs a browser — run the whole command on a workstation, not headless. |
+| Wizard exits non-zero | The CLI surfaces the wizard's exit code in the error message. Re-run; if it keeps failing, file an issue with `@posthog/wizard`. |
