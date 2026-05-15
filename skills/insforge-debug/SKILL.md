@@ -1,27 +1,29 @@
 ---
 name: insforge-debug
 description: >-
-  Use this skill when encountering errors, bugs, performance issues, or
-  unexpected behavior in an InsForge project — from frontend SDK errors
-  to backend infrastructure problems. Trigger on: SDK returning error objects,
-  HTTP 4xx/5xx responses, edge function failures or timeouts, slow database
-  queries, authentication/authorization failures, realtime channel issues,
-  backend performance degradation (high CPU/memory/slow responses),
-  edge function deploy failures, or frontend Vercel deploy failures.
-  This skill guides diagnostic command execution to locate problems.
-  The manual scenarios surface logs/status only; the AI-assisted path
+  Use this skill when encountering errors, bugs, or unexpected behavior in an
+  InsForge project that has a concrete symptom — an SDK error object, an HTTP
+  4xx/5xx response, a failing edge function, a login that won't go through,
+  a realtime channel that won't connect, or a deploy that just errored.
+  This skill guides diagnostic command execution to locate the cause. The
+  manual scenarios surface logs/status only; the AI-assisted path
   (`diagnose --ai`) additionally returns suggested causes and solutions.
+  For proactive health audits without a concrete symptom (security review,
+  performance scan, system health check), use `insforge-backend-advisor`
+  instead.
 license: MIT
 metadata:
   author: insforge
-  version: "1.0.0"
+  version: "1.1.0"
   organization: InsForge
-  date: March 2026
+  date: May 2026
 ---
 
 # InsForge Debug
 
-Diagnose problems in InsForge projects — from frontend SDK errors to backend infrastructure issues. This skill helps you **locate** problems by running the right commands and surfacing logs/status. The manual scenarios below locate problems without suggesting fixes; the [AI-assisted path](#ai-assisted-diagnosis-fastest-path) additionally returns suggested causes and solutions.
+Diagnose concrete problems in InsForge projects — from frontend SDK errors to edge function failures. This skill helps you **locate** the cause of a known symptom by running the right commands and surfacing logs/status. The manual scenarios below locate problems without suggesting fixes; the [AI-assisted path](#ai-assisted-diagnosis-fastest-path) additionally returns suggested causes and solutions.
+
+For a proactive audit (security review, slow-query hunt, backend health check) without a specific failing request in hand, use `insforge-backend-advisor` instead.
 
 **Always use `npx @insforge/cli`** — never install the CLI globally.
 
@@ -62,12 +64,12 @@ Match the symptom to a scenario, then follow that scenario's steps.
 | SDK returns `{ data: null, error: {...} }` | [#1 SDK Error](#scenario-1-sdk-returns-error-object) |
 | HTTP 400 / 401 / 403 / 404 / 429 / 500 | [#2 HTTP Status Code](#scenario-2-http-status-code-anomaly) |
 | Function throws or times out | [#3 Edge Function Failure](#scenario-3-edge-function-execution-failuretimeout) |
-| Query slow or hangs | [#4 Database Slow](#scenario-4-database-query-slow-or-unresponsive) |
-| Login fails / token expired / RLS denied | [#5 Auth Failure](#scenario-5-authenticationauthorization-failure) |
-| Channel won't connect / messages missing | [#6 Realtime Issues](#scenario-6-realtime-channel-issues) |
-| High CPU/memory, all responses slow | [#7 Backend Performance](#scenario-7-backend-performance-degradation) |
-| `functions deploy` fails | [#8 Function Deploy](#scenario-8-edge-function-deploy-failure) |
-| `deployments deploy` fails / Vercel error | [#9 Frontend Deploy](#scenario-9-frontend-vercel-deploy-failure) |
+| Login fails / token expired / OAuth error | [#4 Auth Failure](#scenario-4-authenticationauthorization-failure) |
+| Channel won't connect / messages missing | [#5 Realtime Issues](#scenario-5-realtime-channel-issues) |
+| `functions deploy` fails | [#6 Function Deploy](#scenario-6-edge-function-deploy-failure) |
+| `deployments deploy` fails / Vercel error | [#7 Frontend Deploy](#scenario-7-frontend-vercel-deploy-failure) |
+
+For symptoms like "queries are slow", "EC2 looks pegged", or "I want to audit my RLS policies" — switch to `insforge-backend-advisor`.
 
 ---
 
@@ -136,6 +138,8 @@ npx @insforge/cli diagnose logs
 
 **Information gathered**: Status code context, relevant log entries, request/response details from logs. For 429: client-side request patterns and backend load metrics.
 
+> If the 403 turns out to be a misconfigured RLS policy (not just a runtime denial), the policy review itself belongs in `insforge-backend-advisor` under [Security Audit](../insforge-backend-advisor/SKILL.md#security-audit).
+
 ---
 
 ## Scenario 3: Edge Function Execution Failure/Timeout
@@ -166,43 +170,9 @@ npx @insforge/cli functions code <slug>
 
 ---
 
-## Scenario 4: Database Query Slow or Unresponsive
+## Scenario 4: Authentication/Authorization Failure
 
-**Symptoms**: Queries take too long, hang indefinitely, or connection pool is exhausted.
-
-**Steps**:
-
-1. Check database health — slow queries, active connections, locks:
-
-```bash
-npx @insforge/cli diagnose db --check slow-queries,connections,locks
-```
-
-2. Check postgres logs for query errors or warnings:
-
-```bash
-npx @insforge/cli logs postgres.logs --limit 50
-```
-
-3. Check index usage and table bloat:
-
-```bash
-npx @insforge/cli diagnose db --check index-usage,bloat,cache-hit,size
-```
-
-4. If the whole system feels slow, check EC2 instance metrics:
-
-```bash
-npx @insforge/cli diagnose metrics --range 1h
-```
-
-**Information gathered**: Slow query details, connection pool state, lock contention, index efficiency, table bloat, cache hit ratio, EC2 resource usage.
-
----
-
-## Scenario 5: Authentication/Authorization Failure
-
-**Symptoms**: Login fails, signup errors, token expired, OAuth callback error, RLS policy denies access.
+**Symptoms**: Login fails at runtime, signup errors, token expired, OAuth callback errors, a specific request returns 403 with an RLS denial.
 
 **Steps**:
 
@@ -212,7 +182,7 @@ npx @insforge/cli diagnose metrics --range 1h
 npx @insforge/cli logs insforge.logs --limit 50
 ```
 
-2. Check postgREST.logs for RLS policy violations:
+2. Check postgREST.logs for RLS policy violations at runtime:
 
 ```bash
 npx @insforge/cli logs postgREST.logs --limit 50
@@ -224,17 +194,13 @@ npx @insforge/cli logs postgREST.logs --limit 50
 npx @insforge/cli metadata --json
 ```
 
-4. If RLS suspected, inspect current policies:
+**Information gathered**: Auth error details, RLS violation logs around the failing request, auth configuration state.
 
-```bash
-npx @insforge/cli db policies
-```
-
-**Information gathered**: Auth error details, RLS violation logs, auth configuration state, active RLS policies.
+> This scenario covers **runtime** auth failures (a specific login or request failed). For a proactive audit of RLS policies, secrets, or auth provider configuration without a concrete failing request, use `insforge-backend-advisor` → [Security Audit](../insforge-backend-advisor/SKILL.md#security-audit).
 
 ---
 
-## Scenario 6: Realtime Channel Issues
+## Scenario 5: Realtime Channel Issues
 
 **Symptoms**: WebSocket won't connect, channel subscription fails, messages not received or lost.
 
@@ -258,51 +224,13 @@ npx @insforge/cli db query "SELECT pattern, description, enabled FROM realtime.c
 npx @insforge/cli db policies
 ```
 
-4. If the issue is widespread (all channels affected), check overall backend health:
+4. If the issue is widespread (all channels affected), the underlying cause is likely backend-wide — switch to `insforge-backend-advisor` for a system health audit.
 
-```bash
-npx @insforge/cli diagnose
-```
-
-**Information gathered**: WebSocket error logs, channel configuration, realtime RLS policies, overall backend health.
+**Information gathered**: WebSocket error logs, channel configuration, realtime RLS policies.
 
 ---
 
-## Scenario 7: Backend Performance Degradation
-
-**Symptoms**: All responses slow, high latency, intermittent failures across the board.
-
-**Steps**:
-
-1. Check EC2 instance metrics — CPU, memory, disk, network:
-
-```bash
-npx @insforge/cli diagnose metrics --range 1h
-```
-
-2. Check database health (often the bottleneck):
-
-```bash
-npx @insforge/cli diagnose db
-```
-
-3. Check aggregate error logs:
-
-```bash
-npx @insforge/cli diagnose logs
-```
-
-4. Check advisor for known critical issues:
-
-```bash
-npx @insforge/cli diagnose advisor --severity critical
-```
-
-**Information gathered**: CPU/memory/disk/network metrics (current and trend), database health, error log summary, advisor warnings.
-
----
-
-## Scenario 8: Edge Function Deploy Failure
+## Scenario 6: Edge Function Deploy Failure
 
 **Symptoms**: `functions deploy <slug>` command fails, function not appearing in the list after deploy.
 
@@ -330,7 +258,7 @@ npx @insforge/cli functions list
 
 ---
 
-## Scenario 9: Frontend (Vercel) Deploy Failure
+## Scenario 7: Frontend (Vercel) Deploy Failure
 
 **Symptoms**: `deployments deploy` command fails, deployment status shows error, Vercel build errors.
 
@@ -391,9 +319,6 @@ npx @insforge/cli diagnose --ai "<issue description>"
 # EC2 instance metrics (CPU, memory, disk, network)
 npx @insforge/cli diagnose metrics [--range 1h|6h|24h|7d] [--metrics <list>]
 
-# Advisor scan results
-npx @insforge/cli diagnose advisor [--severity critical|warning|info] [--category security|performance|health] [--limit <n>]
-
 # Database health checks
 npx @insforge/cli diagnose db [--check <checks>]
 # checks: connections, slow-queries, bloat, size, index-usage, locks, cache-hit (default: all)
@@ -401,6 +326,8 @@ npx @insforge/cli diagnose db [--check <checks>]
 # Aggregate error logs from all sources
 npx @insforge/cli diagnose logs [--source <name>] [--limit <n>]
 ```
+
+For `diagnose advisor` and proactive backend audits, see `insforge-backend-advisor`.
 
 ### Supporting Commands
 
