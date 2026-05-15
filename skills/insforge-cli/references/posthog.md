@@ -1,6 +1,14 @@
 # npx @insforge/cli posthog setup
 
-One-shot command that ensures the InsForge dashboard has a PostHog connection, then runs the official PostHog setup wizard to wire PostHog into the app code.
+One-shot command that ensures the InsForge dashboard has a PostHog connection, then prints the official PostHog wizard command so the user can wire PostHog into their app code in their own terminal.
+
+> ⚠️ **For coding agents:** Don't run `npx @insforge/cli posthog setup` from your shell as the second step (the wizard command it prints) is interactive and requires a real terminal. Tell the user to run it themselves with the `!` prefix:
+>
+> ```
+> ! npx @insforge/cli posthog setup
+> ```
+>
+> The CLI itself is non-interactive — it does the cloud-side connection and exits. The wizard command it surfaces is what needs the human terminal.
 
 ## Availability
 
@@ -12,11 +20,14 @@ PostHog integration is in beta. If `npx @insforge/cli posthog setup` fails with 
 cd /path/to/your/app
 npx @insforge/cli link --project-id <insforge-project-id>   # if not already linked
 npx @insforge/cli posthog setup
+# CLI exits after the dashboard connection is ensured. Then run the wizard
+# command it prints (something like `npx -y @posthog/wizard@latest`) in your
+# own terminal.
 ```
 
 | Flag | Description |
 |------|-------------|
-| `--skip-browser` | Don't auto-open the browser for InsForge's OAuth step; only print the URL (useful for headless / SSH sessions). Does **not** affect the wizard, which always opens a browser. |
+| `--skip-browser` | Don't auto-open the browser for InsForge's OAuth step; only print the URL (useful for headless / SSH sessions). |
 
 Inherited global flags (e.g. `--json`, `--api-url`) work too — see the main CLI skill.
 
@@ -24,25 +35,25 @@ Inherited global flags (e.g. `--json`, `--api-url`) work too — see the main CL
 
 1. Reads `.insforge/project.json` from the current directory to find your InsForge project ID
 2. Calls cloud-backend `/integrations/posthog/v1/cli-start`. Two outcomes:
-   - **Already connected**: dashboard already has a PostHog connection → skip OAuth, go straight to step 4
+   - **Already connected**: dashboard already has a PostHog connection → go straight to step 3
    - **Not connected**: cloud-backend returns an authorize URL. CLI opens it in the browser (unless `--skip-browser`) and polls `/connection` until the dashboard receives the OAuth callback
-3. (If step 2 needed OAuth) Confirms the InsForge dashboard now has a PostHog connection
-4. Spawns `npx -y @posthog/wizard@latest` with stdio inherited. The wizard:
-   - Opens its own browser for PostHog OAuth (this is independent of step 2)
-   - Lets the user pick a PostHog project
-   - Detects the app's framework, installs the SDK, writes env vars, and adds the SDK init / provider code
-5. After the wizard exits cleanly, prints a "Open Analytics in your dashboard" outro
+3. Prints a `Next step` note with the `npx -y @posthog/wizard@latest` command and exits
+
+CLI does NOT spawn the wizard — that's left to the user. The wizard:
+- Opens its own browser for PostHog OAuth (independent of step 2)
+- Lets the user pick a PostHog project
+- Detects the app's framework, installs the SDK, writes env vars, and adds the SDK init / provider code
 
 ## Two OAuths, briefly explained
 
-The command does two OAuths in sequence, both targeting PostHog but for different consumers:
+The whole flow involves two OAuths in sequence, both targeting PostHog but for different consumers:
 
-| Step | What it sets up | What it writes |
-|------|-----------------|----------------|
-| 2 — InsForge cli-start | Server-side connection so the InsForge dashboard Analytics page can query PostHog on the user's behalf | `posthog_connections` row in cloud-backend |
-| 4 — `@posthog/wizard` | Client-side instrumentation so events flow from the app to PostHog | Env vars + SDK init in the app code |
+| Step | What it sets up | Driver | What it writes |
+|------|-----------------|--------|----------------|
+| 2 — InsForge cli-start | Server-side connection so the InsForge dashboard Analytics page can query PostHog on the user's behalf | `npx @insforge/cli posthog setup` | `posthog_connections` row in cloud-backend |
+| post-step 3 — `@posthog/wizard` | Client-side instrumentation so events flow from the app to PostHog | User runs `npx -y @posthog/wizard@latest` themselves | Env vars + SDK init in the app code |
 
-Practically the user signs in with the same PostHog account both times and ends up on the same PostHog project. The CLI doesn't try to deduplicate — the wizard's OAuth is the source of truth for which project the app sends events to.
+Practically the user signs in with the same PostHog account both times and ends up on the same PostHog project.
 
 ## Web Analytics ingestion delay
 
@@ -53,5 +64,5 @@ PostHog's `sessions` materialized view (which powers Web Analytics queries) has 
 | Mistake | Solution |
 |---------|----------|
 | Running `npx @insforge/cli posthog setup` outside the linked project directory | The CLI reads `.insforge/project.json` from cwd. Run it from the project root after `npx @insforge/cli link --project-id <id>` |
-| Headless environment, browser doesn't open for the InsForge OAuth step | Pass `--skip-browser` and copy the printed URL onto a machine with a browser. The wizard step also needs a browser — run the whole command on a workstation, not headless. |
-| Wizard exits non-zero | The CLI surfaces the wizard's exit code in the error message. Re-run; if it keeps failing, file an issue with `@posthog/wizard`. |
+| Headless environment, browser doesn't open for the InsForge OAuth step | Pass `--skip-browser` and copy the printed URL onto a machine with a browser |
+| Agent ran `posthog setup` and the wizard command printed at the end was never executed | The wizard is interactive — the agent should ask the user to run it (`! npx -y @posthog/wizard@latest`). The InsForge dashboard connection is already in place, but app-code instrumentation is not. |
