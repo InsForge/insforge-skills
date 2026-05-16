@@ -65,9 +65,11 @@ import { Pool } from 'pg';
 // Fail at module-load if a required var is missing. Better than `!`
 // because the error names the missing var instead of crashing on a
 // downstream undefined. Used for server-side env vars throughout this
-// guide. Client-side `NEXT_PUBLIC_*` reads keep the `!` syntax — those
-// are inlined at build time, so a module-load check would just fire in
-// the browser at request time anyway.
+// guide; the CLI scaffold duplicates this helper inline in each file
+// that reads env (lib/auth.ts, route handlers, the email mailer) so
+// each file copy-pastes cleanly. Client-side `NEXT_PUBLIC_*` reads keep
+// the `!` syntax — those are inlined at build time, so a module-load
+// check would just fire in the browser at request time anyway.
 function requireEnv(name: string): string {
   const v = process.env[name];
   if (!v) throw new Error(`Missing required env var: ${name}`);
@@ -77,12 +79,30 @@ function requireEnv(name: string): string {
 // BA's tables live in the dedicated `better_auth` schema. PostgREST exposes
 // only `public` by default, so this isolation is what keeps user emails out
 // of the data API — no REVOKE step needed. `pg.Pool` doesn't take a `schema`
-// option, so we set search_path on every new pooled connection. BA's CLI
-// (`better-auth migrate`) imports this file, so search_path applies during
-// migrate too — its `CREATE TABLE`s land in `better_auth.*`, not `public`.
-const pool = new Pool({ connectionString: requireEnv('DATABASE_URL') });
-pool.on('connect', (client) => {
-  client.query('SET search_path TO better_auth, public').catch(() => { /* noop */ });
+// option, so we scope BA's queries via Postgres `search_path`. Pass it as
+// a startup option (`-c search_path=…`) rather than firing `SET search_path`
+// from a `pool.on('connect')` listener: the listener is async and BA/Kysely
+// can dispatch queries against a fresh connection BEFORE the SET completes,
+// hitting `relation "user" does not exist`. The startup option is applied
+// during connection negotiation, so every query sees `better_auth, public`
+// from the very first statement. `public` stays in the path for
+// `gen_random_uuid()` and other extensions. BA's CLI (`better-auth migrate`)
+// imports this file, so `CREATE TABLE`s during migrate land in
+// `better_auth.*`, not `public`.
+//
+// SSL handling for InsForge cloud Postgres: `pg-connection-string` v2 treats
+// `sslmode=require` as `verify-full`, which rejects InsForge cloud's
+// self-signed cert with `DEPTH_ZERO_SELF_SIGNED_CERT`. Strip `sslmode` from
+// the URL and apply `ssl: { rejectUnauthorized: false }` explicitly. Local
+// stacks (no sslmode in the URL) get a plain non-TLS connection.
+const databaseUrl = requireEnv('DATABASE_URL');
+const parsedUrl = new URL(databaseUrl);
+const hasSslmode = parsedUrl.searchParams.has('sslmode');
+parsedUrl.searchParams.delete('sslmode');
+const pool = new Pool({
+  connectionString: parsedUrl.toString(),
+  ssl: hasSslmode ? { rejectUnauthorized: false } : undefined,
+  options: '-c search_path=better_auth,public',
 });
 
 export const auth = betterAuth({
@@ -635,6 +655,8 @@ Server-only vars (read via `process.env` in the BA process) are the same across 
 | ❌ Using `auth.uid()` for RLS policies | ✅ Use `requesting_user_id()` — Better Auth IDs are strings, not UUIDs. |
 | ❌ FK'ing to `auth.users(id)` (or `public.user(id)`) | ✅ FK to `better_auth.user(id)` — that's where Better Auth puts its tables. `auth.users` is InsForge's native auth (UUID id, irrelevant here); `public.user` no longer exists post-migrate. |
 | ❌ Forgetting `CREATE SCHEMA better_auth` before the first `auth:migrate` | ✅ The migrate fails with "schema better_auth does not exist". The CLI scaffold's `npm run setup` runs schema → migrate → app SQL in order; if you migrate manually, create the schema first. |
+| ❌ Setting `search_path` from a `pool.on('connect')` listener: `relation "user" does not exist` on the first BA/Kysely query | ✅ The listener is async and BA can dispatch the first query before `SET search_path` completes. Use the `options: '-c search_path=better_auth,public'` startup option on `new Pool({…})` — applied during connection negotiation, so every query sees the right path from statement 1. |
+| ❌ InsForge cloud Postgres rejected with `DEPTH_ZERO_SELF_SIGNED_CERT` even though `ssl: { rejectUnauthorized: false }` is set | ✅ `pg-connection-string` v2 treats `sslmode=require` in the URL as `verify-full`, silently overriding the explicit `ssl` object. Strip `sslmode` from the URL with the URL API (so param ordering stays correct) and apply the `ssl` override on the Pool. |
 | ❌ Setting `search_path` only inside the BA pool but FK'ing app tables to a schema-unqualified `"user"` | ✅ Outside BA's pool, the Postgres default search_path doesn't include `better_auth`. Always qualify FKs explicitly: `REFERENCES better_auth."user"(id)`. |
 | ❌ Re-using `BETTER_AUTH_SECRET` as the InsForge JWT secret | ✅ They are independent. `BETTER_AUTH_SECRET` is for Better Auth's session cookies; `INSFORGE_JWT_SECRET` is the HS256 key for the bridge JWT. |
 | ❌ Setting the token only once on mount (Pattern A) | ✅ Refresh on a ~50min interval for a 1h JWT, keyed on Better Auth's `useSession()`. |
