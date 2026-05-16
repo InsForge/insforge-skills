@@ -2,13 +2,13 @@
 
 One-shot command that ensures the InsForge dashboard has a PostHog connection, then prints the official PostHog wizard command so the user can wire PostHog into their app code in their own terminal.
 
-> ⚠️ **For coding agents:** Don't run `npx @insforge/cli posthog setup` from your shell as the second step (the wizard command it prints) is interactive and requires a real terminal. Tell the user to run it themselves with the `!` prefix:
+> ⚠️ **For coding agents:** `npx @insforge/cli posthog setup` itself is safe to run from your shell — it just ensures the dashboard connection and exits. The **wizard command it prints at the end** (`npx -y @posthog/wizard@latest`) is interactive (browser OAuth + framework picker), so don't try to spawn that one yourself. After `posthog setup` exits, ask the user to run the wizard with the `!` prefix:
 >
 > ```
-> ! npx @insforge/cli posthog setup
+> ! npx -y @posthog/wizard@latest
 > ```
 >
-> The CLI itself is non-interactive — it does the cloud-side connection and exits. The wizard command it surfaces is what needs the human terminal.
+> Note: if the InsForge dashboard isn't connected to PostHog yet, `posthog setup` opens a browser for the user to authorize — the agent should let the user know to check their browser.
 
 ## Availability
 
