@@ -12,17 +12,11 @@ npx @insforge/cli functions deploy <slug> [options]
 
 | Option | Description |
 |--------|-------------|
-| `--file <path>` | Path to function source file |
+| `--file <path>` | **Required.** Path to the function source file. |
 | `--name <name>` | Display name |
 | `--description <desc>` | Function description |
 
-## Default File Path
-
-If `--file` is not specified, the CLI looks for:
-
-```
-insforge/functions/{slug}/index.ts
-```
+The CLI does not prescribe a layout: keep your function source wherever you like and point `--file` at it.
 
 ## What It Does
 
@@ -33,10 +27,10 @@ insforge/functions/{slug}/index.ts
 ## Usage Examples
 
 ```bash
-# Deploy from default path (insforge/functions/my-handler/index.ts)
-npx @insforge/cli functions deploy my-handler
+# Deploy a function from its source file
+npx @insforge/cli functions deploy my-handler --file ./my-handler.ts
 
-# Deploy from custom file
+# Deploy with a display name and description
 npx @insforge/cli functions deploy cleanup-expired --file ./handler.ts --name "Cleanup Expired" --description "Removes expired records"
 
 # Update an existing function
@@ -168,8 +162,8 @@ export default async function(req: Request): Promise<Response> {
 ## Recommended Workflow
 
 ```
-1. Write function code            → insforge/functions/{slug}/index.ts
-2. Deploy                         → npx @insforge/cli functions deploy {slug}
+1. Write function code            → wherever you keep source (e.g. ./functions/{slug}.ts)
+2. Deploy                         → npx @insforge/cli functions deploy {slug} --file <path>
 3. Check status                   → npx @insforge/cli functions list
 4. Ensure secrets are set         → npx @insforge/cli secrets add INSFORGE_BASE_URL https://...
 5. Invoke from frontend           → insforge.functions.invoke('{slug}', { body: {...} })

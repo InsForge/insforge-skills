@@ -359,8 +359,8 @@ npx @insforge/cli db migrations up --all
 ### Deploy an edge function
 
 ```bash
-# Default source path: insforge/functions/{slug}/index.ts
-npx @insforge/cli functions deploy my-handler
+# --file is required; point it at your source wherever it lives
+npx @insforge/cli functions deploy my-handler --file ./my-handler.ts
 npx @insforge/cli functions invoke my-handler --data '{"action": "test"}'
 ```
 
