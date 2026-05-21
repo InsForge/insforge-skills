@@ -88,6 +88,20 @@ Integrate third-party authentication providers with InsForge for Row Level Secur
 
 </details>
 
+<details>
+<summary><strong>doc-author</strong> - Write & Maintain Documentation</summary>
+
+Write, edit, and maintain documentation: collaborative drafting, autonomous writing, or improving existing docs. Defaults to collaborative mode where the human makes final decisions. Vendored from Mintlify (MIT).
+
+</details>
+
+<details>
+<summary><strong>humanizer</strong> - Remove AI Writing Patterns</summary>
+
+Detect and remove signs of AI-generated writing (inflated symbolism, em-dash overuse, rule of three, AI vocabulary, filler phrases, negative parallelisms) so text reads as human-written. Based on Wikipedia's "Signs of AI writing" guide (MIT).
+
+</details>
+
 ## Usage
 
 Once installed, AI agents can access InsForge-specific guidance when:
@@ -142,17 +156,22 @@ skills/
 │       └── deployments-deploy.md
 ├── insforge-debug/
 │   └── SKILL.md              # Debug & diagnostics skill
-└── insforge-integrations/
-    ├── auth0/
-    │   └── SKILL.md          # Auth0 integration guide
-    ├── clerk/
-    │   └── SKILL.md          # Clerk integration guide
-    ├── kinde/
-    │   └── SKILL.md          # Kinde integration guide
-    ├── stytch/
-    │   └── SKILL.md          # Stytch integration guide
-    └── workos/
-        └── SKILL.md          # WorkOS integration guide
+├── insforge-integrations/
+│   ├── auth0/
+│   │   └── SKILL.md          # Auth0 integration guide
+│   ├── clerk/
+│   │   └── SKILL.md          # Clerk integration guide
+│   ├── kinde/
+│   │   └── SKILL.md          # Kinde integration guide
+│   ├── stytch/
+│   │   └── SKILL.md          # Stytch integration guide
+│   └── workos/
+│       └── SKILL.md          # WorkOS integration guide
+├── doc-author/
+│   ├── SKILL.md
+│   └── INSFORGE.md
+└── humanizer/
+    └── SKILL.md
 ```
 
 ### Documentation Pattern
