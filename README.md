@@ -88,6 +88,41 @@ Integrate third-party authentication providers with InsForge for Row Level Secur
 
 </details>
 
+<details>
+<summary><strong>publish-blog</strong> - Publish Blog Posts to the InsForge CMS</summary>
+
+Publish a blog post to the InsForge content management system from a Notion draft or other source. Handles the full workflow: reading source content, creating the markdown file with proper frontmatter, downloading and pushing images, and opening a PR.
+
+</details>
+
+<details>
+<summary><strong>publish-integration</strong> - Publish Integration Pages to the InsForge CMS</summary>
+
+Publish an integration page to the InsForge content management system. Reads source content, creates the markdown file with proper frontmatter, downloads and pushes the logo, and opens a PR.
+
+</details>
+
+<details>
+<summary><strong>publish-story</strong> - Publish Customer Stories to the InsForge CMS</summary>
+
+Publish or update a customer story (`stories/` and `/customers`) from a Notion page, interview notes, or other source material.
+
+</details>
+
+<details>
+<summary><strong>seo-frontmatter</strong> - SEO Frontmatter Linting for the InsForge CMS</summary>
+
+Keep `title` and `description` frontmatter within Google SERP limits (title at most 55 chars, description 60-155 chars) when adding or editing blogs, stories, alternatives, or integration pages.
+
+</details>
+
+<details>
+<summary><strong>seo-landing-page</strong> - SEO Landing Pages for Search Targeting</summary>
+
+Create search-targeted landing pages (comparison "X vs Y", "best X for Y", "what is X" explainers) that ship as `unlisted` with hand-tuned JSON-LD, optimized for Google ranking and AI-answer citation rather than the blog feed.
+
+</details>
+
 ## Usage
 
 Once installed, AI agents can access InsForge-specific guidance when:
@@ -142,17 +177,28 @@ skills/
 │       └── deployments-deploy.md
 ├── insforge-debug/
 │   └── SKILL.md              # Debug & diagnostics skill
-└── insforge-integrations/
-    ├── auth0/
-    │   └── SKILL.md          # Auth0 integration guide
-    ├── clerk/
-    │   └── SKILL.md          # Clerk integration guide
-    ├── kinde/
-    │   └── SKILL.md          # Kinde integration guide
-    ├── stytch/
-    │   └── SKILL.md          # Stytch integration guide
-    └── workos/
-        └── SKILL.md          # WorkOS integration guide
+├── insforge-integrations/
+│   ├── auth0/
+│   │   └── SKILL.md          # Auth0 integration guide
+│   ├── clerk/
+│   │   └── SKILL.md          # Clerk integration guide
+│   ├── kinde/
+│   │   └── SKILL.md          # Kinde integration guide
+│   ├── stytch/
+│   │   └── SKILL.md          # Stytch integration guide
+│   └── workos/
+│       └── SKILL.md          # WorkOS integration guide
+├── publish-blog/
+│   ├── SKILL.md
+│   └── style-guide.md
+├── publish-integration/
+│   └── SKILL.md
+├── publish-story/
+│   └── SKILL.md
+├── seo-frontmatter/
+│   └── SKILL.md
+└── seo-landing-page/
+    └── SKILL.md
 ```
 
 ### Documentation Pattern
