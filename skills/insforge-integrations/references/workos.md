@@ -111,7 +111,7 @@ export async function createInsForgeClient() {
 ## Database setup
 
 - WorkOS user IDs are strings (e.g. `user_01H...`), not UUIDs — use `TEXT` columns for `user_id`
-- Create a `requesting_user_id()` SQL function that extracts the `sub` claim from `request.jwt.claims` as text
+- Create a `requesting_user_id()` SQL function that extracts the `sub` claim from `auth.jwt()` as text
 - Set `user_id` column default to `requesting_user_id()` so it auto-populates on insert
 - Enable RLS and create policies that compare `user_id = requesting_user_id()`
 
@@ -120,10 +120,7 @@ create or replace function public.requesting_user_id()
 returns text
 language sql stable
 as $$
-  select nullif(
-    current_setting('request.jwt.claims', true)::json->>'sub',
-    ''
-  )::text
+  select nullif(auth.jwt() ->> 'sub', '')::text
 $$;
 ```
 

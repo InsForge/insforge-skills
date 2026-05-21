@@ -312,12 +312,12 @@ Better Auth user IDs are **strings** (e.g. `f5kGYiUXDPEJqRDQ4jgtNTopIzpj5MgK`), 
 -- 0. ensure gen_random_uuid() is available (idempotent)
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
--- 1. helper that extracts sub claim from request.jwt.claims
+-- 1. helper that extracts sub claim from auth.jwt()
 CREATE OR REPLACE FUNCTION public.requesting_user_id()
 RETURNS text
 LANGUAGE sql STABLE
 AS $$
-  SELECT NULLIF(current_setting('request.jwt.claims', true)::json->>'sub', '')::text
+  SELECT NULLIF(auth.jwt() ->> 'sub', '')::text
 $$;
 
 -- 2. example: a notes table owned by Better Auth users
@@ -477,7 +477,7 @@ export const auth = betterAuth({
 
 Re-run `npx @better-auth/cli migrate -y` — that's it. The new tables land in `better_auth.organization`, `better_auth.team`, `better_auth.member`, `better_auth.teamMember`, `better_auth.invitation`. Verify with `curl http://<insforge>/organization?select=id` (anon) — should return `404 relation "public.organization" does not exist` because PostgREST never sees the schema.
 
-For multi-tenant RLS on app tables, add `org_id` to `request.jwt.claims` by reading `session.activeOrganizationId` in the bridge route and including it as a custom claim:
+For multi-tenant RLS on app tables, add `org_id` as a custom JWT claim by reading `session.activeOrganizationId` in the bridge route:
 
 ```ts
 // app/api/insforge-token/route.ts (delta)
@@ -493,7 +493,7 @@ const token = jwt.sign(
 );
 ```
 
-Then in policies use `current_setting('request.jwt.claims', true)::json->>'org_id'` alongside `requesting_user_id()`.
+Then in policies use `auth.jwt() ->> 'org_id'` alongside `requesting_user_id()`.
 
 ### Other table-adding plugins
 

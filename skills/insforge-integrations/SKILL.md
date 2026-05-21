@@ -38,7 +38,7 @@ This skill covers integrating **third-party providers** with InsForge. Currently
 ### Auth providers
 1. **Provider signs or issues a JWT** containing the user's ID
 2. **JWT is passed to InsForge** via `edgeFunctionToken` in `createClient()`
-3. **InsForge extracts claims** via `request.jwt.claims` in SQL
+3. **InsForge exposes claims** through `auth.jwt()` in SQL
 4. **RLS policies** use a `requesting_user_id()` function to enforce row-level security
 
 ### Payment facilitators (x402)
