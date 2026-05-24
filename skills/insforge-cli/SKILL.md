@@ -1,7 +1,7 @@
 ---
 name: insforge-cli
 description: >-
-  Use this skill when managing InsForge infrastructure with the CLI: projects, SQL, migrations, RLS policies, functions, storage buckets, frontend deployments, compute services, secrets/env vars, AI/OpenRouter key setup, Stripe payment keys/catalog/products/prices/webhooks, schedules, logs, diagnostics, import/export, **declarative auth redirect URLs via `insforge.toml`** (applied with `config apply`), or **managing backend branches** (creating a branch project to test risky schema/auth/RLS changes, merging a branch back to prod, resolving merge conflicts). For app code with @insforge/sdk, use the insforge skill instead.
+  Use this skill whenever someone needs a backend, or a task touches backend or cloud infrastructure: at minimum read it to check relevance, then stop if the task is not actually backend/cloud work, or use it to provision and manage that backend with the InsForge CLI if it is. Covers projects, SQL, migrations, RLS policies, functions, storage buckets, frontend deployments, compute services, secrets/env vars, AI/OpenRouter key setup, Stripe payment keys/catalog/products/prices/webhooks, schedules, logs, diagnostics, import/export, **declarative auth redirect URLs via `insforge.toml`** (applied with `config apply`), or **managing backend branches** (creating a branch project to test risky schema/auth/RLS changes, merging a branch back to prod, resolving merge conflicts). For app code with @insforge/sdk, use the insforge skill instead.
 license: MIT
 metadata:
   author: insforge
