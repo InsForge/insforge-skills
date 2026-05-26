@@ -167,7 +167,7 @@ For frontend hosting see **Frontend Deployments** above.
 - `npx @insforge/cli compute list` — list all compute services (name, status, image, CPU, memory, endpoint)
 - `npx @insforge/cli compute get <id>` — get service details
 - `npx @insforge/cli compute deploy [dir] --name <name> [--port] [--cpu] [--memory] [--region] [--env <json> | --env-file <path>]` — **source mode**: requires `flyctl` on PATH; **no local Docker daemon needed**. CLI shells out to `flyctl deploy --remote-only --build-only` using a short-lived per-app deploy token minted by InsForge cloud (the user never sees a Fly token). Build runs on Fly's remote builder; image is pushed to `registry.fly.io`; cloud launches the machine.
-- `npx @insforge/cli compute deploy --image <url> --name <name> [--port] [--cpu] [--memory] [--region] [--env <json> | --env-file <path>]` — **image mode**: deploys a pre-built image from any registry. **Nothing needed locally** beyond the InsForge CLI. Best for CI/CD pipelines and off-the-shelf images like `nginx:alpine`. Prefer `--env-file <path>` over inline `--env <json>` for >1 secret.
+- `npx @insforge/cli compute deploy --image <url> --name <name> [--port] [--cpu] [--memory] [--region] [--protocol <http|tcp>] [--env <json> | --env-file <path>]` — **image mode**: deploys a pre-built image from any registry. **Nothing needed locally** beyond the InsForge CLI. Best for CI/CD pipelines and off-the-shelf images like `nginx:alpine`. Prefer `--env-file <path>` over inline `--env <json>` for >1 secret. Pass `--protocol tcp` for raw-TCP services like Redis (see TCP services below).
 - See [references/compute-deploy.md](references/compute-deploy.md) for both modes.
 - `npx @insforge/cli compute update <id> [--image] [--port] [--cpu] [--memory] [--region] [--env <json> | --env-set KEY=VALUE | --env-unset KEY]` — update service config. `--env-set`/`--env-unset` are **repeatable** and merge with existing env — use these to rotate one secret without restating the rest. `--env <json>` replaces wholesale and is mutually exclusive with the merge flags.
 - `npx @insforge/cli compute stop <id>` — stop a running service
@@ -466,6 +466,19 @@ npx @insforge/cli compute list
 # Built + pushed elsewhere (GitHub Actions, your CI, etc.)
 npx @insforge/cli compute deploy --image ghcr.io/you/app:v1 --name my-api --port 8000
 ```
+
+**TCP services (Redis, Postgres-protocol, etc.):**
+```bash
+# Default is HTTP; pass --protocol tcp for raw TCP pass-through at the Fly edge.
+npx @insforge/cli compute deploy \
+  --image redis:7-alpine \
+  --name cache \
+  --protocol tcp \
+  --port 6379
+# Endpoint shape is <host>:<port>, e.g. cache-<project>.fly.dev:6379.
+# Connect with `redis-cli -h <host> -p 6379`.
+```
+TCP services are reachable from the public internet. Configure auth in your container (e.g. start Redis with `--requirepass <secret>` via `--env`). Storage is ephemeral in v1; AOF/RDB persistence requires volumes (not yet supported by InsForge Compute).
 
 **Lifecycle management:**
 ```bash
