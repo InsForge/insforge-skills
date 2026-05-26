@@ -2,7 +2,7 @@
 
 ## Overview
 
-InsForge governs `storage.objects` with PostgreSQL Row Level Security, not with app-side `WHERE uploaded_by = $1` filters. A signed-in caller runs as `authenticated` with their JWT `sub` available via `auth.jwt() ->> 'sub'`. Admin connections (API key, `project_admin`) bypass RLS by design — dashboard tools and server-side code keep working out of the box.
+InsForge governs `storage.objects` with PostgreSQL Row Level Security, not with app-side `WHERE uploaded_by = $1` filters. A signed-in caller runs as `authenticated` with their JWT `sub` available via `auth.jwt() ->> 'sub'`. Admin/API-key callers bypass RLS for admin workflows.
 
 **Core principle:** Policies are the contract. The user API does the cheapest possible thing on top of them — it does not re-implement authorization.
 
@@ -14,7 +14,6 @@ InsForge governs `storage.objects` with PostgreSQL Row Level Security, not with 
 |------|-------------|-------------|
 | `anon` | Unauthenticated callers | No valid session token |
 | `authenticated` | Logged-in end users | Valid session token in the request |
-| `project_admin` | Admin / API key callers | Bypass RLS via the elevated postgres role |
 
 The `auth.jwt()` helper returns the caller's full claims as `jsonb`. Most policies use `auth.jwt() ->> 'sub'` for ownership checks, but you can read any claim — `->> 'role'`, `->> 'org_id'`, custom claims from third-party providers (Better Auth, Clerk, Auth0, WorkOS, Stytch, Kinde).
 
@@ -22,6 +21,14 @@ The `auth.jwt()` helper returns the caller's full claims as `jsonb`. Most polici
 
 - **Fresh installs**: zero policies on `storage.objects`. The table has RLS enabled but nothing matches, so end users can't do anything until you write a policy. Same shape Supabase ships.
 - **Existing projects** (any rows in `storage.buckets` at migration time): the owner-only set below is auto-installed so the upgrade does not silently break end-user uploads and reads.
+
+### Managed Storage RLS
+
+Allowed managed storage policy tables:
+
+- `storage.objects`
+
+Put `storage.objects` policy changes in a custom migration. This managed storage table can be managed with RLS.
 
 ### Path helpers shipped with InsForge
 
@@ -226,7 +233,7 @@ InsForge exposes two write surfaces against the same `storage.objects` table:
 | `/api/storage/...` REST | A signed-in end user, JWT in the request | The caller's `sub` |
 | `/storage/v1/s3/...` S3 protocol | An AWS-SDK / `aws-cli` client with an InsForge S3 access key | `NULL` |
 
-Under the default owner-only SELECT policy, `NULL = '<sub>'` is never true (SQL three-valued logic), so **end users cannot see S3-uploaded rows through the user API**. Admin (API key / project_admin) bypasses RLS and sees everything. The S3 surface itself doesn't run RLS — it uses admin credentials by design.
+Under the default owner-only SELECT policy, `NULL = '<sub>'` is never true (SQL three-valued logic), so **end users cannot see S3-uploaded rows through the user API**. Admin/API-key callers bypass RLS and see everything. The S3 surface itself doesn't run RLS — it uses admin credentials by design.
 
 When the S3 gateway overwrites a key that a REST user previously owned, the platform preserves `uploaded_by` — it does not clobber to NULL. That part is automatic.
 
@@ -281,15 +288,16 @@ Adding `WHERE uploaded_by = $1` in your service code on top of the RLS policy du
 - **Per-operation policies are independent.** A permissive SELECT does NOT grant DELETE. The reverse is also true. Audit each of the four operations separately.
 - **Permissive vs restrictive policies.** Multiple matching policies OR together by default. If you want AND behavior, use `AS RESTRICTIVE`. Most storage policies are permissive (default).
 - **Out-of-band URLs bypass RLS.** Presigned S3 URLs and signed download links are redeemed against the storage backend directly — RLS does not fire on those redemptions. The platform code does an explicit RLS-scoped existence check before issuing the URL; if you build your own signed-URL flow, do the same.
-- **Admin always sees everything.** RLS only applies to `authenticated` and `anon`. API-key callers, dashboard inspectors, and `project_admin` bypass policies regardless of which pattern you pick.
+- **Admin always sees everything.** RLS only applies to `authenticated` and `anon`. API-key callers and dashboard inspectors bypass policies regardless of which pattern you pick.
 
 ---
 
 ## Checklist
 
-Before shipping a storage RLS configuration:
+Before shipping a storage RLS configuration, apply `storage.objects` policy changes with a custom migration.
 
 - [ ] `ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY` is in place (already true on InsForge installs since migration 036)
+- [ ] Policies target `storage.objects`
 - [ ] All four operations (SELECT, INSERT, UPDATE, DELETE) have policies — or you've consciously decided to deny one
 - [ ] `auth.jwt() ->> 'sub'` is wrapped in `(SELECT ...)` for performance
 - [ ] `GRANT SELECT, INSERT, UPDATE, DELETE ON storage.objects TO authenticated` (and `anon` if your pattern allows it)

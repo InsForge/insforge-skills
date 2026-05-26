@@ -22,9 +22,9 @@ npx @insforge/cli payments status
 npx @insforge/cli payments catalog --environment test
 ```
 
-If the CLI says `Payments are not available on this backend`, stop and ask the developer/admin to enable payments or upgrade the self-hosted backend. Do not implement a direct Stripe secret-key flow in the frontend. If keys, products, or prices are missing, configure them first. See [backend-configuration.md](backend-configuration.md).
+If the CLI says `Payments are not available on this backend`, stop and ask the developer/admin to enable payments or upgrade the self-hosted backend. Do not implement a direct Stripe secret-key flow in the frontend. If keys, products, or prices are missing, configure them first. See the **insforge-cli** skill's [payments](../../insforge-cli/references/payments.md) reference.
 
-Before integrating payments, make sure a Stripe key is configured. If `payments status` shows `unconfigured`, ask the user for the Stripe key first. See [backend-configuration.md](backend-configuration.md).
+Before integrating payments, make sure a Stripe key is configured. If `payments status` shows `unconfigured`, ask the user for the Stripe key first. See the **insforge-cli** skill's [payments](../../insforge-cli/references/payments.md) reference.
 
 ## Authorization Prerequisite
 
@@ -37,13 +37,13 @@ Checkout creation needs an `INSERT` policy. If the app sends checkout `idempoten
 
 For example, if subscriptions belong to teams, policies must prove the current user belongs to the team before allowing rows with `subject: { type: 'team', id: teamId }`. If subscriptions belong to organizations, workspaces, or users, write policies for that structure instead.
 
-Do not expose UI that accepts arbitrary `subject.type` or `subject.id` until these policies exist. See [backend-configuration.md](backend-configuration.md).
+Do not expose UI that accepts arbitrary `subject.type` or `subject.id` until these policies exist. See the **insforge-cli** skill's [payments](../../insforge-cli/references/payments.md#session-rls-before-app-integration) reference.
 
 ## One-Time Checkout
 
 Use `mode: 'payment'` for one-time purchases. For one-time payments, `subject` is optional. Anonymous checkout is allowed, but include `customerEmail` when available.
 
-If the buyer is signed in, prefer passing a subject so checkout RLS can use the same ownership model as subscriptions. If you enable RLS on `payments.checkout_sessions`, subject-less `mode: 'payment'` rows need their own narrow `INSERT` policy, plus `SELECT` when the request sends `idempotencyKey` or user-facing read paths need to see the checkout attempt. See [backend-configuration.md#checkout-and-portal-authorization](backend-configuration.md#checkout-and-portal-authorization).
+If the buyer is signed in, prefer passing a subject so checkout RLS can use the same ownership model as subscriptions. If you enable RLS on `payments.checkout_sessions`, subject-less `mode: 'payment'` rows need their own narrow `INSERT` policy, plus `SELECT` when the request sends `idempotencyKey` or user-facing read paths need to see the checkout attempt. See the **insforge-cli** skill's [payments](../../insforge-cli/references/payments.md#session-rls-before-app-integration) reference.
 
 If the payment should fulfill an app record such as an order, credit grant, download, or booking, create that app record first and pass its ID in checkout metadata. Do not mark it paid from the success URL.
 
@@ -108,7 +108,7 @@ Do not let users supply arbitrary `order_id` metadata. Create or select the pend
 
 If the success page also runs user-dependent side effects, wait for auth loading to finish before choosing the signed-in vs guest branch. Webhook-backed Realtime updates can arrive before a cold-load auth refresh completes. See [../auth/sdk-integration.md#dont-fire-user-dependent-side-effects-during-auth-loading](../auth/sdk-integration.md#dont-fire-user-dependent-side-effects-during-auth-loading).
 
-The backend fulfillment migration should be implemented separately before relying on the success page. See [backend-configuration.md#fulfillment-business-logic](backend-configuration.md#fulfillment-business-logic) for the trigger/source-table guidance.
+The backend fulfillment migration should be implemented separately before relying on the success page. See the **insforge-cli** skill's [payments](../../insforge-cli/references/payments.md#fulfillment-migrations) reference for the trigger/source-table guidance.
 
 ## Subscription Checkout
 
@@ -162,7 +162,7 @@ Do not assume frontend users can read `payments.subscriptions` or `payments.paym
 - `public.user_entitlements`
 - `public.orders`
 
-Protect those tables with app-specific RLS. Backend fulfillment should populate them from InsForge payment projections or a trusted server path; see [backend-configuration.md#fulfillment-business-logic](backend-configuration.md#fulfillment-business-logic).
+Protect those tables with app-specific RLS. Backend fulfillment should populate them from InsForge payment projections or a trusted server path; see the **insforge-cli** skill's [payments](../../insforge-cli/references/payments.md#fulfillment-migrations) reference.
 
 ## Live/Test Environment
 
@@ -177,7 +177,7 @@ Do not put Stripe secret keys in frontend code. Stripe keys are configured throu
 3. **Use explicit success and cancel URLs** matching the app routes.
 4. **Treat Stripe as source of truth** for catalog data. Use the CLI/dashboard to sync before relying on product or price IDs.
 5. **Use subjects consistently**. If subscriptions bill teams, always use `subject: { type: 'team', id: teamId }`.
-6. **Create payment-session RLS before subscription UI**. Checkout creation needs `INSERT`; checkout requests with `idempotencyKey` also need matching `SELECT`. See [backend-configuration.md](backend-configuration.md).
+6. **Create payment-session RLS before subscription UI**. Checkout creation needs `INSERT`; checkout requests with `idempotencyKey` also need matching `SELECT`. See the **insforge-cli** skill's [payments](../../insforge-cli/references/payments.md#session-rls-before-app-integration) reference.
 7. **Do not treat redirects as fulfillment**. Success pages should read app-owned fulfilled state.
 
 ## Common Mistakes

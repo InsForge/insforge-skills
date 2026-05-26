@@ -15,6 +15,10 @@ const insforge = createClient({
 })
 ```
 
+## Backend Setup
+
+If the task needs channel patterns, database triggers, or channel/message RLS, use the **insforge-cli** skill's [realtime](../../insforge-cli/references/realtime.md) reference. This SDK guide covers frontend connection, subscription, publishing, and presence handling.
+
 ## Usage Examples
 
 ### Connect
@@ -219,8 +223,8 @@ await insforge.realtime.publish(channel, 'viewed', {
 ## Best Practices
 
 1. **Ensure channel pattern exists before subscribing**
-   - Channel patterns must be created in `realtime.channels` table via SQL: `INSERT INTO realtime.channels (pattern, description, enabled) VALUES (...)`
-   - If no channel pattern exists, create one first via admin API
+   - The frontend can only subscribe to channel names that match an enabled backend channel pattern.
+   - If no channel pattern exists, finish backend setup with the **insforge-cli** skill first.
 
 2. **Seed presence from `subscribe()` before processing deltas**
    - Treat `response.presence.members` as the initial source of truth
@@ -247,7 +251,7 @@ await insforge.realtime.publish(channel, 'viewed', {
 ### Recommended Workflow
 
 ```text
-1. Create channel patterns        → INSERT INTO realtime.channels via SQL
+1. Confirm backend setup          → channel pattern exists and is enabled
 2. Connect to realtime            → await insforge.realtime.connect()
 3. Subscribe and seed presence    → const response = await insforge.realtime.subscribe('channel')
 4. Listen for events and deltas   → on('event', handler) + on('presence:join'/'presence:leave')
@@ -258,7 +262,7 @@ await insforge.realtime.publish(channel, 'viewed', {
 
 | Mistake | Solution |
 |---------|----------|
-| ❌ Subscribing without channel pattern configured | ✅ Create channel pattern in backend first |
+| ❌ Subscribing without channel pattern configured | ✅ Finish backend setup first |
 | ❌ Waiting for your own `presence:join` event | ✅ Initialize local presence state from `subscribe()` response |
 | ❌ Assuming presence is global or durable | ✅ Treat presence as single-instance, in-memory state and resubscribe after reconnects |
 | ❌ Not handling connection errors | ✅ Listen for `connect_error` and `disconnect` events |

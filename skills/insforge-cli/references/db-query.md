@@ -12,13 +12,13 @@ npx @insforge/cli db query <sql> [options]
 
 | Option | Description |
 |--------|-------------|
-| `--unrestricted` | Access system tables (e.g., `pg_tables`, `information_schema`) |
+| `--json` | Return rows as JSON for scripting |
 
 ## Examples
 
 ```bash
 # Basic query
-npx @insforge/cli db query "SELECT * FROM auth.users LIMIT 10"
+npx @insforge/cli db query "SELECT * FROM posts LIMIT 10"
 
 # Update rows
 npx @insforge/cli db query "UPDATE posts SET status = 'published' WHERE id = 'post_123'"
@@ -29,11 +29,14 @@ npx @insforge/cli db query "INSERT INTO posts (title, status) VALUES ('Hello', '
 # Delete rows
 npx @insforge/cli db query "DELETE FROM posts WHERE archived = true"
 
-# Query system tables
-npx @insforge/cli db query "SELECT * FROM pg_tables WHERE schemaname = 'public'" --unrestricted
+# Inspect Postgres system catalog
+npx @insforge/cli db query "SELECT table_schema, table_name FROM information_schema.tables WHERE table_schema = 'public'"
+
+# Inspect InsForge-managed schema data
+npx @insforge/cli db query "SELECT * FROM auth.users LIMIT 10"
 
 # JSON output for scripting
-npx @insforge/cli db query "SELECT count(*) FROM users" --json
+npx @insforge/cli db query "SELECT count(*) FROM posts" --json
 ```
 
 ## Output
@@ -41,25 +44,22 @@ npx @insforge/cli db query "SELECT count(*) FROM users" --json
 - **Human:** Formatted table
 - **JSON:** `{ "rows": [...] }`
 
-## Use Migrations for Schema Changes
+## Permission Model and Schema Changes
 
-Do **not** use `db query` for schema changes such as:
+`db query` runs as `project_admin`.
 
-- `CREATE TABLE`
-- `ALTER TABLE`
-- `CREATE INDEX`
-- `CREATE POLICY`
-- `CREATE TRIGGER`
-- other DDL or schema-shaping changes
+- `public`: full access for normal data changes and schema work.
+- Postgres system catalogs such as `pg_catalog` and `information_schema`: read-only inspection is allowed.
+- InsForge-managed schemas: inspection is allowed, but writes and DDL are restricted to operations documented by the relevant skill or CLI reference.
 
-Use `npx @insforge/cli db migrations new ...` and `npx @insforge/cli db migrations up ...` instead.
+Use `npx @insforge/cli db migrations new ...` and `npx @insforge/cli db migrations up ...` for schema changes, including RLS policies on documented InsForge-managed tables.
 
 Use `db query` for:
 
-- reading data
-- backfilling or correcting rows
-- one-off row updates
-- inspecting database metadata or system tables
+- reading app data and managed-schema data
+- inspecting Postgres system catalogs such as `pg_catalog` and `information_schema`
+- backfilling or correcting rows in `public`
+- one-off row updates where the target schema allows it
 
 ## InsForge SQL References
 
@@ -83,6 +83,5 @@ npx @insforge/cli db query "UPDATE posts SET status = 'draft' WHERE status IS NU
 
 ## Notes
 
-- Without `--unrestricted`, system tables (`pg_tables`, `information_schema`) are not accessible.
-- For schema changes, use the migrations workflow in [db-migrations.md](db-migrations.md).
+- For schema changes and RLS policy changes, use the migrations workflow in [db-migrations.md](db-migrations.md).
 - For advanced RLS patterns (infinite recursion prevention, SECURITY DEFINER, performance), see the insforge skill's [postgres-rls.md](../../insforge/database/postgres-rls.md).

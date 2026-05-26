@@ -141,7 +141,7 @@ Creates or recreates the InsForge-managed Stripe webhook endpoint for an environ
 
 ## Session RLS Before App Integration
 
-Before exposing subscription checkout or Billing Portal UI, define RLS policies for the app's business model:
+Before exposing subscription checkout or Billing Portal UI, define RLS policies for the app's business model in a custom migration. These managed payment tables can be managed with RLS:
 
 - `payments.checkout_sessions` controls who can create and read Checkout Session attempts for a subject.
 - `payments.customer_portal_sessions` controls who can create and read Billing Portal Session attempts for a subject.
@@ -150,7 +150,52 @@ Checkout creation needs an `INSERT` policy on `payments.checkout_sessions`. If t
 
 If subscriptions bill teams, policies should check team membership. If subscriptions bill organizations, workspaces, groups, or users, policies should check that model instead. Do not let generated apps pass arbitrary subject IDs without matching policies.
 
-See the SDK skill guide `skills/insforge/payments/backend-configuration.md` for policy examples.
+Subject-less `mode = 'payment'` rows do not have a built-in ownership field. Do not add a broad `SELECT` policy for all subject-less payment rows; scope reads to a checkout attempt or app-owned entity your app controls.
+
+Example for a signed-in app where subscriptions and one-time checkout attempts belong to the authenticated user:
+
+```sql
+ALTER TABLE payments.checkout_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE payments.customer_portal_sessions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "users create their checkout sessions"
+ON payments.checkout_sessions
+FOR INSERT
+TO authenticated
+WITH CHECK (
+  mode IN ('subscription', 'payment')
+  AND subject_type = 'user'
+  AND subject_id = auth.uid()::text
+);
+
+CREATE POLICY "users read their checkout sessions"
+ON payments.checkout_sessions
+FOR SELECT
+TO authenticated
+USING (
+  mode IN ('subscription', 'payment')
+  AND subject_type = 'user'
+  AND subject_id = auth.uid()::text
+);
+
+CREATE POLICY "users create portal sessions"
+ON payments.customer_portal_sessions
+FOR INSERT
+TO authenticated
+WITH CHECK (
+  subject_type = 'user'
+  AND subject_id = auth.uid()::text
+);
+
+CREATE POLICY "users read portal sessions"
+ON payments.customer_portal_sessions
+FOR SELECT
+TO authenticated
+USING (
+  subject_type = 'user'
+  AND subject_id = auth.uid()::text
+);
+```
 
 ## Subscriptions and Payment History
 
@@ -174,6 +219,7 @@ Recommended migration pattern:
 - Protect those app-owned tables with app-specific RLS.
 - For one-time purchases, trigger from `payments.payment_history` where `type = 'one_time_payment'` and `status = 'succeeded'`.
 - For subscription access, trigger from `payments.subscriptions` status changes.
+- Managed payment triggers are allowed on `payments.checkout_sessions`, `payments.customer_portal_sessions`, `payments.subscriptions`, `payments.payment_history`, and `payments.customers`. Put the trigger function in `public`; delete the trigger by dropping that function with `CASCADE`.
 - Use `payments.checkout_sessions` metadata only for correlation/debugging. Do not treat a completed checkout session or success redirect as final fulfillment.
 - Do not let users supply arbitrary app IDs in checkout metadata. Create/select the app-owned row through app logic/RLS first, then pass that trusted row ID.
 - Keep SQL triggers idempotent. For external side effects, write an app-owned outbox row and process it from an edge function or worker.

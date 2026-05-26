@@ -10,15 +10,29 @@ Row Level Security (RLS) provides defense-in-depth for data isolation. When impl
 
 ## InsForge RLS Basics
 
-InsForge uses two built-in PostgreSQL roles:
+InsForge uses three built-in PostgreSQL roles:
 
 | Role | Description | When active |
 |------|-------------|-------------|
 | `anon` | Unauthenticated users | No valid session token |
 | `authenticated` | Logged-in users | Valid session token present |
-| `project_admin` | Project admin | Only used for admin tasks |
+| `project_admin` | Project admin | CLI `db query`, migrations, API-key/admin tasks |
 
 The current user's ID is available via `auth.uid()`. All user foreign keys should reference `auth.users(id)`.
+
+Raw SQL from `db query` and migration files runs as `project_admin`. This role can manage and own objects in `public`; access to InsForge-managed schemas is restricted.
+
+### Managed Tables With RLS
+
+Only these InsForge-managed tables allow developer RLS changes. On these tables, normal RLS operations are allowed and should go in migrations:
+
+- `storage.objects`
+- `realtime.channels`
+- `realtime.messages`
+- `payments.checkout_sessions`
+- `payments.customer_portal_sessions`
+
+Do not create, alter, or drop other InsForge-managed database objects unless the module docs explicitly allow that operation.
 
 ### Minimal RLS Setup
 

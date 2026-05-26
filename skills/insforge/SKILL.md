@@ -114,146 +114,15 @@ const insforge = createClient({
 | [storage/postgres-rls.md](storage/postgres-rls.md) | Writing RLS policies for `storage.objects` — owner-only, public-read, path-scoped, team-shared, and the `NULL uploaded_by` caveat for mixed REST + S3 buckets |
 | [database/pgvector.md](database/pgvector.md) | Building semantic search, recommendations, or RAG — covers the `vector` extension, schema/dimensions, distance operators, HNSW/IVFFlat indexes, and RPC similarity search |
 | [ai/embeddings-and-rag.md](ai/embeddings-and-rag.md) | Generating embeddings through OpenRouter, storing them in pgvector, and wiring up a basic RAG pipeline with chat completions |
-| [payments/backend-configuration.md](payments/backend-configuration.md) | Configuring Stripe keys, syncing catalog, creating products/prices, webhooks, and portal RLS before app integration |
+| [payments](../insforge-cli/references/payments.md) | Configuring Stripe keys, syncing catalog, creating products/prices, webhooks, and portal RLS before app integration |
 
 ### Building Checkout for a New App
 
-Before integrating payments, make sure a Stripe key is configured. Run `npx @insforge/cli payments status`. If it shows `unconfigured`, ask the user for the Stripe key first. See [payments/backend-configuration.md](payments/backend-configuration.md).
+Before integrating payments, make sure a Stripe key is configured. Run `npx @insforge/cli payments status`. If it shows `unconfigured`, ask the user for the Stripe key first. See the **insforge-cli** skill's [payments](../insforge-cli/references/payments.md) reference.
 
-### Real-time Configuration
+### Real-time Backend Setup
 
-For real-time channels and database triggers, use SQL migrations or database admin tooling to configure channels, triggers, and policies. The real-time SDK is for frontend event handling and messaging, not backend configuration.
-
-#### Create Database Triggers
-
-Automatically publish events when database records change.
-
-```sql
--- Create trigger function
-CREATE OR REPLACE FUNCTION notify_order_changes()
-RETURNS TRIGGER AS $$
-BEGIN
-  PERFORM realtime.publish(
-    'order:' || NEW.id::text,    -- channel
-    TG_OP || '_order',           -- event: INSERT_order, UPDATE_order
-    jsonb_build_object(
-      'id', NEW.id,
-      'status', NEW.status,
-      'total', NEW.total
-    )
-  );
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- Attach to table
-CREATE TRIGGER order_realtime
-  AFTER INSERT OR UPDATE ON orders
-  FOR EACH ROW
-  EXECUTE FUNCTION notify_order_changes();
-```
-
-#### Conditional Trigger (Status Changes Only)
-
-```sql
-CREATE OR REPLACE FUNCTION notify_order_status()
-RETURNS TRIGGER AS $$
-BEGIN
-  PERFORM realtime.publish(
-    'order:' || NEW.id::text,
-    'status_changed',
-    jsonb_build_object('id', NEW.id, 'status', NEW.status)
-  );
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-CREATE TRIGGER order_status_trigger
-  AFTER UPDATE ON orders
-  FOR EACH ROW
-  WHEN (OLD.status IS DISTINCT FROM NEW.status)
-  EXECUTE FUNCTION notify_order_status();
-```
-
-#### Access Control (RLS)
-
-RLS is disabled by default. To restrict channel access:
-
-- **Enable RLS**
-
-```sql
-ALTER TABLE realtime.channels ENABLE ROW LEVEL SECURITY;
-ALTER TABLE realtime.messages ENABLE ROW LEVEL SECURITY;
-```
-
-- **Restrict Subscribe (SELECT on channels)**
-
-```sql
-CREATE POLICY "users_subscribe_own_orders"
-ON realtime.channels FOR SELECT
-TO authenticated
-USING (
-  pattern = 'order:%'
-  AND EXISTS (
-    SELECT 1 FROM orders
-    WHERE id = NULLIF(split_part(realtime.channel_name(), ':', 2), '')::uuid
-      AND user_id = auth.uid()
-  )
-);
-```
-
-- **Restrict Publish (INSERT on messages)**
-
-```sql
-CREATE POLICY "members_publish_chat"
-ON realtime.messages FOR INSERT
-TO authenticated
-WITH CHECK (
-  channel_name LIKE 'chat:%'
-  AND EXISTS (
-    SELECT 1 FROM chat_members
-    WHERE room_id = NULLIF(split_part(channel_name, ':', 2), '')::uuid
-      AND user_id = auth.uid()
-  )
-);
-```
-
-- **Quick Reference**
-
-| Task | SQL |
-|------|-----|
-| Create channel | `INSERT INTO realtime.channels (pattern, description, enabled) VALUES (...)` |
-| Create trigger | `CREATE TRIGGER ... EXECUTE FUNCTION ...` |
-| Publish from SQL | `PERFORM realtime.publish(channel, event, payload)` |
-| Enable RLS | `ALTER TABLE realtime.channels ENABLE ROW LEVEL SECURITY` |
-
-
-#### Best Practices
-
-1. **Create channel patterns first** before subscribing from frontend
-   - Insert channel patterns into `realtime.channels` table
-   - Ensure `enabled` is set to `true`
-
-2. **Use specific channel patterns**
-   - Use wildcard `%` patterns for dynamic channels (e.g., `order:%` for `order:123`)
-   - Use exact patterns for global channels (e.g., `notifications`)
-
-#### Common Mistakes
-
-| Mistake | Solution |
-|---------|----------|
-| Subscribing to undefined channel pattern | Create channel pattern in `realtime.channels` first |
-| Channel not receiving messages | Ensure channel `enabled` is `true` |
-| Publishing without trigger | Create database trigger to auto-publish on changes |
-
-#### Recommended Workflow
-
-```text
-1. Create channel patterns   → INSERT INTO realtime.channels
-2. Ensure enabled = true     → Set enabled to true
-3. Create triggers if needed → Auto-publish on database changes
-4. Proceed with SDK subscribe → Use channel name matching pattern
-```
+The real-time SDK is for frontend event handling and messaging. Configure channel patterns, database triggers, and channel/message RLS with the **insforge-cli** skill; see [realtime](../insforge-cli/references/realtime.md).
 
 ### Backend Configuration (Not Yet in CLI)
 

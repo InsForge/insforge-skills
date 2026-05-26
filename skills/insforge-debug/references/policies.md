@@ -10,6 +10,8 @@ npx @insforge/cli db policies
 
 Returns every policy: table, schema, policy name, command (`SELECT` / `INSERT` / `UPDATE` / `DELETE` / `ALL`), target role, `USING` expression, `WITH CHECK` expression.
 
+Only specific InsForge-managed tables allow developer RLS changes. Check the relevant module skill or CLI reference before writing policy SQL for a managed table. If that table is listed as allowing RLS changes, normal RLS operations are allowed and should go in migrations.
+
 ## Policy anatomy
 
 | Field | Meaning |
@@ -46,7 +48,7 @@ For "why was this request denied?":
 
 - **Lists active policies, doesn't simulate.** Doesn't tell you "this specific request would be allowed" — combine with [logs](logs.md) (`postgREST.logs`) to see the actual denial event.
 - **Doesn't include the helper function bodies.** `auth.uid()` / `requesting_user_id()` are SQL functions; inspect via `db query` if you need to verify they return what you expect.
-- **Schema changes via `db query` won't show in migrations.** Always use [migrations](../../insforge-cli/references/db-migrations.md) for RLS edits so changes are reproducible.
+- **Only listed managed tables allow RLS changes.** Check the relevant module skill or CLI reference before changing RLS on a managed table. If the table is listed, put normal RLS operations in [migrations](../../insforge-cli/references/db-migrations.md); keep normal schema changes in `public`.
 
 ## Example
 

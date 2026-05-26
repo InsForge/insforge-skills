@@ -91,6 +91,10 @@ If no project linked: `npx @insforge/cli create` (new — for non-interactive ag
 
 > Use `db migrations` for schema changes. Reserve `db query` for inspecting data and for row-level `SELECT / INSERT / UPDATE / DELETE` work.
 
+### Realtime Backend Setup
+
+- Create channel patterns, app-table publish triggers, and channel/message RLS through migrations. See [references/realtime.md](references/realtime.md)
+
 ### Edge Functions — `npx @insforge/cli functions`
 - `npx @insforge/cli functions list` — list deployed functions
 - `npx @insforge/cli functions code <slug>` — view function source
@@ -342,7 +346,7 @@ npx @insforge/cli db migrations new create-posts
 npx @insforge/cli db migrations up --all
 ```
 
-> Use migrations for schema changes. Use `db query` for row changes and inspection. In migrations, FK to users with `auth.users(id)` and use `auth.uid()` in RLS policies.
+> `db query` and migrations run as `project_admin`. Use migrations for schema changes and RLS policies, including RLS on documented InsForge-managed tables. Use `db query` for row changes and inspection. In migrations, FK to users with `auth.users(id)` and use `auth.uid()` in RLS policies.
 
 ### Manage database migrations
 
@@ -644,7 +648,7 @@ npx @insforge/cli logs postgrest.logs --limit 50
 ```bash
 INSFORGE_EMAIL=$EMAIL INSFORGE_PASSWORD=$PASSWORD npx @insforge/cli login --email -y
 npx @insforge/cli link --project-id $PROJECT_ID --org-id $ORG_ID -y
-npx @insforge/cli db query "SELECT count(*) FROM users" --json
+npx @insforge/cli db query "SELECT 1 AS ok" --json
 ```
 
 ---
