@@ -16,14 +16,15 @@ Official OpenRouter references:
 
 1. Start the OpenRouter video job from server-side code only.
 2. Store a `video_jobs` row in InsForge with the requesting user, prompt, model,
-   OpenRouter job ID, polling URL, status, and next poll time.
-3. Use one InsForge Edge Function as the poller.
-4. Trigger that poller with an InsForge Schedule, for example every 30 seconds.
-5. In each scheduled run, inspect due unfinished jobs until one is completed.
-6. For the first completed job found, download the video server-side with
-   `OPENROUTER_API_KEY`, upload it to InsForge Storage, save `video_url` and
-   `video_key`, then stop. Leave the rest for later schedule ticks.
-7. Let the frontend read `video_jobs` from InsForge or subscribe via Realtime.
+   OpenRouter job ID, polling URL, status, retry metadata, and storage fields.
+3. Poll OpenRouter from server-side infrastructure, such as an InsForge Edge
+   Function triggered by an InsForge Schedule.
+4. Keep each scheduled invocation bounded. Control how many jobs it polls and
+   how many completed videos it downloads/uploads in one run.
+5. When a job completes, download the video server-side with
+   `OPENROUTER_API_KEY`, upload it to InsForge Storage, and save `video_url` and
+   `video_key`.
+6. Let the frontend read `video_jobs` from InsForge or subscribe via Realtime.
    The browser should never poll OpenRouter or see `OPENROUTER_API_KEY`.
 
 Use a DB **lease** for in-flight work, not a permanent lock. `lease_owner` plus
@@ -40,10 +41,8 @@ whole file inside Deno.
 
 ## Best Practices
 
-1. Use server-side polling as the default baseline; do not pass `callback_url`
-   unless you are ready to verify webhook signatures.
-2. Keep each scheduled invocation bounded: poll a few due jobs, process at most
-   one completed video, then return.
+1. Use server-side polling as the default baseline.
+2. Keep each scheduled invocation bounded with explicit limits and backoff.
 3. Store generated videos in InsForge Storage; save both `url` and `key` in the
    database.
 4. Store prompt, model, duration, resolution, status, polling URL, errors, retry
@@ -56,7 +55,7 @@ whole file inside Deno.
 | Mistake | Fix |
 |---------|-----|
 | Treating video generation as synchronous | Store a job row and poll from a scheduled server-side function |
-| Letting one cron invocation drain the whole queue | Process at most one completed video per run |
+| Letting one cron invocation drain the whole queue | Bound each poller run with explicit limits and backoff |
 | Polling OpenRouter from the browser | Poll from an InsForge Edge Function or server worker |
 | Saving only the OpenRouter content URL | Download server-side, upload to Storage, save `url` and `key` |
 | Assuming `unsigned_urls[0]` is a public app URL | Treat it as a server-side download URL and send Authorization |
