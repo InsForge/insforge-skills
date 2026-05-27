@@ -148,7 +148,7 @@ Services** below.
 ### Backend Compute Services (Fly.io) — `npx @insforge/cli compute`
 
 Deploy and manage backend containerized services (APIs, workers, microservices).
-Each service runs as a Docker container reachable via a public HTTPS endpoint.
+Each service runs as a Docker container reachable via a public endpoint — `https://<name>-<project>.fly.dev` for HTTP services (the default), or `<name>-<project>.fly.dev:<port>` raw TCP for services deployed with `--protocol tcp` (Redis, Postgres-protocol, etc.). See **TCP services** below.
 For frontend hosting see **Frontend Deployments** above.
 
 > 🔧 **Implementation note (for agents):** InsForge runs compute on **Fly.io**
