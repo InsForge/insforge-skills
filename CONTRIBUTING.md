@@ -32,10 +32,12 @@ metadata:                  # Optional: additional metadata
 
 ### Documentation Files
 
-For InsForge modules, follow this pattern:
+For InsForge modules, keep documentation focused on the app or platform surface
+being used:
 
 - **`sdk-integration.md`**: Client-side SDK usage with `@insforge/sdk`
-- **`backend-configuration.md`**: Backend HTTP API configuration
+- **Specialized guides**: Backend, security, protocol, or workflow-specific
+  references such as RLS, pgvector, S3-compatible storage, or capability guides
 
 ## Documentation Guidelines
 

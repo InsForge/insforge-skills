@@ -173,7 +173,7 @@ All SDK methods return `{ data, error }`.
 | `insforge.auth` | `.signUp()`, `.signInWithPassword()`, `.signInWithOAuth()`, `.signOut()`, `.getCurrentUser()` |
 | `insforge.storage` | `.from().upload()`, `.uploadAuto()`, `.download()`, `.remove()` |
 | `insforge.functions` | `.invoke()` |
-| `insforge.ai` | `.chat.completions.create()`, `.images.generate()`, `.embeddings.create()` |
+| `insforge.ai` | Deprecated fallback only: `.chat.completions.create()`, `.images.generate()`, `.embeddings.create()` |
 | `insforge.realtime` | `.connect()`, `.subscribe()`, `.publish()`, `.on()`, `.disconnect()` |
 | `insforge.emails` | `.send({ to, subject, html, cc?, bcc?, from?, replyTo? })` |
 | `insforge.payments` | `.createCheckoutSession()`, `.createCustomerPortalSession()` |

@@ -136,6 +136,7 @@ skills/
 ├── insforge-cli/
 │   ├── SKILL.md              # CLI skill manifest and command reference
 │   └── references/
+│       ├── auth.md
 │       ├── login.md
 │       ├── create.md
 │       ├── db-query.md
@@ -163,7 +164,7 @@ skills/
 
 - **`sdk-integration.md`**: How to use app-facing SDKs/APIs in application code.
 - **AI capability guides**: `ai/overview.md` links to smaller OpenRouter-focused guides for chat completions, image generation, video generation, audio, embeddings/RAG, and model discovery.
-- **`backend-configuration.md`**: How to configure InsForge backend via HTTP API
+- **Specialized guides**: Focused references such as `postgres-rls.md`, `pgvector.md`, `s3-gateway.md`, or provider-specific integration guides.
 
 ## Contributing
 

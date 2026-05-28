@@ -36,6 +36,15 @@ Keep `OPENROUTER_API_KEY` server-side only. Browser-visible env prefixes such
 as `NEXT_PUBLIC_*`, `VITE_*`, `PUBLIC_*`, and `REACT_APP_*` are for non-secret
 values.
 
+Use these optional server-side model override names consistently when a project
+needs configurable models:
+
+| Variable | Used For |
+|----------|----------|
+| `OPENROUTER_CHAT_MODEL` | Chat completions and RAG answer generation |
+| `OPENROUTER_IMAGE_MODEL` | Image generation |
+| `OPENROUTER_EMBEDDING_MODEL` | Embeddings and vector search |
+
 Install the OpenAI SDK when using chat completions or embeddings:
 
 ```bash

@@ -61,7 +61,6 @@ async function storeDocument(content: string) {
   const { data, error } = await insforge.database.from('documents').insert([{
     content,
     embedding: response.data[0].embedding,
-    embedding_model: process.env.OPENROUTER_EMBEDDING_MODEL ?? 'openai/text-embedding-3-small',
   }]).select()
 
   if (error) {
@@ -135,8 +134,9 @@ async function askQuestion(sessionId: string, question: string) {
 
 1. Design the InsForge tables first: source documents, vector column dimension,
    match RPC, and optional chat history table.
-2. Store `embedding_model` with embedded rows so future migrations can identify
-   which vectors need re-embedding.
+2. If your schema includes an `embedding_model` column, store the model ID with
+   embedded rows so future migrations can identify which vectors need
+   re-embedding.
 3. Use one embedding model per vector column. Re-embed when changing models.
 4. Add chunking, query rewriting, re-ranking, context truncation, and retrieval
    evaluation before treating a RAG prototype as production-ready.

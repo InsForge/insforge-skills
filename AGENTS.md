@@ -16,19 +16,20 @@ agent-skills/
 │       ├── ai/             # AI/ML operations
 │       ├── realtime/       # Real-time messaging
 │       ├── payments/       # Stripe payments
-│       └── deployments/    # App deployment
+│       └── email/          # Transactional email
 │   └── insforge-cli/       # InsForge CLI project management
 │       ├── SKILL.md        # Skill manifest and command reference
 │       └── references/     # CLI command reference
+│           ├── auth.md
 │           ├── create.md
 │           ├── login.md
-│           ├── link.md
 │           ├── db-query.md
 │           ├── db-export.md
 │           ├── db-import.md
 │           ├── functions-deploy.md
 │           ├── payments.md
-│           └── deployments-deploy.md
+│           ├── deployments-deploy.md
+│           └── ...
 ├── AGENTS.md               # This file
 ├── CONTRIBUTING.md         # Contribution guidelines
 ├── LICENSE                 # MIT License
@@ -48,12 +49,12 @@ Each skill contains a `SKILL.md` with:
 
 ### Documentation Pattern
 
-Most InsForge skill modules use a two-file pattern:
+Most InsForge skill modules use focused app-facing guides:
 
 | File | Purpose | When to Use |
 |------|---------|-------------|
 | `sdk-integration.md` | App-facing SDK/API usage, usually through `@insforge/sdk` | Implementing features in user's app code |
-| `backend-configuration.md` | Backend HTTP API configuration | Setting up infrastructure before app can use it |
+| Specialized guides such as `postgres-rls.md`, `pgvector.md`, or `s3-gateway.md` | Backend, security, or protocol-specific patterns | When the task needs that capability |
 
 The AI module is capability-based instead: start at `skills/insforge/ai/overview.md`,
 then load only the needed OpenRouter guide (`chat-completions.md`,
@@ -67,7 +68,8 @@ then load only the needed OpenRouter guide (`chat-completions.md`,
 1. Create a directory under `skills/insforge/` with the module name
 2. Add `sdk-integration.md` for client-side SDK usage, or use a focused
    capability guide when the module spans multiple APIs
-3. Add `backend-configuration.md` for backend configuration (if applicable)
+3. Add specialized guides only when a capability needs separate backend,
+   security, protocol, or workflow documentation
 4. Update the module reference table in `skills/insforge/SKILL.md`
 
 ### Updating Existing Documentation

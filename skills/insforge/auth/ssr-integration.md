@@ -1,6 +1,6 @@
 # SSR Authentication Integration
 
-Use this reference for Next.js, Remix, SvelteKit, Nuxt server routes, or any other SSR setup that needs InsForge auth in both server-rendered code and browser-only SDK surfaces such as Storage and Realtime.
+Use this reference for Next.js SSR auth. The same cookie/session concepts can be adapted to Remix, SvelteKit, Nuxt, or other SSR frameworks, but the examples below use Next.js route handlers, server actions, and Proxy/Middleware.
 
 ## Recommended Pattern
 
@@ -20,6 +20,8 @@ Default cookies:
 
 Both cookies should expire at the JWT `exp`; the SDK helpers do this when tokens include `exp`.
 
+`insforge_access_token` is intentionally readable by JavaScript so browser SDK calls, Storage, and Realtime can authenticate directly. Keep access-token TTL short. If a project requires fully httpOnly auth tokens, proxy Storage and Realtime calls through server-side routes instead of direct browser SDK calls.
+
 ## Environment Variables
 
 For Next.js, prefer:
@@ -27,9 +29,10 @@ For Next.js, prefer:
 ```bash
 NEXT_PUBLIC_INSFORGE_URL=https://your-project.insforge.app
 NEXT_PUBLIC_INSFORGE_ANON_KEY=...
+NEXT_PUBLIC_APP_URL=https://your-app.example
 ```
 
-The SSR helpers use explicit `baseUrl` / `anonKey` when provided. Otherwise they read `NEXT_PUBLIC_INSFORGE_URL` / `NEXT_PUBLIC_INSFORGE_ANON_KEY` in both browser and server code. Missing config throws a clear error.
+The SSR helpers use explicit `baseUrl` / `anonKey` when provided. Otherwise they read `NEXT_PUBLIC_INSFORGE_URL` / `NEXT_PUBLIC_INSFORGE_ANON_KEY` in both browser and server code. `NEXT_PUBLIC_APP_URL` is the public app origin used by OAuth redirect examples. Missing config throws a clear error.
 
 ## Browser Client
 
@@ -130,10 +133,7 @@ export async function POST(request: Request) {
     )
   }
 
-  const response = NextResponse.json({
-    user: data.user,
-    accessToken: data.accessToken
-  })
+  const response = NextResponse.json({ user: data.user })
   setAuthCookies(response.cookies, {
     accessToken: data.accessToken,
     refreshToken: data.refreshToken
@@ -198,7 +198,10 @@ export async function GET(request: NextRequest) {
   const oauthError = request.nextUrl.searchParams.get('error')
 
   if (oauthError || !code) {
-    return NextResponse.redirect(new URL(`/login?error=${oauthError ?? 'oauth_failed'}`, request.url))
+    if (oauthError) {
+      console.warn('OAuth callback failed', { error: oauthError })
+    }
+    return NextResponse.redirect(new URL('/login?error=oauth_failed', request.url))
   }
 
   const cookieStore = await cookies()
@@ -210,7 +213,10 @@ export async function GET(request: NextRequest) {
   const client = createServerClient()
   const { data, error } = await client.auth.exchangeOAuthCode(code, codeVerifier)
   if (error || !data?.accessToken) {
-    return NextResponse.redirect(new URL(`/login?error=${error?.message ?? 'exchange_failed'}`, request.url))
+    if (error) {
+      console.error('OAuth code exchange failed', error)
+    }
+    return NextResponse.redirect(new URL('/login?error=exchange_failed', request.url))
   }
 
   const response = NextResponse.redirect(new URL('/dashboard', request.url))
