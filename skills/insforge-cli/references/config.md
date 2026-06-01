@@ -25,12 +25,31 @@ npx @insforge/cli config apply  [--file insforge.toml] [--dry-run] [--auto-appro
   "config": {
     "auth": {
       "allowed_redirect_urls": ["https://app.com"],
+      "require_email_verification": true,
+      "verify_email_method": "link",
+      "reset_password_method": "code",
       "disable_signup": false,
-      "password": { "min_length": 8, "require_number": false }
+      "password": {
+        "min_length": 8,
+        "require_number": false,
+        "require_lowercase": true,
+        "require_uppercase": false,
+        "require_special_char": false
+      },
+      "smtp": {
+        "enabled": false,
+        "host": "",
+        "port": 587,
+        "username": "",
+        "sender_email": "",
+        "sender_name": "",
+        "min_interval_seconds": 60
+      }
     },
     "storage": { "max_file_size_mb": 100 },
     "realtime": { "retention_days": null },
-    "schedules": { "retention_days": 7 }
+    "schedules": { "retention_days": 7 },
+    "deployments": { "subdomain": "my-app" }
   },
   "skipped": []
 }
@@ -60,8 +79,8 @@ npx @insforge/cli config apply  [--file insforge.toml] [--dry-run] [--auto-appro
   "applied": [ /* DiffChange objects that were applied */ ],
   "skipped": [
     {
-      "key": "auth.allowed_redirect_urls",
-      "reason": "your backend doesn't expose auth.allowed_redirect_urls — upgrade the project to apply this section"
+      "key": "storage.max_file_size_mb",
+      "reason": "your backend doesn't expose storage.max_file_size_mb — upgrade the project to apply this section"
     }
   ]
 }

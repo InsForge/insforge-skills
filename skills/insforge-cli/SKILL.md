@@ -191,7 +191,6 @@ Manage supported project settings declaratively via `insforge.toml` (project roo
 - `npx @insforge/cli config apply [--file insforge.toml] [--dry-run] [--auto-approve]` — apply the TOML. Per-change capability gate: supported changes apply; unsupported go to `skipped[]` with an upgrade message and **no write is issued for them**. `--json` returns `{ plan, applied[], skipped[] }`.
 
 > **If `apply` returns `skipped: [...]`, surface verbatim.** The user's backend predates this section. Tell them which sections were skipped and to upgrade; do not retry, do not bypass with `curl` (silent drop). Sample message: _"I tried to set `storage.max_file_size_mb` but your backend is on an older version that doesn't support it yet. Upgrade your backend and re-run `npx @insforge/cli config apply`."_
-
 > **TOML is for knobs only — never embed programs.** SQL → `db migrations`. Function code → `functions deploy`. Compute → `compute deploy`. Frontend → `deployments deploy`. TOML carries booleans, numbers, strings, arrays, and simple nested config — anything bigger lives in its own file managed by a dedicated CLI command.
 
 **Scope today:** auth redirects and verification flags, password policy, SMTP, storage upload size, realtime/schedule retention, and cloud deployment subdomain. TOML does not manage external provider resources such as OAuth apps, storage bucket lifecycle, realtime channels, deployment env vars, functions, or secrets.
