@@ -2,7 +2,7 @@
 
 Deep reference for `config export | plan | apply`. The SKILL.md Configuration section has the principles and rules; this file has output shapes and the error table.
 
-**Scope today:** only `auth.allowed_redirect_urls`. Other auth knobs are dashboard-only.
+**Scope today:** auth redirects and verification flags, password policy, SMTP, storage upload size, realtime/schedule retention, and cloud deployment subdomain. TOML does not manage external provider resources such as OAuth apps, storage bucket lifecycle, realtime channels, deployment env vars, functions, or secrets.
 
 ## Commands
 
@@ -22,7 +22,16 @@ npx @insforge/cli config apply  [--file insforge.toml] [--dry-run] [--auto-appro
 ```json
 {
   "written": "/abs/path/to/insforge.toml",
-  "config": { "auth": { "allowed_redirect_urls": ["https://app.com"] } },
+  "config": {
+    "auth": {
+      "allowed_redirect_urls": ["https://app.com"],
+      "disable_signup": false,
+      "password": { "min_length": 8, "require_number": false }
+    },
+    "storage": { "max_file_size_mb": 100 },
+    "realtime": { "retention_days": null },
+    "schedules": { "retention_days": 7 }
+  },
   "skipped": []
 }
 ```
@@ -62,11 +71,11 @@ npx @insforge/cli config apply  [--file insforge.toml] [--dry-run] [--auto-appro
 
 | Mistake | What to do instead |
 |---|---|
-| Calling `PUT /api/auth/config` directly to change `allowedRedirectUrls` | Use `config apply` — it's version-aware; direct PUTs can silently drop on older backends |
+| Calling raw admin APIs directly for TOML-supported settings | Use `config apply` — it's version-aware; direct writes can silently drop on older backends |
 | Treating `skipped[]` as an error to retry | It's intentional; surface verbatim with the upgrade ask and stop |
 | Running `config apply` in `--json` mode without `--yes` | Add `-y`/`--yes` (global) or `--auto-approve` (subcommand alias — same effect); otherwise fails fast with `CONFIRMATION_REQUIRED` |
 | Re-running with `--force` to "fix" a skip | `--force` is only for `export`'s overwrite gate; skips need a backend upgrade |
-| Setting password policy / OAuth providers / SMTP via TOML | Out of scope today — dashboard-only |
+| Managing OAuth apps, email templates, storage buckets, realtime channels, secrets, functions, or deployment env vars via TOML | Use their dedicated dashboard or CLI flows; TOML only carries supported project config knobs |
 
 ## Related
 

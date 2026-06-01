@@ -372,7 +372,7 @@ Only render the reset form when `insforge_status=ready` and `token` is present.
 1. **Always check auth config first** before implementing
    - Run `npx @insforge/cli metadata --json` to get auth config (`requireEmailVerification`, `verifyEmailMethod`, `resetPasswordMethod`, `oAuthProviders`, `allowedRedirectUrls`)
    - This tells you what features to implement
-   - To **add a redirect URL** to the allowlist, use `npx @insforge/cli config apply` — see the **insforge-cli** skill's Configuration section. Other auth settings (password policy, OAuth providers, etc.) are dashboard-only today.
+   - To change supported project config such as redirect URLs, verification flags, password policy, or SMTP, use `npx @insforge/cli config apply` — see the **insforge-cli** skill's Configuration section. OAuth providers and external app setup are dashboard/provider-managed.
 
 2. **The sign-up page must handle the full registration flow**
    - After calling `signUp()`, if `requireEmailVerification` is true, branch on `verifyEmailMethod`
