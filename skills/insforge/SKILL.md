@@ -140,12 +140,15 @@ Before integrating payments, make sure a Stripe key is configured. Run `npx @ins
 
 The real-time SDK is for frontend event handling and messaging. Configure channel patterns, database triggers, and channel/message RLS with the **insforge-cli** skill; see [realtime](../insforge-cli/references/realtime.md).
 
-### Backend Configuration (Not Yet in CLI)
+### Backend Configuration
 
-Auth redirect URL allowlist is now managed via the CLI — use
-`npx @insforge/cli config export/plan/apply`. Other auth settings (password
-policy, OAuth providers, verification methods) still live on the dashboard. See
-the **insforge-cli** skill's Configuration section.
+Supported project config knobs are managed via the CLI — use
+`npx @insforge/cli config export/plan/apply` for auth redirect URLs,
+verification flags, password policy, auth SMTP settings, storage upload size,
+realtime/schedule retention, and cloud deployment subdomain. OAuth providers,
+external app setup, storage buckets, functions, secrets, and deployment env vars
+still use their dedicated dashboard or CLI flows. See the **insforge-cli**
+skill's Configuration section.
 
 ### Risky backend changes? Use a branch first
 

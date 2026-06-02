@@ -1,7 +1,7 @@
 ---
 name: insforge-cli
 description: >-
-  Use this skill whenever someone needs a backend, or a task touches backend or cloud infrastructure: at minimum read it to check relevance, then stop if the task is not actually backend/cloud work, or use it to provision and manage that backend with the InsForge CLI if it is. Covers projects, SQL, migrations, RLS policies, functions, storage buckets, frontend deployments, compute services, secrets/env vars, AI/OpenRouter key setup, Stripe payment keys/catalog/products/prices/webhooks, schedules, logs, diagnostics, import/export, **declarative auth redirect URLs via `insforge.toml`** (applied with `config apply`), or **managing backend branches** (creating a branch project to test risky schema/auth/RLS changes, merging a branch back to prod, resolving merge conflicts). For app code with @insforge/sdk, use the insforge skill instead.
+  Use this skill whenever someone needs a backend, or a task touches backend or cloud infrastructure: at minimum read it to check relevance, then stop if the task is not actually backend/cloud work, or use it to provision and manage that backend with the InsForge CLI if it is. Covers projects, SQL, migrations, RLS policies, functions, storage buckets, frontend deployments, compute services, secrets/env vars, AI/OpenRouter key setup, Stripe payment keys/catalog/products/prices/webhooks, schedules, logs, diagnostics, import/export, **declarative project config via `insforge.toml`** (applied with `config apply`), or **managing backend branches** (creating a branch project to test risky schema/auth/RLS changes, merging a branch back to prod, resolving merge conflicts). For app code with @insforge/sdk, use the insforge skill instead.
 license: MIT
 metadata:
   author: insforge
@@ -184,17 +184,16 @@ For frontend hosting see **Frontend Deployments** above.
 
 ### Configuration — `npx @insforge/cli config`
 
-Manage `auth.allowed_redirect_urls` declaratively via `insforge.toml` (project root). For changing redirect URLs, prefer this over `PUT /api/auth/config` — the CLI gates on backend version and surfaces a clean skip if the backend predates the field, where the raw PUT may 200-and-silently-drop.
+Manage supported project settings declaratively via `insforge.toml` (project root). For auth redirect URLs, verification flags, password policy, SMTP, storage upload size, realtime/schedule retention, and cloud deployment subdomain, prefer this over raw admin API calls — the CLI gates on backend version and surfaces a clean skip if the backend predates a field, where a raw write may 200-and-silently-drop.
 
 - `npx @insforge/cli config export [--out insforge.toml] [--force]` — pull live config into TOML. Sections the backend doesn't expose are omitted.
 - `npx @insforge/cli config plan [--file insforge.toml]` — diff TOML vs. live state; shows which changes will apply vs. be skipped on the connected backend.
-- `npx @insforge/cli config apply [--file insforge.toml] [--dry-run] [--auto-approve]` — apply the TOML. Per-change capability gate: supported changes apply; unsupported go to `skipped[]` with an upgrade message and **no PUT is issued for them**. `--json` returns `{ plan, applied[], skipped[] }`.
+- `npx @insforge/cli config apply [--file insforge.toml] [--dry-run] [--auto-approve]` — apply the TOML. Per-change capability gate: supported changes apply; unsupported go to `skipped[]` with an upgrade message and **no write is issued for them**. `--json` returns `{ plan, applied[], skipped[] }`.
 
-> **If `apply` returns `skipped: [...]`, surface verbatim.** The user's backend predates this section. Tell them which sections were skipped and to upgrade; do not retry, do not bypass with `curl` (silent drop). Sample message: _"I tried to set `auth.allowed_redirect_urls` but your backend is on an older version that doesn't support it yet. Upgrade your backend and re-run `npx @insforge/cli config apply`."_
+> **If `apply` returns `skipped: [...]`, surface verbatim.** The user's backend predates this section. Tell them which sections were skipped and to upgrade; do not retry, do not bypass with `curl` (silent drop). Sample message: _"I tried to set `storage.max_file_size_mb` but your backend is on an older version that doesn't support it yet. Upgrade your backend and re-run `npx @insforge/cli config apply`."_
+> **TOML is for knobs only — never embed programs.** SQL → `db migrations`. Function code → `functions deploy`. Compute → `compute deploy`. Frontend → `deployments deploy`. TOML carries booleans, numbers, strings, arrays, and simple nested config — anything bigger lives in its own file managed by a dedicated CLI command.
 
-> **TOML is for knobs only — never embed programs.** SQL → `db migrations`. Function code → `functions deploy`. Compute → `compute deploy`. Frontend → `deployments deploy`. TOML carries booleans, strings, and arrays — anything bigger lives in its own file managed by a dedicated CLI command.
-
-**Scope today:** only `auth.allowed_redirect_urls`. Password policy, SMTP, OAuth providers, custom subdomain, and similar will land in TOML later. For other `auth.config` fields today, use the dashboard.
+**Scope today:** auth redirects and verification flags, password policy, SMTP, storage upload size, realtime/schedule retention, and cloud deployment subdomain. TOML does not manage external provider resources such as OAuth apps, storage bucket lifecycle, realtime channels, deployment env vars, functions, or secrets.
 
 See [references/config.md](references/config.md) for output shapes and a common-mistakes table.
 
@@ -302,19 +301,20 @@ Run with no subcommand for a full health report across all checks.
 
 **Payments use Stripe as source of truth**: use `payments config set` for Stripe keys, `payments sync` before relying on existing catalog data, and create a new Stripe price instead of editing amount/currency. Runtime checkout and customer portal integration belongs in the `insforge` SDK skill.
 
-**`config apply` is version-aware**: per-project backends drift in version. The CLI probes `/api/metadata` and gates `auth.allowed_redirect_urls` on whether the backend exposes it; if not, the change lands in `skipped[]` with an upgrade message and **no PUT is issued**. Never bypass with `curl` to "force" a skipped field — older backends may 200-and-silently-drop. Surface skips to the user and ask them to upgrade.
+**`config apply` is version-aware**: per-project backends drift in version. The CLI probes backend metadata/config endpoints and gates each TOML key on whether the backend exposes it; if not, the change lands in `skipped[]` with an upgrade message and **no PUT/PATCH is issued**. Never bypass with `curl` to "force" a skipped field — older backends may 200-and-silently-drop. Surface skips to the user and ask them to upgrade.
 
 ---
 
 ## Common Workflows
 
-### Configure auth redirect URLs (insforge.toml)
+### Configure project settings (insforge.toml)
 
 ```bash
 # 1. Pull current config to insforge.toml (writes in project root)
 npx @insforge/cli --json config export
 
-# 2. Edit insforge.toml — add/remove entries under [auth] allowed_redirect_urls
+# 2. Edit supported sections such as [auth], [auth.password], [auth.smtp],
+#    [storage], [realtime], [schedules], or [deployments]
 
 # 3. Preview the diff
 npx @insforge/cli --json config plan
