@@ -84,4 +84,4 @@ npx @insforge/cli db query "UPDATE posts SET status = 'draft' WHERE status IS NU
 ## Notes
 
 - For schema changes and RLS policy changes, use the migrations workflow in [db-migrations.md](db-migrations.md).
-- For advanced RLS patterns (infinite recursion prevention, SECURITY DEFINER, performance), see the insforge skill's [postgres-rls.md](../../insforge/database/postgres-rls.md).
+- For advanced RLS patterns (infinite recursion prevention, SECURITY DEFINER, performance), see [db-rls.md](db-rls.md).
