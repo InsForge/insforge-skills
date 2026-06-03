@@ -150,10 +150,14 @@ with (lists = 100);  -- rule of thumb: rows / 1000
 
 ### RLS with Vector Columns
 
-Standard [RLS](./postgres-rls.md) applies — the `match_*` RPC runs under the
+Standard database access-control rules apply — the `match_*` RPC runs under the
 caller's role. If you use `SECURITY DEFINER` to bypass RLS inside the RPC,
 re-filter by `auth.uid()` (or `requesting_user_id()` for third-party auth)
-inside the function body — otherwise users can query each other's vectors.
+inside the function body — otherwise users can query each other's vectors. For
+schema, privilege, RLS, helper-function, and migration guidance, use the
+**insforge-cli** skill's
+[db-access-control.md](../../insforge-cli/references/db-access-control.md)
+reference.
 
 ### Quick Reference
 

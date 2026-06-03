@@ -36,7 +36,7 @@ When the project is already linked, use the current linked project. Run login, p
 - It is allowed to reference built-in objects such as `auth.users(id)` and `auth.uid()` from public tables or public RLS policies; do not modify those built-in objects.
 - Do not create users, seed business rows, or run application CRUD workflows unless the user request explicitly asks for data migration, repair, or test setup.
 
-## RLS Guidance
+## Access Control Guidance
 
 - Use `auth.uid()` or an equivalent authenticated identity expression for user ownership checks.
 - Add both SQL privileges and RLS policies. Policies do not replace `GRANT`.
@@ -51,5 +51,5 @@ When the project is already linked, use the current linked project. Run login, p
 
 - `references/db-migrations.md` - migration file creation and apply workflow.
 - `references/db-query.md` - raw SQL execution and inspection.
-- `references/db-rls.md` - InsForge/Postgres RLS patterns, recursion avoidance, and policy guidance.
+- `references/db-access-control.md` - SQL privileges, RLS patterns, recursion avoidance, helper functions, and policy guidance.
 - `references/db-export.md` / `references/db-import.md` - schema or data import/export tasks.
