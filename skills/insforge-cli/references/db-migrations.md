@@ -145,6 +145,7 @@ npx @insforge/cli db migrations list --json
    - Migration SQL runs as `project_admin`.
    - `project_admin` can manage and own objects in `public`, but access to InsForge-managed schemas is restricted.
    - For generic application database work, create and evolve app-owned objects through migration files in `public`: tables, views, indexes, policies, triggers, helper functions, and grants.
+   - InsForge keeps `public` app tables broadly granted to runtime roles for smooth SDK/REST DX. If a task needs column-level or operation-level restriction, add explicit `REVOKE` statements before the narrow `GRANT`.
    - Do not create custom schemas or write to InsForge-managed/system schemas such as `auth`, `storage`, `realtime`, `payments`, `graphql`, `extensions`, `pg_catalog`, `information_schema`, or `system`, unless you are working on that specific feature module and its docs explicitly allow the operation.
    - It is allowed to reference built-in objects such as `auth.users(id)` and `auth.uid()` from public tables or public RLS policies; do not modify those built-in objects.
    - Reserve `db query` for row-level data fixes, backfills, and inspection.

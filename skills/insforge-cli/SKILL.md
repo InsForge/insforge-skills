@@ -40,6 +40,7 @@ When the project is already linked, use the current linked project. Run login, p
 
 - Use `auth.uid()` or an equivalent authenticated identity expression for user ownership checks.
 - Add both SQL privileges and RLS policies. Policies do not replace `GRANT`.
+- InsForge keeps `public` app tables broadly granted to runtime roles for smooth SDK/REST DX. A narrow column-level `GRANT` does not remove existing table-level privileges; explicitly `REVOKE UPDATE/INSERT/DELETE/SELECT` first when an operation or column must be restricted, then grant back only the allowed operations/columns.
 - Prefer helper functions for cross-table RLS checks when direct policy joins can recurse through other RLS policies.
 - Helper functions called from RLS policies that query RLS-enabled tables should be `SECURITY DEFINER`.
 - Put RLS helper functions in `public`.

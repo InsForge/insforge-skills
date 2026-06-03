@@ -80,6 +80,19 @@ CREATE TRIGGER posts_updated_at
 
 Policies decide which rows a role may access after PostgreSQL has allowed the SQL operation. They do not grant `SELECT`, `INSERT`, `UPDATE`, or `DELETE` privileges. If a table has policies but no matching `GRANT`, SDK/REST calls still fail before RLS can allow the row.
 
+### InsForge Public Schema Default Privileges
+
+For smooth SDK/REST development, InsForge treats `public` as the application data surface. New public tables usually inherit broad runtime privileges for `anon` and `authenticated`; RLS policies are expected to decide row-level access.
+
+Do not assume a new table starts with no runtime privileges. A narrow grant such as `GRANT UPDATE (title) ON posts TO authenticated` only adds permission; it does not remove an existing table-level `UPDATE`. For protected columns or operations, revoke first, then grant back the exact surface:
+
+```sql
+REVOKE UPDATE ON posts FROM anon, authenticated;
+GRANT UPDATE (title) ON posts TO authenticated;
+```
+
+For immutable fields, counters, role columns, ownership fields, or trigger-maintained columns, prefer a `BEFORE UPDATE` trigger guard as a second line of defense. Column privileges are useful, but triggers make the invariant independent of inherited grants and API behavior.
+
 ---
 
 ## Critical Vulnerabilities
@@ -317,6 +330,7 @@ Before completing an RLS implementation:
 
 - [ ] All tables with user data have `ALTER TABLE ... ENABLE ROW LEVEL SECURITY`
 - [ ] Matching SQL privileges are granted to `anon`/`authenticated` (`GRANT USAGE ON SCHEMA ...`, `GRANT SELECT/INSERT/UPDATE/DELETE ON ...`)
+- [ ] If relying on column-level or operation-level privileges, broad inherited public privileges are explicitly revoked before narrow grants are added
 - [ ] All policies have both `USING` and `WITH CHECK` where applicable
 - [ ] No circular RLS dependencies between tables (infinite recursion risk)
 - [ ] All helper functions called from policies are `SECURITY DEFINER`
