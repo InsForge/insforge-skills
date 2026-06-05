@@ -256,7 +256,7 @@ function setBridgeToken(client: InsForgeClient, token: string | null) {
 }
 ```
 
-Updating only the HTTP client leaves the realtime WebSocket on the anon key, so `senderId` shows the anon UUID instead of the user's Better Auth id.
+On SDK < 1.3.0, also replace each `client.setAccessToken(token)` / `client.setAccessToken(null)` call in the hook above with `setBridgeToken(client, token)` / `setBridgeToken(client, null)` — dropping in the helper alone isn't enough. Updating only the HTTP client leaves the realtime WebSocket on the anon key, so `senderId` shows the anon UUID instead of the user's Better Auth id.
 
 ### Pattern B — per-request client construction (server components, route handlers)
 
@@ -646,7 +646,7 @@ Server-only vars (read via `process.env` in the BA process) are the same across 
 | ❌ Forgetting `credentials: 'same-origin'` (or `'include'` cross-origin) on the bridge fetch | ✅ Without credentials, the Better Auth cookie isn't sent and the bridge always returns 401. |
 | ❌ Cross-origin without `sameSite: 'none'; secure` on the BA cookie | ✅ The browser drops the cookie on cross-origin requests by default. Configure Better Auth's cookies for cross-origin explicitly. |
 | ❌ Missing `Origin` header on direct `fetch`/`curl` to Better Auth POSTs | ✅ Better Auth requires `Origin` for CSRF. Browsers send it automatically; server-side clients must add `'Origin: <baseURL>'`. |
-| ❌ Realtime client shows `senderId` as the anon UUID instead of the user's BA id (Pattern A only) | ✅ On SDK ≥ 1.3.0 call `client.setAccessToken(token)` — it updates the HTTP client and the realtime token manager together. (On SDK < 1.3.0 the public method doesn't exist; call `client.getHttpClient().setAuthToken(token)` PLUS `client.realtime.tokenManager.setAccessToken(token)` (reach the private manager via a cast).) Pattern B's `edgeFunctionToken` already pipes into both. |
+| ❌ Realtime client shows `senderId` as the anon UUID instead of the user's BA id (Pattern A only) | ✅ On SDK ≥ 1.3.0 call `client.setAccessToken(token)` — it updates the HTTP client and the realtime token manager together. (On SDK < 1.3.0 the public method doesn't exist; use the `setBridgeToken` legacy fallback from Pattern A, which updates the HTTP client plus the private realtime `tokenManager` via a cast.) Pattern B's `edgeFunctionToken` already pipes into both. |
 | ❌ Realtime publish silently fails for authenticated users (`UNAUTHORIZED`) | ✅ `realtime.messages.sender_id` is `uuid` in core InsForge; Better Auth IDs are strings. One-time fix: `ALTER TABLE realtime.messages ALTER COLUMN sender_id TYPE text;` |
 | ❌ Vite SPA proxying to a separate BA server, sign-out (or any state-changing endpoint) returns 403 | ✅ BA's CSRF check compares the request's `Origin` against its `baseURL`. Either rewrite the proxy's `Origin` header to BA's URL (Vite `proxy.configure`) or add the SPA origin to BA's `trustedOrigins`. Sign-up has looser handling and won't trip this — the bug shows up later. |
 | ❌ Cross-origin missing `trustedOrigins` even with `sameSite: 'none'; secure: true` | ✅ Cookie config alone isn't enough — BA's CSRF gate also reads `trustedOrigins`. Add the SPA's full origin (no trailing slash) to the array. |
