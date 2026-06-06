@@ -1,7 +1,7 @@
 ---
 name: insforge-cli
 description: >-
-  Use this skill whenever someone needs a backend, or a task touches InsForge backend or cloud infrastructure through the InsForge CLI: projects, SQL, migrations, RLS policies, functions, storage, deployments, compute, secrets, config, schedules, logs, diagnostics, import/export, AI/OpenRouter setup, Stripe payments, backend branches, or CLI docs. For app code with @insforge/sdk, use the InsForge SDK skill instead.
+  Use this skill whenever someone needs a backend, or a task touches InsForge backend or cloud infrastructure through the InsForge CLI: projects, SQL, migrations, RLS policies, functions, storage, deployments, compute, secrets, config, schedules, logs, diagnostics, import/export, AI/OpenRouter setup, Stripe payments, backend branches, or CLI docs. For app code with InsForge or @insforge/sdk, use the insforge app-integration skill instead.
 license: MIT
 metadata:
   author: insforge
@@ -12,7 +12,7 @@ metadata:
 
 # InsForge CLI
 
-Use this skill whenever someone needs a backend, or when managing InsForge backend and cloud infrastructure with the InsForge CLI. For application code that calls InsForge from a frontend, backend, or edge function, use the `insforge` SDK skill instead.
+Use this skill whenever someone needs a backend, or when managing InsForge backend and cloud infrastructure with the InsForge CLI. For application code that calls InsForge from a frontend, backend, or edge function, use the `insforge` app-integration skill instead.
 
 ## Core Rules
 
@@ -152,7 +152,7 @@ Use `payments` for Stripe backend setup and catalog sync. See `references/paymen
 - Prefer test mode while building. Use live mode only after explicit user approval.
 - If the backend reports payments unavailable, ask the user/admin to enable or upgrade payments. Do not work around it by storing Stripe keys as generic secrets or embedding Stripe secret keys in app code.
 
-Runtime checkout, subscriptions, customer portal flows, and app code belong in the `insforge` SDK skill.
+Runtime checkout, subscriptions, customer portal flows, and app code belong in the `insforge` app-integration skill.
 
 ## Deployments
 
@@ -219,7 +219,7 @@ Typical log sources include `function.logs`, `function-deploy.logs`, `postgres.l
 - `npx @insforge/cli docs instructions` - setup guide.
 - `npx @insforge/cli docs <feature> <language>` - feature docs for `db`, `storage`, `functions`, `auth`, `ai`, or `realtime` in `typescript`, `swift`, `kotlin`, or `rest-api`.
 
-For application code with the InsForge SDK, use the `insforge` SDK skill and use `docs` only as official feature reference.
+For application code with InsForge or `@insforge/sdk`, use the `insforge` app-integration skill and use `docs` only as official feature reference.
 
 ## PostHog
 

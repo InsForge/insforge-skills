@@ -2,7 +2,7 @@
 
 Manage the Stripe payments foundation for a linked InsForge project.
 
-Use this command group for infrastructure and agent/admin workflows: Stripe key configuration, unified sync, webhook setup, catalog inspection, customer reads, product CRUD, price CRUD, subscription reads, and payment history reads. For frontend checkout and customer portal code, use the `insforge` SDK skill and `@insforge/sdk`.
+Use this command group for infrastructure and agent/admin workflows: Stripe key configuration, unified sync, webhook setup, catalog inspection, customer reads, product CRUD, price CRUD, subscription reads, and payment history reads. For frontend checkout and customer portal code, use the `insforge` app-integration skill and `@insforge/sdk`.
 
 ## Availability
 
@@ -252,13 +252,13 @@ Example flow:
 
 ## Common Mistakes
 
-| Mistake | Fix |
-|---------|-----|
-| Managing Stripe keys with generic secrets commands | Use `payments config set` |
-| Mutating live while still developing | Use `--environment test` |
-| Expecting `payments sync` to configure webhooks | Use `payments webhooks configure` |
-| Trying to update price amount/currency | Create a new price and archive the old one |
-| Using CLI for runtime checkout | Use `insforge.payments.createCheckoutSession` in app code |
-| Shipping subscription UI before RLS | Add policies on `payments.checkout_sessions` and `payments.customer_portal_sessions` first |
-| Idempotent checkout retry blocked by RLS after adding `INSERT` | Add the matching `SELECT` policy for rows the caller may retry/read |
-| Marking app orders paid from success URL | Fulfill from webhook-backed `payments.payment_history` or `payments.subscriptions` |
+| Mistake                                                        | Fix                                                                                        |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Managing Stripe keys with generic secrets commands             | Use `payments config set`                                                                  |
+| Mutating live while still developing                           | Use `--environment test`                                                                   |
+| Expecting `payments sync` to configure webhooks                | Use `payments webhooks configure`                                                          |
+| Trying to update price amount/currency                         | Create a new price and archive the old one                                                 |
+| Using CLI for runtime checkout                                 | Use `insforge.payments.createCheckoutSession` in app code                                  |
+| Shipping subscription UI before RLS                            | Add policies on `payments.checkout_sessions` and `payments.customer_portal_sessions` first |
+| Idempotent checkout retry blocked by RLS after adding `INSERT` | Add the matching `SELECT` policy for rows the caller may retry/read                        |
+| Marking app orders paid from success URL                       | Fulfill from webhook-backed `payments.payment_history` or `payments.subscriptions`         |

@@ -10,9 +10,9 @@ metadata:
   date: April 2026
 ---
 
-# InsForge SDK Skill
+# InsForge App Integration Skill
 
-This skill covers **client-side SDK integration** using `@insforge/sdk`. For backend infrastructure operations (creating tables, inspecting schema, deploying functions, secrets, managing storage buckets, configuring Stripe keys/catalog, website deployments, cron job and schedules, logs, etc.), use the **insforge-cli** skill.
+This skill covers application code and integration work with InsForge, primarily through `@insforge/sdk`. For backend infrastructure operations (creating tables, inspecting schema, deploying functions, secrets, managing storage buckets, configuring Stripe keys/catalog, website deployments, cron job and schedules, logs, etc.), use the **insforge-cli** skill.
 
 ## Quick Setup
 
@@ -32,6 +32,7 @@ Before using the SDK, create a `.env` file (or `.env.local` for Next.js) in your
    - Generate it with `npx @insforge/cli link` for an existing project or `npx @insforge/cli create` for a new project.
 
 2. **Get the anon key** via the CLI:
+
    ```bash
    npx @insforge/cli secrets get ANON_KEY
    ```
@@ -44,16 +45,17 @@ Before using the SDK, create a `.env` file (or `.env.local` for Next.js) in your
 
 Use the correct environment variable prefix and access pattern for your framework:
 
-| Framework | `.env` file | Variables | Access Pattern |
-|-----------|-------------|-----------|----------------|
-| **Next.js** | `.env.local` | `NEXT_PUBLIC_INSFORGE_URL`, `NEXT_PUBLIC_INSFORGE_ANON_KEY` | `process.env.NEXT_PUBLIC_*` |
-| **Vite** (React, Vue, Svelte) | `.env` | `VITE_INSFORGE_URL`, `VITE_INSFORGE_ANON_KEY` | `import.meta.env.VITE_*` |
-| **Astro** | `.env` | `PUBLIC_INSFORGE_URL`, `PUBLIC_INSFORGE_ANON_KEY` | `import.meta.env.PUBLIC_*` |
-| **SvelteKit** | `.env` | `PUBLIC_INSFORGE_URL`, `PUBLIC_INSFORGE_ANON_KEY` | `import { env } from '$env/dynamic/public'` |
-| **Create React App** | `.env` | `REACT_APP_INSFORGE_URL`, `REACT_APP_INSFORGE_ANON_KEY` | `process.env.REACT_APP_*` |
-| **Node.js / Server** | `.env` | `INSFORGE_URL`, `INSFORGE_ANON_KEY` | `process.env.*` |
+| Framework                     | `.env` file  | Variables                                                   | Access Pattern                              |
+| ----------------------------- | ------------ | ----------------------------------------------------------- | ------------------------------------------- |
+| **Next.js**                   | `.env.local` | `NEXT_PUBLIC_INSFORGE_URL`, `NEXT_PUBLIC_INSFORGE_ANON_KEY` | `process.env.NEXT_PUBLIC_*`                 |
+| **Vite** (React, Vue, Svelte) | `.env`       | `VITE_INSFORGE_URL`, `VITE_INSFORGE_ANON_KEY`               | `import.meta.env.VITE_*`                    |
+| **Astro**                     | `.env`       | `PUBLIC_INSFORGE_URL`, `PUBLIC_INSFORGE_ANON_KEY`           | `import.meta.env.PUBLIC_*`                  |
+| **SvelteKit**                 | `.env`       | `PUBLIC_INSFORGE_URL`, `PUBLIC_INSFORGE_ANON_KEY`           | `import { env } from '$env/dynamic/public'` |
+| **Create React App**          | `.env`       | `REACT_APP_INSFORGE_URL`, `REACT_APP_INSFORGE_ANON_KEY`     | `process.env.REACT_APP_*`                   |
+| **Node.js / Server**          | `.env`       | `INSFORGE_URL`, `INSFORGE_ANON_KEY`                         | `process.env.*`                             |
 
 Example `.env.local` for Next.js:
+
 ```bash
 NEXT_PUBLIC_INSFORGE_URL=https://your-appkey.us-east.insforge.app
 NEXT_PUBLIC_INSFORGE_ANON_KEY=eyJhbGciOiJIUzI1NiIs...
@@ -64,73 +66,73 @@ NEXT_PUBLIC_INSFORGE_ANON_KEY=eyJhbGciOiJIUzI1NiIs...
 ### 3. Initialize the client
 
 ```javascript
-import { createClient } from '@insforge/sdk'
+import { createClient } from "@insforge/sdk";
 
 // Next.js / CRA: use process.env
 const insforge = createClient({
   baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL,
-  anonKey: process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY
-})
+  anonKey: process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY,
+});
 
 // Vite / Astro: use import.meta.env
 const insforge = createClient({
   baseUrl: import.meta.env.VITE_INSFORGE_URL,
-  anonKey: import.meta.env.VITE_INSFORGE_ANON_KEY
-})
+  anonKey: import.meta.env.VITE_INSFORGE_ANON_KEY,
+});
 ```
 
 For trusted server-only code that needs project-admin access:
 
 ```javascript
-import { createAdminClient } from '@insforge/sdk'
+import { createAdminClient } from "@insforge/sdk";
 
 const admin = createAdminClient({
   baseUrl: process.env.INSFORGE_URL,
-  apiKey: process.env.INSFORGE_API_KEY
-})
+  apiKey: process.env.INSFORGE_API_KEY,
+});
 ```
 
 ## Module Reference
 
-| Module | Integration Guide |
-|--------|-------------------|
-| **Database** | [database/sdk-integration.md](database/sdk-integration.md) |
-| **Auth** | [auth/sdk-integration.md](auth/sdk-integration.md) |
-| **Storage** | [storage/sdk-integration.md](storage/sdk-integration.md) |
+| Module        | Integration Guide                                            |
+| ------------- | ------------------------------------------------------------ |
+| **Database**  | [database/sdk-integration.md](database/sdk-integration.md)   |
+| **Auth**      | [auth/sdk-integration.md](auth/sdk-integration.md)           |
+| **Storage**   | [storage/sdk-integration.md](storage/sdk-integration.md)     |
 | **Functions** | [functions/sdk-integration.md](functions/sdk-integration.md) |
-| **AI** | [ai/overview.md](ai/overview.md) |
-| **Real-time** | [realtime/sdk-integration.md](realtime/sdk-integration.md) |
-| **Email** | [email/sdk-integration.md](email/sdk-integration.md) |
-| **Payments** | [payments/sdk-integration.md](payments/sdk-integration.md) |
+| **AI**        | [ai/overview.md](ai/overview.md)                             |
+| **Real-time** | [realtime/sdk-integration.md](realtime/sdk-integration.md)   |
+| **Email**     | [email/sdk-integration.md](email/sdk-integration.md)         |
+| **Payments**  | [payments/sdk-integration.md](payments/sdk-integration.md)   |
 
 ### What Each Module Covers
 
-| Module | Content |
-|--------|---------|
-| **Database** | CRUD operations, filters, pagination, RPC calls |
-| **Auth** | Sign up/in, OAuth, sessions, profiles, password reset |
-| **Storage** | Upload, download, delete files; S3-compatible gateway for CI / backup tooling; write RLS policies for buckets |
-| **Functions** | Invoke edge functions |
-| **AI** | OpenRouter AI calls for chat, images, video, audio, embeddings, and model discovery |
-| **Email** | Send custom transactional HTML emails (welcome, newsletter, notifications) |
-| **Payments** | Stripe Checkout Sessions, subscriptions, and Billing Portal redirects |
-| **Real-time** | Connect, subscribe, publish events, and track presence snapshots plus join/leave deltas |
+| Module        | Content                                                                                                       |
+| ------------- | ------------------------------------------------------------------------------------------------------------- |
+| **Database**  | CRUD operations, filters, pagination, RPC calls                                                               |
+| **Auth**      | Sign up/in, OAuth, sessions, profiles, password reset                                                         |
+| **Storage**   | Upload, download, delete files; S3-compatible gateway for CI / backup tooling; write RLS policies for buckets |
+| **Functions** | Invoke edge functions                                                                                         |
+| **AI**        | OpenRouter AI calls for chat, images, video, audio, embeddings, and model discovery                           |
+| **Email**     | Send custom transactional HTML emails (welcome, newsletter, notifications)                                    |
+| **Payments**  | Stripe Checkout Sessions, subscriptions, and Billing Portal redirects                                         |
+| **Real-time** | Connect, subscribe, publish events, and track presence snapshots plus join/leave deltas                       |
 
 ### Guides
 
-| Guide | When to Use |
-|-------|-------------|
-| [../insforge-cli/references/database/access-control.md](../insforge-cli/references/database/access-control.md) | Backend setup for application-table access control — covers RLS, infinite recursion prevention, `SECURITY DEFINER` patterns, performance tips, and common InsForge patterns |
-| [storage/s3-gateway.md](storage/s3-gateway.md) | Fallback path when the consumer is existing S3 tooling (aws CLI, AWS SDKs, rclone, Terraform, boto3) and adopting `@insforge/sdk` is impractical — covers endpoint/region setup, access-key management, path-style addressing, and supported vs. not-supported S3 operations. **Requires InsForge 2.0.9+.** **Prefer the SDK** ([storage/sdk-integration.md](storage/sdk-integration.md)) for app code |
-| [storage/postgres-rls.md](storage/postgres-rls.md) | Writing RLS policies for `storage.objects` — owner-only, public-read, path-scoped, team-shared, and the `NULL uploaded_by` caveat for mixed REST + S3 buckets |
-| [../insforge-cli/references/database/vector.md](../insforge-cli/references/database/vector.md) | Backend setup for semantic search, recommendations, or RAG — covers the `vector` extension, schema/dimensions, distance operators, HNSW/IVFFlat indexes, and RPC similarity search |
-| [ai/chat-completions.md](ai/chat-completions.md) | Text generation, structured answers, and streaming chat through OpenRouter |
-| [ai/image-generation.md](ai/image-generation.md) | Image generation/editing through OpenRouter, then durable storage in InsForge Storage |
-| [ai/video-generation.md](ai/video-generation.md) | Async OpenRouter video jobs, status polling, and storing generated media |
-| [ai/audio.md](ai/audio.md) | Speech-to-text, text-to-speech, and storing audio assets/transcripts with InsForge |
-| [ai/embeddings-and-rag.md](ai/embeddings-and-rag.md) | Generating embeddings through OpenRouter, storing them in pgvector, and wiring up a basic RAG pipeline |
-| [ai/models-list.md](ai/models-list.md) | Discovering OpenRouter model IDs, modalities, parameters, pricing, and embedding dimensions |
-| [payments](../insforge-cli/references/payments.md) | Configuring Stripe keys, syncing catalog, creating products/prices, webhooks, and portal RLS before app integration |
+| Guide                                                                                                          | When to Use                                                                                                                                                                                                                                                                                                                                                                                            |
+| -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [../insforge-cli/references/database/access-control.md](../insforge-cli/references/database/access-control.md) | Backend setup for application-table access control — covers RLS, infinite recursion prevention, `SECURITY DEFINER` patterns, performance tips, and common InsForge patterns                                                                                                                                                                                                                            |
+| [storage/s3-gateway.md](storage/s3-gateway.md)                                                                 | Fallback path when the consumer is existing S3 tooling (aws CLI, AWS SDKs, rclone, Terraform, boto3) and adopting `@insforge/sdk` is impractical — covers endpoint/region setup, access-key management, path-style addressing, and supported vs. not-supported S3 operations. **Requires InsForge 2.0.9+.** **Prefer the SDK** ([storage/sdk-integration.md](storage/sdk-integration.md)) for app code |
+| [storage/postgres-rls.md](storage/postgres-rls.md)                                                             | Writing RLS policies for `storage.objects` — owner-only, public-read, path-scoped, team-shared, and the `NULL uploaded_by` caveat for mixed REST + S3 buckets                                                                                                                                                                                                                                          |
+| [../insforge-cli/references/database/vector.md](../insforge-cli/references/database/vector.md)                 | Backend setup for semantic search, recommendations, or RAG — covers the `vector` extension, schema/dimensions, distance operators, HNSW/IVFFlat indexes, and RPC similarity search                                                                                                                                                                                                                     |
+| [ai/chat-completions.md](ai/chat-completions.md)                                                               | Text generation, structured answers, and streaming chat through OpenRouter                                                                                                                                                                                                                                                                                                                             |
+| [ai/image-generation.md](ai/image-generation.md)                                                               | Image generation/editing through OpenRouter, then durable storage in InsForge Storage                                                                                                                                                                                                                                                                                                                  |
+| [ai/video-generation.md](ai/video-generation.md)                                                               | Async OpenRouter video jobs, status polling, and storing generated media                                                                                                                                                                                                                                                                                                                               |
+| [ai/audio.md](ai/audio.md)                                                                                     | Speech-to-text, text-to-speech, and storing audio assets/transcripts with InsForge                                                                                                                                                                                                                                                                                                                     |
+| [ai/embeddings-and-rag.md](ai/embeddings-and-rag.md)                                                           | Generating embeddings through OpenRouter, storing them in pgvector, and wiring up a basic RAG pipeline                                                                                                                                                                                                                                                                                                 |
+| [ai/models-list.md](ai/models-list.md)                                                                         | Discovering OpenRouter model IDs, modalities, parameters, pricing, and embedding dimensions                                                                                                                                                                                                                                                                                                            |
+| [payments](../insforge-cli/references/payments.md)                                                             | Configuring Stripe keys, syncing catalog, creating products/prices, webhooks, and portal RLS before app integration                                                                                                                                                                                                                                                                                    |
 
 ### Building Checkout for a New App
 
@@ -170,16 +172,16 @@ npx @insforge/cli branch merge feat-x               # apply to parent
 
 All SDK methods return `{ data, error }`.
 
-| Module | Methods |
-|--------|---------|
-| `insforge.database` | `.from().select()`, `.insert()`, `.update()`, `.delete()`, `.rpc()` |
-| `insforge.auth` | `.signUp()`, `.signInWithPassword()`, `.signInWithOAuth()`, `.signOut()`, `.getCurrentUser()` |
-| `insforge.storage` | `.from().upload()`, `.uploadAuto()`, `.download()`, `.remove()` |
-| `insforge.functions` | `.invoke()` |
-| `insforge.ai` | Deprecated fallback only: `.chat.completions.create()`, `.images.generate()`, `.embeddings.create()` |
-| `insforge.realtime` | `.connect()`, `.subscribe()`, `.publish()`, `.on()`, `.disconnect()` |
-| `insforge.emails` | `.send({ to, subject, html, cc?, bcc?, from?, replyTo? })` |
-| `insforge.payments` | `.createCheckoutSession()`, `.createCustomerPortalSession()` |
+| Module               | Methods                                                                                              |
+| -------------------- | ---------------------------------------------------------------------------------------------------- |
+| `insforge.database`  | `.from().select()`, `.insert()`, `.update()`, `.delete()`, `.rpc()`                                  |
+| `insforge.auth`      | `.signUp()`, `.signInWithPassword()`, `.signInWithOAuth()`, `.signOut()`, `.getCurrentUser()`        |
+| `insforge.storage`   | `.from().upload()`, `.uploadAuto()`, `.download()`, `.remove()`                                      |
+| `insforge.functions` | `.invoke()`                                                                                          |
+| `insforge.ai`        | Deprecated fallback only: `.chat.completions.create()`, `.images.generate()`, `.embeddings.create()` |
+| `insforge.realtime`  | `.connect()`, `.subscribe()`, `.publish()`, `.on()`, `.disconnect()`                                 |
+| `insforge.emails`    | `.send({ to, subject, html, cc?, bcc?, from?, replyTo? })`                                           |
+| `insforge.payments`  | `.createCheckoutSession()`, `.createCustomerPortalSession()`                                         |
 
 ## Important Notes
 

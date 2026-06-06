@@ -19,6 +19,7 @@ npx @insforge/cli config apply  [--file insforge.toml] [--dry-run] [--auto-appro
 ## Output shapes (`--json` mode)
 
 `config export`:
+
 ```json
 {
   "written": "/abs/path/to/insforge.toml",
@@ -56,6 +57,7 @@ npx @insforge/cli config apply  [--file insforge.toml] [--dry-run] [--auto-appro
 ```
 
 `config plan`:
+
 ```json
 {
   "changes": [
@@ -73,10 +75,15 @@ npx @insforge/cli config apply  [--file insforge.toml] [--dry-run] [--auto-appro
 ```
 
 `config apply`:
+
 ```json
 {
-  "plan": { /* same shape as plan output */ },
-  "applied": [ /* DiffChange objects that were applied */ ],
+  "plan": {
+    /* same shape as plan output */
+  },
+  "applied": [
+    /* DiffChange objects that were applied */
+  ],
   "skipped": [
     {
       "key": "storage.max_file_size_mb",
@@ -88,15 +95,15 @@ npx @insforge/cli config apply  [--file insforge.toml] [--dry-run] [--auto-appro
 
 ## Common mistakes
 
-| Mistake | What to do instead |
-|---|---|
-| Calling raw admin APIs directly for TOML-supported settings | Use `config apply` — it's version-aware; direct writes can silently drop on older backends |
-| Treating `skipped[]` as an error to retry | It's intentional; surface verbatim with the upgrade ask and stop |
-| Running `config apply` in `--json` mode without `--yes` | Add `-y`/`--yes` (global) or `--auto-approve` (subcommand alias — same effect); otherwise fails fast with `CONFIRMATION_REQUIRED` |
-| Re-running with `--force` to "fix" a skip | `--force` is only for `export`'s overwrite gate; skips need a backend upgrade |
-| Managing OAuth apps, email templates, storage buckets, realtime channels, secrets, functions, or deployment env vars via TOML | Use their dedicated dashboard or CLI flows; TOML only carries supported project config knobs |
+| Mistake                                                                                                                       | What to do instead                                                                                                                |
+| ----------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Calling raw admin APIs directly for TOML-supported settings                                                                   | Use `config apply` — it's version-aware; direct writes can silently drop on older backends                                        |
+| Treating `skipped[]` as an error to retry                                                                                     | It's intentional; surface verbatim with the upgrade ask and stop                                                                  |
+| Running `config apply` in `--json` mode without `--yes`                                                                       | Add `-y`/`--yes` (global) or `--auto-approve` (subcommand alias — same effect); otherwise fails fast with `CONFIRMATION_REQUIRED` |
+| Re-running with `--force` to "fix" a skip                                                                                     | `--force` is only for `export`'s overwrite gate; skips need a backend upgrade                                                     |
+| Managing OAuth apps, email templates, storage buckets, realtime channels, secrets, functions, or deployment env vars via TOML | Use their dedicated dashboard or CLI flows; TOML only carries supported project config knobs                                      |
 
 ## Related
 
 - `npx @insforge/cli metadata` — read-only view of all backend config slices
-- **insforge** SDK skill `auth/sdk-integration.md` — how SDK code reads auth config at runtime
+- **insforge** app-integration skill `auth/sdk-integration.md` — how SDK code reads auth config at runtime
