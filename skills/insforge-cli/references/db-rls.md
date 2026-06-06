@@ -29,7 +29,8 @@ For generic application database work, create and modify app-owned objects in th
 - Create, alter, drop, grant, revoke, index, trigger, function, view, and policy changes on `public` application objects.
 - Do not create custom schemas or write to InsForge-managed/system schemas such as `auth`, `storage`, `realtime`, `payments`, `graphql`, `extensions`, `pg_catalog`, `information_schema`, or `system`, unless you are working on that specific feature module and its docs explicitly allow the operation.
 - It is allowed to reference built-in objects such as `auth.users(id)` and `auth.uid()` from public tables or public RLS policies; do not modify those built-in objects.
-- Put RLS helper functions in `public` and set a fixed search path, for example `SET search_path = public`.
+- Put RLS helper functions in `public` and schema-qualify references such as `public.team_members` and `auth.uid()`.
+- Do not manually change `search_path`; InsForge migrations already run against `public`.
 
 Managed table RLS belongs to the corresponding storage, realtime, or payments feature context. Use those feature docs when the task is specifically about those modules.
 
@@ -122,19 +123,18 @@ $$ LANGUAGE sql STABLE;
 CREATE OR REPLACE FUNCTION is_company_member(company_uuid UUID)
 RETURNS BOOLEAN AS $$
   SELECT EXISTS (
-    SELECT 1 FROM company_memberships
+    SELECT 1 FROM public.company_memberships
     WHERE company_id = company_uuid AND user_id = auth.uid()
   );
-$$ LANGUAGE sql STABLE SECURITY DEFINER
-SET search_path = public;
+$$ LANGUAGE sql STABLE SECURITY DEFINER;
 ```
 
-**Rule: Any helper function called from an RLS policy MUST be `SECURITY DEFINER`** if it queries tables that also have RLS enabled. Production helpers should set a fixed `search_path`.
+**Rule: Any helper function called from an RLS policy MUST be `SECURITY DEFINER`** if it queries tables that also have RLS enabled. Keep helpers in `public` and use explicit schema-qualified references.
 
 **Checklist:**
 - [ ] Map all RLS policy → function → table dependencies
 - [ ] Every helper function that queries RLS-enabled tables is `SECURITY DEFINER`
-- [ ] Every `SECURITY DEFINER` helper sets a fixed search path, for example `SET search_path = public`
+- [ ] Helper functions and policies schema-qualify app tables/functions with `public.` and built-ins with their managed schema, such as `auth.uid()`
 - [ ] No circular chains: table A RLS → table B RLS → table A RLS
 - [ ] Test with `EXPLAIN (ANALYZE)` to verify queries terminate
 
@@ -223,9 +223,8 @@ Avoid RLS-on-RLS chains (see Infinite Recursive RLS above). Wrap cross-table loo
 ```sql
 CREATE OR REPLACE FUNCTION user_accessible_document_ids(uid UUID)
 RETURNS SETOF UUID AS $$
-  SELECT document_id FROM permissions WHERE user_id = uid;
-$$ LANGUAGE sql STABLE SECURITY DEFINER
-SET search_path = public;
+  SELECT document_id FROM public.permissions WHERE user_id = uid;
+$$ LANGUAGE sql STABLE SECURITY DEFINER;
 
 CREATE POLICY "access check" ON documents
   USING (id IN (SELECT * FROM user_accessible_document_ids((SELECT auth.uid()))));
@@ -283,11 +282,10 @@ GRANT INSERT, UPDATE, DELETE ON posts TO authenticated;
 CREATE OR REPLACE FUNCTION is_org_member(org_uuid UUID)
 RETURNS BOOLEAN AS $$
   SELECT EXISTS (
-    SELECT 1 FROM org_members
+    SELECT 1 FROM public.org_members
     WHERE org_id = org_uuid AND user_id = auth.uid()
   );
-$$ LANGUAGE sql STABLE SECURITY DEFINER
-SET search_path = public;  -- SECURITY DEFINER: prevents recursive RLS
+$$ LANGUAGE sql STABLE SECURITY DEFINER;  -- prevents recursive RLS when this queries RLS-enabled tables
 
 CREATE POLICY "org members access" ON projects
   FOR ALL TO authenticated
@@ -320,7 +318,7 @@ Before completing an RLS implementation:
 - [ ] All policies have both `USING` and `WITH CHECK` where applicable
 - [ ] No circular RLS dependencies between tables (infinite recursion risk)
 - [ ] All helper functions called from policies are `SECURITY DEFINER`
-- [ ] All `SECURITY DEFINER` helpers set a fixed search path
+- [ ] Helper functions and policies use explicit `public.` and managed-schema references instead of relying on `search_path`
 - [ ] Policy columns (`user_id`, `tenant_id`, etc.) are indexed
 - [ ] `(SELECT auth.uid())` used in subquery form for performance
 - [ ] Views on RLS tables use `security_invoker = true` (PG15+)

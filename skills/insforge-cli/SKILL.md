@@ -40,8 +40,7 @@ When the project is already linked, use the current linked project. Run login, p
 - Add both SQL privileges and RLS policies. Policies do not replace `GRANT`.
 - Prefer helper functions for cross-table RLS checks when direct policy joins can recurse through other RLS policies.
 - Helper functions called from RLS policies that query RLS-enabled tables should be `SECURITY DEFINER`.
-- Put RLS helper functions in `public`.
-- For production-quality `SECURITY DEFINER` helpers, set a fixed search path, for example `SET search_path = public`.
+- Put RLS helper functions in `public` and schema-qualify references such as `public.team_members` and `auth.uid()`.
 - Include `WITH CHECK` for INSERT and UPDATE policies so writes cannot create rows the user should not own.
 
 ## Integrity Guidance

@@ -110,7 +110,6 @@ CREATE OR REPLACE FUNCTION public.bump_comment_count()
 RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
 AS $$
 BEGIN
   UPDATE public.posts
@@ -193,7 +192,6 @@ CREATE OR REPLACE FUNCTION public.set_latest_revision()
 RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
 AS $$
 BEGIN
   UPDATE public.documents
@@ -221,8 +219,8 @@ updates to that column with privileges and let the trigger maintain it.
 - Are immutable owner, tenant, and business identity fields protected?
 - Are append-only child/history rows protected from update and delete?
 - Do trigger functions that must bypass runtime privileges use `SECURITY DEFINER`
-  with a fixed `search_path`?
-- Do RLS helpers that query RLS-enabled tables use `SECURITY DEFINER` with a
-  fixed `search_path`?
+  and schema-qualify references such as `public.documents`?
+- Do RLS helpers that query RLS-enabled tables use `SECURITY DEFINER` and
+  schema-qualify references such as `public.team_members` and `auth.uid()`?
 - Are foreign keys and columns used by guards, RLS, and lookups indexed where
   the table can grow?
