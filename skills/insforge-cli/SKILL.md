@@ -57,25 +57,25 @@ If not authenticated, run `npx @insforge/cli login`. If no project is linked, us
 
 ## Command Routing
 
-| Need                                                                                               | CLI area                                        | Reference                                                                          |
-| -------------------------------------------------------------------------------------------------- | ----------------------------------------------- | ---------------------------------------------------------------------------------- |
-| Login, logout, current user                                                                        | `login`, `logout`, `whoami`                     | `references/login.md`                                                              |
-| Create/link/list/current project                                                                   | `create`, `link`, `list`, `current`, `metadata` | `references/create.md`                                                             |
-| Schema, SQL, RLS, triggers, indexes, imports, exports                                              | `db`                                            | `references/database/*`                                                            |
-| Auth redirects, password policy, SMTP, storage size, realtime/schedule retention, subdomain config | `config`                                        | `references/config.md`                                                             |
-| Storage buckets and objects                                                                        | `storage`                                       | this file                                                                          |
-| Realtime backend setup                                                                             | `db` migrations                                 | `references/realtime.md`                                                           |
-| Edge functions                                                                                     | `functions`                                     | `references/functions-deploy.md`                                                   |
-| AI/OpenRouter key setup                                                                            | `ai setup`                                      | this file                                                                          |
-| Stripe keys, catalog sync, webhooks                                                                | `payments`                                      | `references/payments.md`                                                           |
-| Frontend deployments                                                                               | `deployments`                                   | `references/deployments-deploy.md`                                                 |
-| Backend containers/services                                                                        | `compute`                                       | `references/compute-deploy.md`                                                     |
-| Secrets/env vars                                                                                   | `secrets`, deployment/compute env commands      | this file                                                                          |
-| Scheduled jobs                                                                                     | `schedules`                                     | `references/schedules.md`                                                          |
-| Backend branches                                                                                   | `branch`                                        | `references/branch.md`, `references/branch-merge.md`, `references/branch-reset.md` |
-| Logs and health checks                                                                             | `logs`, `diagnose`                              | `references/diagnostics.md`                                                        |
-| Built-in documentation lookup                                                                      | `docs`                                          | this file                                                                          |
-| PostHog setup                                                                                      | `posthog setup`                                 | `references/posthog.md`                                                            |
+| Need                                                                                               | CLI area                                        | Reference                                                                                   |
+| -------------------------------------------------------------------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Login, logout, current user                                                                        | `login`, `logout`, `whoami`                     | `references/login.md`                                                                       |
+| Create/link/list/current project                                                                   | `create`, `link`, `list`, `current`, `metadata` | `references/create.md`                                                                      |
+| Schema, SQL, RLS, triggers, indexes, imports, exports                                              | `db`                                            | `references/database/*`                                                                     |
+| Auth redirects, password policy, SMTP, storage size, realtime/schedule retention, subdomain config | `config`                                        | `references/config.md`                                                                      |
+| Storage buckets and objects                                                                        | `storage`                                       | this file                                                                                   |
+| Realtime backend setup                                                                             | `db` migrations                                 | `references/realtime.md`                                                                    |
+| Edge functions                                                                                     | `functions`                                     | `references/functions-deploy.md`                                                            |
+| AI/OpenRouter key setup                                                                            | `ai setup`                                      | this file                                                                                   |
+| Stripe keys, catalog sync, webhooks                                                                | `payments`                                      | `references/payments.md`                                                                    |
+| Frontend deployments                                                                               | `deployments`                                   | `references/deployments-deploy.md`                                                          |
+| Backend containers/services                                                                        | `compute`                                       | `references/compute-deploy.md`                                                              |
+| Secrets/env vars                                                                                   | `secrets`, deployment/compute env commands      | this file                                                                                   |
+| Scheduled jobs                                                                                     | `schedules`                                     | `references/schedules.md`                                                                   |
+| Backend branches                                                                                   | `branch`                                        | `references/branch/overview.md`, `references/branch/merge.md`, `references/branch/reset.md` |
+| Logs and health checks                                                                             | `logs`, `diagnose`                              | `references/diagnostics.md`                                                                 |
+| Built-in documentation lookup                                                                      | `docs`                                          | this file                                                                                   |
+| PostHog setup                                                                                      | `posthog setup`                                 | `references/posthog.md`                                                                     |
 
 ## Database Workflow
 
@@ -213,7 +213,7 @@ Backend compute services:
 
 ## Branching
 
-Use backend branches to test risky schema, RLS, auth, or function changes before applying them to production. See `references/branch.md`.
+Use backend branches to test risky schema, RLS, auth, or function changes before applying them to production. See `references/branch/overview.md`.
 
 Common commands:
 

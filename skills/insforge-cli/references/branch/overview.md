@@ -7,16 +7,19 @@ Branching is **not free** — each branch consumes an EC2 instance. Use it when 
 ## When to use a branch
 
 **Strong signals — branch first:**
+
 - Destructive DDL on existing tables (`DROP TABLE`, `DROP COLUMN`, `ALTER COLUMN TYPE`). `git revert` doesn't restore lost data.
 - New or modified RLS policies on user-data tables. RLS bugs are silent — prod users lock out or get unintended access.
 - Auth provider config changes (OAuth providers, redirect URIs, SMTP). Bricks prod login if wrong.
 - Multi-step refactors touching >3 tables or >1 schema.
 
 **Moderate signals — branch if convenient:**
+
 - Adding a new table or column (additive).
 - Email templates, AI gateway config, cron schedule changes.
 
 **Skip the branch:**
+
 - Row-data-only changes (insert/update). Branching is about schema, not data.
 - Client-side fixes that don't touch the backend.
 - Edge-function logic-only changes covered by unit tests.
@@ -24,10 +27,10 @@ Branching is **not free** — each branch consumes an EC2 instance. Use it when 
 
 ## Mode selection
 
-| Mode | When |
-|------|------|
-| `full` (default) | Need realistic data — RLS testing with real rows, query plan tuning, large-table migrations. |
-| `schema-only` | Synthetic seed rows are enough. Faster to create. User-data tables (`auth.users`, `storage.objects`, …) start empty. |
+| Mode             | When                                                                                                                 |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `full` (default) | Need realistic data — RLS testing with real rows, query plan tuning, large-table migrations.                         |
+| `schema-only`    | Synthetic seed rows are enough. Faster to create. User-data tables (`auth.users`, `storage.objects`, …) start empty. |
 
 Mode is **fixed at create time** — `branch reset` uses the original dump. Need a different mode → delete + recreate.
 
@@ -48,14 +51,14 @@ After creation:
 
 Lists active branches of the parent (or, when on a branch, that branch's siblings). The leading column shows `*` for the branch the directory is currently switched onto.
 
-| State | Meaning |
-|-------|---------|
-| `creating` | Provisioning EC2 + restoring pg_dump (30–120 s). |
-| `ready` | Usable — can be switched, modified, merged, or reset. |
-| `merging` | Merge in progress (usually < 30 s). |
-| `merged` | Last merge succeeded. Dormant — `branch reset` rewinds to T0 and flips back to `ready` so the same slot can be reused. |
-| `resetting` | `branch reset` is restoring the T0 dump in place. |
-| `deleted` | Soft-delete tombstone (filtered from `list`). |
+| State       | Meaning                                                                                                                |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `creating`  | Provisioning EC2 + restoring pg_dump (30–120 s).                                                                       |
+| `ready`     | Usable — can be switched, modified, merged, or reset.                                                                  |
+| `merging`   | Merge in progress (usually < 30 s).                                                                                    |
+| `merged`    | Last merge succeeded. Dormant — `branch reset` rewinds to T0 and flips back to `ready` so the same slot can be reused. |
+| `resetting` | `branch reset` is restoring the T0 dump in place.                                                                      |
+| `deleted`   | Soft-delete tombstone (filtered from `list`).                                                                          |
 
 ### `branch switch <name>` / `--parent`
 
@@ -73,25 +76,25 @@ Deletes a branch and reclaims its EC2. Auto-`switch --parent` if the directory i
 
 ## Reset vs. delete + recreate
 
-| Want to… | Reach for |
-|----------|-----------|
-| Rerun the experiment from a clean T0, keep the same `API_KEY` / URL so dev-server config is unchanged | `branch reset` |
-| A different `--mode` (mode is fixed at create time) | delete + create |
-| A fresh `appkey` / API key so callers can't talk to the old branch | delete + create |
-| Re-merge a branch already in `merged` with new changes layered on T0 | `branch reset` (re-opens the slot), make new changes, `branch merge` again |
+| Want to…                                                                                              | Reach for                                                                  |
+| ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Rerun the experiment from a clean T0, keep the same `API_KEY` / URL so dev-server config is unchanged | `branch reset`                                                             |
+| A different `--mode` (mode is fixed at create time)                                                   | delete + create                                                            |
+| A fresh `appkey` / API key so callers can't talk to the old branch                                    | delete + create                                                            |
+| Re-merge a branch already in `merged` with new changes layered on T0                                  | `branch reset` (re-opens the slot), make new changes, `branch merge` again |
 
-See [branch-reset](branch-reset.md) for what reset does and does not touch.
+See [branch reset](reset.md) for what reset does and does not touch.
 
 ## Failure modes
 
-| Error | Meaning | Fix |
-|-------|---------|-----|
-| `branch.quota_exceeded` | Per-org cap (3 parents) or per-parent cap (2 branches) reached | Delete an old branch first |
-| `branch.parent_not_branchable` | Parent is itself a branch / not active / pre-2.x | Use a top-level 2.x project |
-| `branch.name_conflict` | Branch name already exists on this parent | Pick a different name |
-| `branch.not_found` | No branch with that name on the parent | Check `branch list` |
-| `branch.busy` | Branch is `creating` / `merging` / `resetting` | Wait for the in-flight op |
-| `branch.not_ready` | Branch isn't in `ready` state for this op | Wait or check state |
+| Error                          | Meaning                                                        | Fix                         |
+| ------------------------------ | -------------------------------------------------------------- | --------------------------- |
+| `branch.quota_exceeded`        | Per-org cap (3 parents) or per-parent cap (2 branches) reached | Delete an old branch first  |
+| `branch.parent_not_branchable` | Parent is itself a branch / not active / pre-2.x               | Use a top-level 2.x project |
+| `branch.name_conflict`         | Branch name already exists on this parent                      | Pick a different name       |
+| `branch.not_found`             | No branch with that name on the parent                         | Check `branch list`         |
+| `branch.busy`                  | Branch is `creating` / `merging` / `resetting`                 | Wait for the in-flight op   |
+| `branch.not_ready`             | Branch isn't in `ready` state for this op                      | Wait or check state         |
 
 ## Limits
 
@@ -103,5 +106,5 @@ See [branch-reset](branch-reset.md) for what reset does and does not touch.
 
 ## See also
 
-- [branch-merge](branch-merge.md) — merging a branch back to parent (dry-run, conflict resolution, what gets applied)
-- [branch-reset](branch-reset.md) — rewinding a branch to T0 (recovery / re-merge)
+- [branch merge](merge.md) — merging a branch back to parent (dry-run, conflict resolution, what gets applied)
+- [branch reset](reset.md) — rewinding a branch to T0 (recovery / re-merge)
