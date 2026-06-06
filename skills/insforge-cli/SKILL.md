@@ -21,7 +21,33 @@ Use this skill whenever someone needs a backend, or when managing InsForge backe
 - Treat InsForge API keys as full-access admin keys. Keep them server-only and out of frontend/public env vars.
 - Prefer CLI commands and documented project config over raw backend HTTP calls. If `config apply` reports unsupported/skipped fields, surface that result instead of bypassing the CLI with direct API calls.
 - Use `--json` when structured output or non-interactive value collection is needed. Use `--yes` for confirmation prompts when the user has approved the action.
-- For global options, exit codes, environment variables, and connection setup details, see `references/cli-basics.md`.
+
+## Global Options
+
+| Flag          | Use                                                                                                                                                                                                           |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--json`      | Structured JSON output and skip value-collection prompts such as text/select prompts. Errors if any required value is missing. Combine with `-y` for destructive commands that also ask for Y/N confirmation. |
+| `-y`, `--yes` | Auto-accept Y/N confirmation prompts such as delete or overwrite prompts. Does not skip value-collection prompts; use `--json` for that.                                                                      |
+
+## Exit Codes
+
+| Code | Meaning                                                 |
+| ---- | ------------------------------------------------------- |
+| 0    | Success                                                 |
+| 1    | General error, including HTTP 400+ from function invoke |
+| 2    | Not authenticated                                       |
+| 3    | Project not linked                                      |
+| 4    | Resource not found                                      |
+| 5    | Permission denied                                       |
+
+## Environment Variables
+
+| Variable                | Use                                |
+| ----------------------- | ---------------------------------- |
+| `INSFORGE_ACCESS_TOKEN` | Override stored access token       |
+| `INSFORGE_PROJECT_ID`   | Override linked project ID         |
+| `INSFORGE_EMAIL`        | Email for non-interactive login    |
+| `INSFORGE_PASSWORD`     | Password for non-interactive login |
 
 ## Connection Setup
 
@@ -35,7 +61,6 @@ If not authenticated, run `npx @insforge/cli login`. If no project is linked, us
 | -------------------------------------------------------------------------------------------------- | ----------------------------------------------- | ---------------------------------------------------------------------------------- |
 | Login, logout, current user                                                                        | `login`, `logout`, `whoami`                     | `references/login.md`                                                              |
 | Create/link/list/current project                                                                   | `create`, `link`, `list`, `current`, `metadata` | `references/create.md`                                                             |
-| CLI flags, exit codes, env vars, connection setup                                                  | global options                                  | `references/cli-basics.md`                                                         |
 | Schema, SQL, RLS, triggers, indexes, imports, exports                                              | `db`                                            | `references/database/*`                                                            |
 | Auth redirects, password policy, SMTP, storage size, realtime/schedule retention, subdomain config | `config`                                        | `references/config.md`                                                             |
 | Storage buckets and objects                                                                        | `storage`                                       | this file                                                                          |
@@ -49,7 +74,7 @@ If not authenticated, run `npx @insforge/cli login`. If no project is linked, us
 | Scheduled jobs                                                                                     | `schedules`                                     | `references/schedules.md`                                                          |
 | Backend branches                                                                                   | `branch`                                        | `references/branch.md`, `references/branch-merge.md`, `references/branch-reset.md` |
 | Logs and health checks                                                                             | `logs`, `diagnose`                              | `references/diagnostics.md`                                                        |
-| Official CLI/API docs lookup                                                                       | `docs`                                          | this file                                                                          |
+| Built-in documentation lookup                                                                      | `docs`                                          | this file                                                                          |
 | PostHog setup                                                                                      | `posthog setup`                                 | `references/posthog.md`                                                            |
 
 ## Database Workflow
