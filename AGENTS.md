@@ -54,7 +54,7 @@ Most InsForge skill modules use focused app-facing guides:
 | File | Purpose | When to Use |
 |------|---------|-------------|
 | `sdk-integration.md` | App-facing SDK/API usage, usually through `@insforge/sdk` | Implementing features in user's app code |
-| Specialized guides such as `postgres-rls.md`, `pgvector.md`, or `s3-gateway.md` | Backend, security, or protocol-specific patterns | When the task needs that capability |
+| Specialized guides such as `storage/postgres-rls.md`, `s3-gateway.md`, or CLI references like `db-rls.md` and `db-vector.md` | Backend, security, protocol, or infrastructure-specific patterns | When the task needs that capability |
 
 The AI module is capability-based instead: start at `skills/insforge/ai/overview.md`,
 then load only the needed OpenRouter guide (`chat-completions.md`,

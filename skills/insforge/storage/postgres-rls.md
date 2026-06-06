@@ -308,4 +308,4 @@ Before shipping a storage RLS configuration, apply `storage.objects` policy chan
 ## References
 
 - [PostgreSQL RLS Documentation](https://www.postgresql.org/docs/current/ddl-rowsecurity.html)
-- [Database RLS skill](../database/postgres-rls.md) — patterns for application tables, helper-function tricks, infinite-recursion gotchas
+- [Database RLS CLI reference](../../insforge-cli/references/db-rls.md) — patterns for application tables, helper-function tricks, infinite-recursion gotchas

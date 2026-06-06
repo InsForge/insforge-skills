@@ -1,6 +1,6 @@
 ---
 name: insforge-cli
-description: Use this skill for InsForge CLI database work: SQL migrations, raw SQL inspection, RLS policies, schema grants, indexes, triggers, functions, imports, and exports. For app code with @insforge/sdk, use the app SDK skill instead.
+description: Use this skill for InsForge CLI database work: SQL migrations, raw SQL inspection, RLS policies, schema grants, indexes, triggers, functions, vector/pgvector setup, imports, and exports. For app code with @insforge/sdk, use the app SDK skill instead.
 license: MIT
 metadata:
   author: insforge
@@ -27,9 +27,7 @@ When the project is already linked, use the current linked project. Run login, p
 
 - Prefer `npx @insforge/cli db migrations new <name>` plus a migration SQL file for schema, grants, indexes, triggers, functions, and RLS policy changes.
 - Apply migrations with `npx @insforge/cli db migrations up --all`.
-- Use `npx @insforge/cli db query <sql>` for inspection, targeted SQL checks, schema-cache reloads, and small corrective SQL only when a migration is not appropriate.
-- Inspect current state with `db tables`, `db indexes`, `db policies`, `db triggers`, `db functions`, and `db migrations list`.
-- Reload PostgREST schema cache after schema or policy changes when needed: `npx @insforge/cli db query "NOTIFY pgrst, 'reload schema'"`.
+- Use `npx @insforge/cli db query <sql>` for inspection and small corrective SQL only when a migration is not appropriate.
 - For generic application database work, create and modify app-owned objects in the `public` schema.
 - Create, alter, drop, grant, revoke, index, trigger, function, view, and policy changes on `public` application objects.
 - Do not create custom schemas or write to InsForge-managed/system schemas such as `auth`, `storage`, `realtime`, `payments`, `graphql`, `extensions`, `pg_catalog`, `information_schema`, or `system`, unless you are working on that specific feature module and its docs explicitly allow the operation.
@@ -51,4 +49,5 @@ When the project is already linked, use the current linked project. Run login, p
 - `references/db-migrations.md` - migration file creation and apply workflow.
 - `references/db-query.md` - raw SQL execution and inspection.
 - `references/db-rls.md` - InsForge/Postgres RLS patterns, recursion avoidance, and policy guidance.
+- `references/db-vector.md` - pgvector extension, vector schema, distance operators, indexes, and vector search SQL/RPC patterns.
 - `references/db-export.md` / `references/db-import.md` - schema or data import/export tasks.

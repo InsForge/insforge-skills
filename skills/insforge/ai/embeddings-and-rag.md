@@ -8,12 +8,13 @@ Official references:
 
 - [OpenRouter embeddings](https://openrouter.ai/docs/api-reference/embeddings)
 - [OpenAI SDK with OpenRouter](https://openrouter.ai/docs/guides/community/openai-sdk)
-- [InsForge pgvector](../database/pgvector.md)
+- [InsForge CLI pgvector setup](../../insforge-cli/references/db-vector.md)
 
 ## Setup
 
-Bring up the `vector` extension, `documents` table, and `match_documents` RPC
-via `npx @insforge/cli db query`; see [../database/pgvector.md](../database/pgvector.md).
+Bring up the `vector` extension, vector tables, indexes, and match RPCs through
+an InsForge CLI database migration; see
+[db-vector.md](../../insforge-cli/references/db-vector.md).
 
 Run the AI key setup from the linked app directory:
 

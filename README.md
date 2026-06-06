@@ -107,9 +107,7 @@ skills/
 ├── insforge/
 │   ├── SKILL.md              # Main skill manifest and overview
 │   ├── database/
-│   │   ├── sdk-integration.md
-│   │   ├── pgvector.md
-│   │   └── postgres-rls.md
+│   │   └── sdk-integration.md
 │   ├── auth/
 │   │   ├── sdk-integration.md
 │   │   └── ssr-integration.md
@@ -140,6 +138,8 @@ skills/
 │       ├── login.md
 │       ├── create.md
 │       ├── db-query.md
+│       ├── db-rls.md
+│       ├── db-vector.md
 │       ├── db-export.md
 │       ├── db-import.md
 │       ├── functions-deploy.md
@@ -164,7 +164,7 @@ skills/
 
 - **`sdk-integration.md`**: How to use app-facing SDKs/APIs in application code.
 - **AI capability guides**: `ai/overview.md` links to smaller OpenRouter-focused guides for chat completions, image generation, video generation, audio, embeddings/RAG, and model discovery.
-- **Specialized guides**: Focused references such as `postgres-rls.md`, `pgvector.md`, `s3-gateway.md`, or provider-specific integration guides.
+- **Specialized guides**: Focused references such as `db-rls.md`, `storage/postgres-rls.md`, `s3-gateway.md`, `db-vector.md`, or provider-specific integration guides.
 
 ## Contributing
 
