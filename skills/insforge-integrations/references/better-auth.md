@@ -189,19 +189,11 @@ import { useEffect, useMemo, useState } from 'react';
 const REFRESH_INTERVAL_MS = 50 * 60 * 1000;   // 50 min for a 1h bridge JWT
 
 // Bridge JWT → both HTTP and realtime auth.
-// On SDK ≥ 1.3.0 this becomes a single client.setAccessToken(token) call.
-// On 1.2.x (current latest) we update the http client + the realtime token
-// manager separately — realtime needs its own pump or its WebSocket keeps
-// using the anon key (senderId then shows the anon UUID instead of the BA id).
-function setBridgeToken(client: InsForgeClient, token: string | null) {
-  if (typeof (client as unknown as { setAccessToken?: unknown }).setAccessToken === 'function') {
-    (client as unknown as { setAccessToken: (t: string | null) => void }).setAccessToken(token);
-    return;
-  }
-  client.getHttpClient().setAuthToken(token);
-  (client.realtime as unknown as { tokenManager: { setAccessToken: (t: string | null) => void } })
-    .tokenManager.setAccessToken(token);
-}
+// SDK ≥ 1.3.0: client.setAccessToken(token) updates the HTTP client AND the
+// realtime token manager in one call (pass null to clear on sign-out). Skipping
+// realtime is the classic bug — the WebSocket keeps using the anon key and
+// senderId shows the anon UUID instead of the Better Auth id.
+// On SDK < 1.3.0 the public method doesn't exist — see the legacy fallback below.
 
 export function useInsforgeClient(): { client: InsForgeClient; isReady: boolean } {
   const session = authClient.useSession();
@@ -219,7 +211,7 @@ export function useInsforgeClient(): { client: InsForgeClient; isReady: boolean 
 
   useEffect(() => {
     if (!session.data?.user) {
-      setBridgeToken(client, null);
+      client.setAccessToken(null);
       setIsReady(false);
       return;
     }
@@ -232,11 +224,11 @@ export function useInsforgeClient(): { client: InsForgeClient; isReady: boolean 
         const { token } = await res.json();
         if (cancelled) return;
         if (typeof token !== 'string' || !token) throw new Error('bridge: no token in response');
-        setBridgeToken(client, token);
+        client.setAccessToken(token);
         setIsReady(true);
       } catch {
         if (cancelled) return;
-        setBridgeToken(client, null);
+        client.setAccessToken(null);
         setIsReady(false);
       }
     };
@@ -253,7 +245,18 @@ export function useInsforgeClient(): { client: InsForgeClient; isReady: boolean 
 }
 ```
 
-> **Why the dual-update?** The published SDK (1.2.6, latest at time of writing) doesn't expose `client.setAccessToken()` on the public client class — it lives on the internal `TokenManager`. The realtime client and the HTTP client each hold their own auth token, so without updating both you get a working HTTP path but a realtime WebSocket that keeps using the anon key, and `senderId` shows up as the anon UUID instead of the user's BA id. The `setBridgeToken` helper feature-detects so it stays correct once the public method ships in 1.3.0.
+> **SDK version note.** `client.setAccessToken(token)` is public as of SDK **1.3.0** and updates both the HTTP client and the realtime `TokenManager` in one call. On older SDKs (< 1.3.0) the public method doesn't exist — it lives on the internal `TokenManager`, and you must update both the HTTP client and realtime manually with this fallback helper:
+
+```ts
+// Legacy fallback for SDK < 1.3.0 only — on 1.3.0+ call client.setAccessToken(token) directly.
+function setBridgeToken(client: InsForgeClient, token: string | null) {
+  client.getHttpClient().setAuthToken(token);
+  (client.realtime as unknown as { tokenManager: { setAccessToken: (t: string | null) => void } })
+    .tokenManager.setAccessToken(token);
+}
+```
+
+On SDK < 1.3.0, also replace each `client.setAccessToken(token)` / `client.setAccessToken(null)` call in the hook above with `setBridgeToken(client, token)` / `setBridgeToken(client, null)` — dropping in the helper alone isn't enough. Updating only the HTTP client leaves the realtime WebSocket on the anon key, so `senderId` shows the anon UUID instead of the user's Better Auth id.
 
 ### Pattern B — per-request client construction (server components, route handlers)
 
@@ -289,19 +292,21 @@ export async function createInsForgeClient() {
 
 ### Sign-out
 
-Better Auth sign-out doesn't clear the InsForge SDK's in-memory token. Pattern A handles this automatically via the `useEffect` cleanup; if you sign out outside of React, do it explicitly. Reuse the same `setBridgeToken` helper from the Pattern A snippet above:
+Better Auth sign-out doesn't clear the InsForge SDK's in-memory token. Pattern A handles this automatically via the `useEffect` cleanup; if you sign out outside of React, do it explicitly with `client.setAccessToken(null)` (clears both HTTP and realtime in one call):
 
 ```ts
 await authClient.signOut();
-setBridgeToken(client, null);   // clears HTTP + realtime; works on 1.2.x and 1.3.0+
+client.setAccessToken(null);   // SDK ≥ 1.3.0 — clears HTTP + realtime
 ```
 
-If you don't want the helper, do the dual-update inline (1.2.x):
+On SDK < 1.3.0 the public method doesn't exist; clear both manually instead:
 
 ```ts
 await authClient.signOut();
 client.getHttpClient().setAuthToken(null);
-client.realtime['tokenManager'].setAccessToken(null);   // private at compile-time, accessible at runtime
+// tokenManager is private at compile-time, accessible at runtime — cast to reach it.
+(client.realtime as unknown as { tokenManager: { setAccessToken: (t: string | null) => void } })
+  .tokenManager.setAccessToken(null);
 ```
 
 ## Database setup
@@ -378,7 +383,7 @@ INSERT INTO realtime.channels (pattern, description, enabled)
 
 The channel pattern uses SQL `LIKE` syntax — `chat:%` matches `chat:lobby`, `chat:dm:user_xyz`, etc.
 
-The `setBridgeToken` helper from Pattern A propagates the token to the realtime `TokenManager` as well as the HTTP client — that's why we call it on every refresh, not just when realtime is in use. Pattern B (`createClient({ edgeFunctionToken: ... })`) handles both automatically because the SDK pipes `edgeFunctionToken` into the `TokenManager` at construction time.
+`client.setAccessToken(token)` (Pattern A) propagates the token to the realtime `TokenManager` as well as the HTTP client — that's why we call it on every refresh, not just when realtime is in use. Pattern B (`createClient({ edgeFunctionToken: ... })`) handles both automatically because the SDK pipes `edgeFunctionToken` into the `TokenManager` at construction time.
 
 After the SQL fixes above: a two-user realtime broadcast verifies end-to-end — `senderId` on the received message equals the publisher's Better Auth `id`.
 
@@ -641,7 +646,7 @@ Server-only vars (read via `process.env` in the BA process) are the same across 
 | ❌ Forgetting `credentials: 'same-origin'` (or `'include'` cross-origin) on the bridge fetch | ✅ Without credentials, the Better Auth cookie isn't sent and the bridge always returns 401. |
 | ❌ Cross-origin without `sameSite: 'none'; secure` on the BA cookie | ✅ The browser drops the cookie on cross-origin requests by default. Configure Better Auth's cookies for cross-origin explicitly. |
 | ❌ Missing `Origin` header on direct `fetch`/`curl` to Better Auth POSTs | ✅ Better Auth requires `Origin` for CSRF. Browsers send it automatically; server-side clients must add `'Origin: <baseURL>'`. |
-| ❌ Realtime client shows `senderId` as the anon UUID instead of the user's BA id (Pattern A only) | ✅ On SDK 1.2.x (current latest) the public client doesn't expose `setAccessToken` — you must call `client.getHttpClient().setAuthToken(token)` PLUS `client.realtime['tokenManager'].setAccessToken(token)`. Use the `setBridgeToken` helper from Pattern A so this stays correct when the public method ships in 1.3.0. Pattern B's `edgeFunctionToken` already pipes into both. |
+| ❌ Realtime client shows `senderId` as the anon UUID instead of the user's BA id (Pattern A only) | ✅ On SDK ≥ 1.3.0 call `client.setAccessToken(token)` — it updates the HTTP client and the realtime token manager together. (On SDK < 1.3.0 the public method doesn't exist; use the `setBridgeToken` legacy fallback from Pattern A, which updates the HTTP client plus the private realtime `tokenManager` via a cast.) Pattern B's `edgeFunctionToken` already pipes into both. |
 | ❌ Realtime publish silently fails for authenticated users (`UNAUTHORIZED`) | ✅ `realtime.messages.sender_id` is `uuid` in core InsForge; Better Auth IDs are strings. One-time fix: `ALTER TABLE realtime.messages ALTER COLUMN sender_id TYPE text;` |
 | ❌ Vite SPA proxying to a separate BA server, sign-out (or any state-changing endpoint) returns 403 | ✅ BA's CSRF check compares the request's `Origin` against its `baseURL`. Either rewrite the proxy's `Origin` header to BA's URL (Vite `proxy.configure`) or add the SPA origin to BA's `trustedOrigins`. Sign-up has looser handling and won't trip this — the bug shows up later. |
 | ❌ Cross-origin missing `trustedOrigins` even with `sameSite: 'none'; secure: true` | ✅ Cookie config alone isn't enough — BA's CSRF gate also reads `trustedOrigins`. Add the SPA's full origin (no trailing slash) to the array. |
