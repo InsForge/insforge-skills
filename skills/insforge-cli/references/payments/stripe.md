@@ -164,6 +164,10 @@ CREATE TRIGGER fulfill_stripe_billing_event
 
 Make fulfillment idempotent. For email, warehouse, CRM, or other external side effects, write an app-owned outbox row and process it asynchronously.
 
+### Subscription Cancellation Fields
+
+When mirroring subscription state into app-owned tables, store `cancel_at` as well as boolean flags. Stripe can schedule future cancellation by setting `cancel_at` while `cancel_at_period_end` remains `false`; `canceled_at` can be the cancellation request time, not the access end time. Use `status <> 'canceled' AND cancel_at IS NOT NULL` for "will cancel".
+
 ## Common Mistakes
 
 | Mistake | Fix |
@@ -172,4 +176,5 @@ Make fulfillment idempotent. For email, warehouse, CRM, or other external side e
 | Using provider-prefixed price fields in SDK checkout code | Use `priceId` |
 | Marking orders paid from success URL | Fulfill from `payments.webhook_events` |
 | Adding only `INSERT` RLS for idempotent checkout | Add matching `SELECT` |
+| Checking only `cancel_at_period_end` for scheduled cancellation | Also read and store `cancel_at` |
 | Expecting Razorpay Items or Plans | Use Stripe Products and Prices |
