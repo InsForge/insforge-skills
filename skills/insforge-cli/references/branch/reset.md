@@ -8,8 +8,8 @@ Reset a branch's database back to **T0** — the parent's snapshot at the moment
 npx @insforge/cli branch reset <name> [-y]
 ```
 
-| Option | Description |
-|--------|-------------|
+| Option      | Description                   |
+| ----------- | ----------------------------- |
 | `-y, --yes` | Skip the confirmation prompt. |
 
 Inherits the global `--json` and `--api-url` flags.
@@ -48,14 +48,14 @@ Same `BUSY` set as merge: only one of `creating` / `merging` / `resetting` can b
 
 ## Failure modes
 
-| Error | Meaning | Fix |
-|-------|---------|-----|
-| `branch.not_found` | No branch with that name on the parent | Check `branch list` |
-| `branch.not_ready` | Branch is in `creating` / `merging` / `resetting` / `deleted` | Wait for the in-flight op, then retry |
-| Reset polled out at 5 min | SSM job is still running on a large DB | Re-run `branch list` periodically; the backend will eventually settle the state |
-| Branch lands at entry state instead of `ready` | The async restore rolled back. PG content is indeterminate | Retry reset, or restore from a project backup |
+| Error                                          | Meaning                                                       | Fix                                                                             |
+| ---------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `branch.not_found`                             | No branch with that name on the parent                        | Check `branch list`                                                             |
+| `branch.not_ready`                             | Branch is in `creating` / `merging` / `resetting` / `deleted` | Wait for the in-flight op, then retry                                           |
+| Reset polled out at 5 min                      | SSM job is still running on a large DB                        | Re-run `branch list` periodically; the backend will eventually settle the state |
+| Branch lands at entry state instead of `ready` | The async restore rolled back. PG content is indeterminate    | Retry reset, or restore from a project backup                                   |
 
-> See [branch.md](branch.md) for the reset-vs-delete decision matrix.
+> See [branch overview](overview.md) for the reset-vs-delete decision matrix.
 
 ## Example
 
@@ -72,5 +72,5 @@ Reset works the same on a `merged` branch — it lands at `ready` and the slot i
 
 ## See also
 
-- [branch](branch.md) — lifecycle commands and decision guide
-- [branch-merge](branch-merge.md) — merging a branch back to parent
+- [branch overview](overview.md) — lifecycle commands and decision guide
+- [branch merge](merge.md) — merging a branch back to parent

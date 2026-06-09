@@ -20,12 +20,10 @@ agent-skills/
 │   └── insforge-cli/       # InsForge CLI project management
 │       ├── SKILL.md        # Skill manifest and command reference
 │       └── references/     # CLI command reference
+│           ├── database/   # Database migrations, query, RLS, vector, import/export
 │           ├── auth.md
 │           ├── create.md
 │           ├── login.md
-│           ├── db-query.md
-│           ├── db-export.md
-│           ├── db-import.md
 │           ├── functions-deploy.md
 │           ├── payments.md
 │           ├── deployments-deploy.md
@@ -54,7 +52,7 @@ Most InsForge skill modules use focused app-facing guides:
 | File | Purpose | When to Use |
 |------|---------|-------------|
 | `sdk-integration.md` | App-facing SDK/API usage, usually through `@insforge/sdk` | Implementing features in user's app code |
-| Specialized guides such as `postgres-rls.md`, `pgvector.md`, or `s3-gateway.md` | Backend, security, or protocol-specific patterns | When the task needs that capability |
+| Specialized guides such as `storage/postgres-rls.md`, `s3-gateway.md`, or CLI references like `references/database/access-control.md`, `references/database/integrity.md`, and `references/database/vector.md` | Backend, security, protocol, or infrastructure-specific patterns | When the task needs that capability |
 
 The AI module is capability-based instead: start at `skills/insforge/ai/overview.md`,
 then load only the needed OpenRouter guide (`chat-completions.md`,

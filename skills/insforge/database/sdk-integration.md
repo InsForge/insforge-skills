@@ -157,7 +157,7 @@ CREATE TABLE posts (
 -- Enable RLS
 ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
 
--- Policies (see postgres-rls.md for advanced patterns)
+-- Policies (see the insforge-cli database access-control reference for advanced patterns)
 CREATE POLICY "users_own_posts" ON posts
   FOR ALL TO authenticated
   USING (user_id = auth.uid())
@@ -174,7 +174,7 @@ CREATE TRIGGER posts_updated_at
   EXECUTE FUNCTION system.update_updated_at();
 ```
 
-> For RLS best practices (infinite recursion prevention, SECURITY DEFINER, performance), see [postgres-rls.md](postgres-rls.md).
+> For access-control best practices (RLS, infinite recursion prevention, SECURITY DEFINER, performance), see the **insforge-cli** skill's [database/access-control.md](../../insforge-cli/references/database/access-control.md) reference.
 
 ### Bulk Upsert (HTTP API)
 

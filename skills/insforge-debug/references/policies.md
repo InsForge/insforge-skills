@@ -48,7 +48,7 @@ For "why was this request denied?":
 
 - **Lists active policies, doesn't simulate.** Doesn't tell you "this specific request would be allowed" — combine with [logs](logs.md) (`postgREST.logs`) to see the actual denial event.
 - **Doesn't include the helper function bodies.** `auth.uid()` / `requesting_user_id()` are SQL functions; inspect via `db query` if you need to verify they return what you expect.
-- **Only listed managed tables allow RLS changes.** Check the relevant module skill or CLI reference before changing RLS on a managed table. If the table is listed, put normal RLS operations in [migrations](../../insforge-cli/references/db-migrations.md); keep normal schema changes in `public`.
+- **Only listed managed tables allow RLS changes.** Check the relevant module skill or CLI reference before changing RLS on a managed table. If the table is listed, put normal RLS operations in [migrations](../../insforge-cli/references/database/migrations.md); keep normal schema changes in `public`.
 
 ## Example
 

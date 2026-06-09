@@ -1,4 +1,4 @@
-# PostgreSQL Row Level Security (RLS) for InsForge
+# Database Access Control for InsForge
 
 ## Overview
 
@@ -22,17 +22,17 @@ The current user's ID is available via `auth.uid()`. All user foreign keys shoul
 
 Raw SQL from `db query` and migration files runs as `project_admin`. This role can manage and own objects in `public`; access to InsForge-managed schemas is restricted.
 
-### Managed Tables With RLS
+### Schema Scope and Managed Modules
 
-Only these InsForge-managed tables allow developer RLS changes. On these tables, normal RLS operations are allowed and should go in migrations:
+For generic application database work, create and modify app-owned objects in the `public` schema.
 
-- `storage.objects`
-- `realtime.channels`
-- `realtime.messages`
-- `payments.checkout_sessions`
-- `payments.customer_portal_sessions`
+- Create, alter, drop, grant, revoke, index, trigger, function, view, and policy changes on `public` application objects.
+- Do not create custom schemas or write to InsForge-managed/system schemas such as `auth`, `storage`, `realtime`, `payments`, `graphql`, `extensions`, `pg_catalog`, `information_schema`, or `system`, unless you are working on that specific feature module and its docs explicitly allow the operation.
+- It is allowed to reference built-in objects such as `auth.users(id)` and `auth.uid()` from public tables or public RLS policies; do not modify those built-in objects.
+- Put RLS helper functions in `public`, schema-qualify references such as `public.team_members` and `auth.uid()`, and pin `SECURITY DEFINER` helpers to `SET search_path = pg_catalog, public, pg_temp`.
+- InsForge migrations already run against `public`; schema-qualified references keep helper functions explicit.
 
-Do not create, alter, or drop other InsForge-managed database objects unless the module docs explicitly allow that operation.
+Managed table RLS belongs to the corresponding storage, realtime, or payments feature context. Use those feature docs when the task is specifically about those modules.
 
 ### Minimal RLS Setup
 
@@ -56,16 +56,16 @@ CREATE POLICY "anyone can read" ON posts
 
 CREATE POLICY "owners can insert" ON posts
   FOR INSERT TO authenticated
-  WITH CHECK (user_id = auth.uid());
+  WITH CHECK (user_id = (SELECT auth.uid()));
 
 CREATE POLICY "owners can update" ON posts
   FOR UPDATE TO authenticated
-  USING (user_id = auth.uid())
-  WITH CHECK (user_id = auth.uid());
+  USING (user_id = (SELECT auth.uid()))
+  WITH CHECK (user_id = (SELECT auth.uid()));
 
 CREATE POLICY "owners can delete" ON posts
   FOR DELETE TO authenticated
-  USING (user_id = auth.uid());
+  USING (user_id = (SELECT auth.uid()));
 
 -- 4. Grant SQL privileges to the roles that should pass through the policies
 GRANT USAGE ON SCHEMA public TO anon, authenticated;
@@ -79,7 +79,108 @@ CREATE TRIGGER posts_updated_at
   EXECUTE FUNCTION system.update_updated_at();
 ```
 
-Policies decide which rows a role may access after PostgreSQL has allowed the SQL operation. They do not grant `SELECT`, `INSERT`, `UPDATE`, or `DELETE` privileges. If a table has policies but no matching `GRANT`, SDK/REST calls still fail before RLS can allow the row.
+Policies decide which rows a role may access after PostgreSQL has allowed the SQL operation. They do not grant `SELECT`, `INSERT`, `UPDATE`, or `DELETE` privileges.
+
+InsForge grants broad DML privileges on `public` tables to `anon` and
+`authenticated` by default so RLS policies can decide row-level access. When the
+goal is narrower than the default operation or column surface, explicitly revoke
+the broad privilege before granting the exact access you want:
+
+```sql
+REVOKE UPDATE ON public.posts FROM anon, authenticated;
+GRANT UPDATE (title) ON public.posts TO authenticated;
+```
+
+If you revoke a privilege, a matching policy is no longer enough by itself; the
+role still needs the operation or column grant to reach the policy.
+
+### Design the Operation Surface First
+
+Before writing policies, decide what each runtime role may do at the SQL
+operation level. RLS answers "which rows"; privileges and guards answer "which
+operations and columns".
+
+For each table, list:
+
+| Operation | Typical access-control question |
+|-----------|---------------------------------|
+| `SELECT` | Who may see full rows, and who only sees a projection? |
+| `INSERT` | Which user identity or tenant must new rows belong to? |
+| `UPDATE` | Which rows may be edited, and which fields must remain immutable? |
+| `DELETE` | Is deletion allowed, or should lifecycle state/soft delete be modeled? |
+
+If an operation or field is narrower than InsForge's broad public-table runtime
+privileges, revoke the broad privilege first, then grant back the exact surface.
+
+### Guard Protected Fields Outside RLS Predicates
+
+RLS policies filter candidate rows and validate the final row with `WITH CHECK`.
+They do not compare old and new column values. PostgreSQL policy expressions do
+not have `OLD` or `NEW`.
+
+For protected fields such as `owner_id`, `tenant_id`, role columns, immutable
+foreign keys, billing fields, or status fields, use column privileges and/or a
+`BEFORE UPDATE` trigger guard. This keeps invariants true even if a future policy
+or grant becomes broader.
+
+```sql
+REVOKE UPDATE ON public.documents FROM anon, authenticated;
+GRANT UPDATE (title, body) ON public.documents TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.prevent_document_owner_change()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  IF NEW.owner_id IS DISTINCT FROM OLD.owner_id THEN
+    RAISE EXCEPTION 'owner_id cannot be changed';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER prevent_document_owner_change
+BEFORE UPDATE ON public.documents
+FOR EACH ROW EXECUTE FUNCTION public.prevent_document_owner_change();
+```
+
+For field-level update masks such as "members may edit content, managers may
+edit status, finance may edit billing code", use a `BEFORE UPDATE` trigger to
+compare `OLD` and `NEW`; use RLS to decide whether the caller can reach the row.
+
+### Model ACLs as Positive Capabilities
+
+For owner/editor/viewer/member sharing systems, avoid one broad `FOR ALL`
+policy. Write separate policies for each operation and express the positive
+capability needed for that operation.
+
+- `SELECT`: owner or active read/edit share.
+- `UPDATE`: owner or active edit share, with protected owner/tenant fields
+  guarded separately.
+- `DELETE`: usually owner/admin only.
+- Share mutation: usually owner/admin only; viewers and editors should not
+  reshare, revoke, or escalate themselves unless that is explicitly intended.
+
+Cross-table ACL lookups commonly touch RLS-enabled tables. Put those lookups in
+`SECURITY DEFINER` helpers, pin their `search_path`, and schema-qualify
+referenced objects.
+
+### Separate Private Base Tables from Public Projections
+
+When a table contains private JSON, billing fields, internal notes, or other
+sensitive columns, keep full-row base-table access narrow. Expose public data
+through a view or function that projects only safe fields.
+
+Do not make the base table readable by everyone just to make a public view work.
+That exposes the full row through direct table reads. If callers need a public
+projection, design the projection explicitly and grant access to the projection,
+not the private base table.
+
+`WITH (security_invoker = true)` makes a PostgreSQL 15+ view respect the caller's
+RLS on the base tables. Use it when the base-table RLS already allows the rows
+the view should expose. If the public projection intentionally exposes a subset
+of fields from rows whose full base rows are private, use a carefully projected
+view/function and keep direct base-table privileges and policies narrow.
 
 ---
 
@@ -123,19 +224,22 @@ $$ LANGUAGE sql STABLE;
 CREATE OR REPLACE FUNCTION is_company_member(company_uuid UUID)
 RETURNS BOOLEAN AS $$
   SELECT EXISTS (
-    SELECT 1 FROM company_memberships
+    SELECT 1 FROM public.company_memberships
     WHERE company_id = company_uuid AND user_id = auth.uid()
   );
-$$ LANGUAGE sql STABLE SECURITY DEFINER;
+$$ LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = pg_catalog, public, pg_temp;
 ```
 
-**Rule: Any helper function called from an RLS policy MUST be `SECURITY DEFINER`** if it queries tables that also have RLS enabled.
+**Rule: Any helper function called from an RLS policy should be `SECURITY DEFINER`** when it queries RLS-enabled tables. This includes same-table lookups, parent/ancestor lookups, membership tables, ACL/share tables, and helper chains that would otherwise re-enter RLS. Keep helpers in `public`, use explicit schema-qualified references, and pin the function `search_path` to `pg_catalog, public, pg_temp`.
 
 **Checklist:**
 - [ ] Map all RLS policy → function → table dependencies
-- [ ] Every helper function that queries RLS-enabled tables is `SECURITY DEFINER`
+- [ ] Every policy helper that queries RLS-enabled tables, including same-table lookups, is `SECURITY DEFINER`
+- [ ] Every `SECURITY DEFINER` helper sets `search_path` to `pg_catalog, public, pg_temp`
+- [ ] Helper functions and policies schema-qualify app tables/functions with `public.` and built-ins with their managed schema, such as `auth.uid()`
 - [ ] No circular chains: table A RLS → table B RLS → table A RLS
-- [ ] Test with `EXPLAIN (ANALYZE)` to verify queries terminate
+- [ ] If recursion or bad plans are suspected, use targeted `EXPLAIN`
 
 ### 2. Missing USING or WITH CHECK (HIGH)
 
@@ -149,8 +253,8 @@ CREATE POLICY "owner access" ON posts
 -- COMPLETE: Both read and write protected
 CREATE POLICY "owner access" ON posts
   FOR ALL
-  USING (user_id = auth.uid())
-  WITH CHECK (user_id = auth.uid());
+  USING (user_id = (SELECT auth.uid()))
+  WITH CHECK (user_id = (SELECT auth.uid()));
 ```
 
 **Checklist:**
@@ -167,7 +271,7 @@ CREATE POLICY "allow all reads" ON orders
   FOR SELECT USING (true);
 
 CREATE POLICY "tenant isolation" ON orders
-  FOR SELECT USING (tenant_id = auth.uid());
+  FOR SELECT USING (tenant_id = (SELECT auth.uid()));
 -- ^ This is useless — the first policy already allows everything
 ```
 
@@ -222,8 +326,9 @@ Avoid RLS-on-RLS chains (see Infinite Recursive RLS above). Wrap cross-table loo
 ```sql
 CREATE OR REPLACE FUNCTION user_accessible_document_ids(uid UUID)
 RETURNS SETOF UUID AS $$
-  SELECT document_id FROM permissions WHERE user_id = uid;
-$$ LANGUAGE sql STABLE SECURITY DEFINER;
+  SELECT document_id FROM public.permissions WHERE user_id = uid;
+$$ LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = pg_catalog, public, pg_temp;
 
 CREATE POLICY "access check" ON documents
   USING (id IN (SELECT * FROM user_accessible_document_ids((SELECT auth.uid()))));
@@ -259,16 +364,16 @@ CREATE POLICY "public read" ON posts
 
 CREATE POLICY "owner write" ON posts
   FOR INSERT TO authenticated
-  WITH CHECK (user_id = auth.uid());
+  WITH CHECK (user_id = (SELECT auth.uid()));
 
 CREATE POLICY "owner update" ON posts
   FOR UPDATE TO authenticated
-  USING (user_id = auth.uid())
-  WITH CHECK (user_id = auth.uid());
+  USING (user_id = (SELECT auth.uid()))
+  WITH CHECK (user_id = (SELECT auth.uid()));
 
 CREATE POLICY "owner delete" ON posts
   FOR DELETE TO authenticated
-  USING (user_id = auth.uid());
+  USING (user_id = (SELECT auth.uid()));
 
 GRANT USAGE ON SCHEMA public TO anon, authenticated;
 GRANT SELECT ON posts TO anon, authenticated;
@@ -281,10 +386,11 @@ GRANT INSERT, UPDATE, DELETE ON posts TO authenticated;
 CREATE OR REPLACE FUNCTION is_org_member(org_uuid UUID)
 RETURNS BOOLEAN AS $$
   SELECT EXISTS (
-    SELECT 1 FROM org_members
+    SELECT 1 FROM public.org_members
     WHERE org_id = org_uuid AND user_id = auth.uid()
   );
-$$ LANGUAGE sql STABLE SECURITY DEFINER;  -- SECURITY DEFINER: prevents recursive RLS
+$$ LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = pg_catalog, public, pg_temp;  -- prevents recursive RLS and pins name resolution
 
 CREATE POLICY "org members access" ON projects
   FOR ALL TO authenticated
@@ -300,7 +406,7 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON projects TO authenticated;
 ```sql
 CREATE POLICY "authenticated users only" ON profiles
   FOR SELECT TO authenticated
-  USING (auth.uid() IS NOT NULL);
+  USING ((SELECT auth.uid()) IS NOT NULL);
 
 GRANT USAGE ON SCHEMA public TO authenticated;
 GRANT SELECT ON profiles TO authenticated;
@@ -315,16 +421,19 @@ Before completing an RLS implementation:
 - [ ] All tables with user data have `ALTER TABLE ... ENABLE ROW LEVEL SECURITY`
 - [ ] Matching SQL privileges are granted to `anon`/`authenticated` (`GRANT USAGE ON SCHEMA ...`, `GRANT SELECT/INSERT/UPDATE/DELETE ON ...`)
 - [ ] All policies have both `USING` and `WITH CHECK` where applicable
+- [ ] Protected owner, tenant, role, and identity fields are guarded with column privileges or triggers, not only RLS predicates
 - [ ] No circular RLS dependencies between tables (infinite recursion risk)
-- [ ] All helper functions called from policies are `SECURITY DEFINER`
+- [ ] All policy helpers that query RLS-enabled tables are `SECURITY DEFINER`
+- [ ] Helper functions pin `search_path` to `pg_catalog, public, pg_temp`
+- [ ] Helper functions and policies use explicit `public.` and managed-schema references instead of relying on `search_path`
+- [ ] Broad default table privileges are revoked before narrower operation or column grants
 - [ ] Policy columns (`user_id`, `tenant_id`, etc.) are indexed
 - [ ] `(SELECT auth.uid())` used in subquery form for performance
-- [ ] Views on RLS tables use `security_invoker = true` (PG15+)
+- [ ] Public projections do not expose private base-table rows; view/function grants are separated from full table access
 - [ ] No overly permissive `USING (true)` on sensitive tables
-- [ ] Tested as `authenticated` role, not as superuser/admin
+- [ ] Runtime behavior is not inferred from `project_admin`-only queries
 
 ## References
 
 - [PostgreSQL RLS Documentation](https://www.postgresql.org/docs/current/ddl-rowsecurity.html)
 - [SECURITY DEFINER Functions](https://www.postgresql.org/docs/current/sql-createfunction.html)
-- [Postgres-rls Skill](https://playbooks.com/skills/troykelly/claude-skills/postgres-rls)

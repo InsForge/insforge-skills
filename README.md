@@ -107,9 +107,7 @@ skills/
 ├── insforge/
 │   ├── SKILL.md              # Main skill manifest and overview
 │   ├── database/
-│   │   ├── sdk-integration.md
-│   │   ├── pgvector.md
-│   │   └── postgres-rls.md
+│   │   └── sdk-integration.md
 │   ├── auth/
 │   │   ├── sdk-integration.md
 │   │   └── ssr-integration.md
@@ -139,9 +137,18 @@ skills/
 │       ├── auth.md
 │       ├── login.md
 │       ├── create.md
-│       ├── db-query.md
-│       ├── db-export.md
-│       ├── db-import.md
+│       ├── database/
+│       │   ├── migrations.md
+│       │   ├── query.md
+│       │   ├── access-control.md
+│       │   ├── integrity.md
+│       │   ├── vector.md
+│       │   ├── export.md
+│       │   └── import.md
+│       ├── branch/
+│       │   ├── overview.md
+│       │   ├── merge.md
+│       │   └── reset.md
 │       ├── functions-deploy.md
 │       ├── payments.md
 │       └── deployments-deploy.md
@@ -164,7 +171,7 @@ skills/
 
 - **`sdk-integration.md`**: How to use app-facing SDKs/APIs in application code.
 - **AI capability guides**: `ai/overview.md` links to smaller OpenRouter-focused guides for chat completions, image generation, video generation, audio, embeddings/RAG, and model discovery.
-- **Specialized guides**: Focused references such as `postgres-rls.md`, `pgvector.md`, `s3-gateway.md`, or provider-specific integration guides.
+- **Specialized guides**: Focused references such as `references/database/access-control.md`, `references/database/integrity.md`, `storage/postgres-rls.md`, `s3-gateway.md`, `references/database/vector.md`, or provider-specific integration guides.
 
 ## Contributing
 

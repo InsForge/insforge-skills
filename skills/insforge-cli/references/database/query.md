@@ -1,6 +1,6 @@
 # npx @insforge/cli db query
 
-Execute a raw SQL query against the project database for inspection and row-level data changes.
+Execute a raw SQL query against the project database for targeted inspection and row-level data changes.
 
 ## Syntax
 
@@ -50,16 +50,19 @@ npx @insforge/cli db query "SELECT count(*) FROM posts" --json
 
 - `public`: full access for normal data changes and schema work.
 - Postgres system catalogs such as `pg_catalog` and `information_schema`: read-only inspection is allowed.
-- InsForge-managed schemas: inspection is allowed, but writes and DDL are restricted to operations documented by the relevant skill or CLI reference.
+- InsForge-managed/system schemas such as `auth`, `storage`, `realtime`, `payments`, `graphql`, `extensions`, `pg_catalog`, `information_schema`, or `system`: do not write or run DDL unless you are working on that specific feature module and its docs explicitly allow the operation.
 
-Use `npx @insforge/cli db migrations new ...` and `npx @insforge/cli db migrations up ...` for schema changes, including RLS policies on documented InsForge-managed tables.
+Use `npx @insforge/cli db migrations new ...` and `npx @insforge/cli db migrations up ...` for schema changes on `public` application objects.
 
 Use `db query` for:
 
-- reading app data and managed-schema data
+- reading app data and inspecting managed-schema data
 - inspecting Postgres system catalogs such as `pg_catalog` and `information_schema`
 - backfilling or correcting rows in `public`
-- one-off row updates where the target schema allows it
+- one-off row updates in `public`
+
+For schema, RLS, grants, triggers, functions, indexes, and extensions, create a
+migration and apply it.
 
 ## InsForge SQL References
 
@@ -83,5 +86,5 @@ npx @insforge/cli db query "UPDATE posts SET status = 'draft' WHERE status IS NU
 
 ## Notes
 
-- For schema changes and RLS policy changes, use the migrations workflow in [db-migrations.md](db-migrations.md).
-- For advanced RLS patterns (infinite recursion prevention, SECURITY DEFINER, performance), see the insforge skill's [postgres-rls.md](../../insforge/database/postgres-rls.md).
+- For schema changes and RLS policy changes, use the migrations workflow in [migrations.md](migrations.md).
+- For advanced access-control patterns (RLS recursion prevention, SECURITY DEFINER, performance), see [access-control.md](access-control.md).
