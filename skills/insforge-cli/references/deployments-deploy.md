@@ -35,11 +35,27 @@ Current directory (`.`) if not specified. In most projects, this should be the a
 
 ## Excluded Files
 
-The following are automatically excluded from the zip:
+The following are automatically excluded from the upload:
 - `node_modules/`, `.git/`, `.next/`, `dist/`, `build/`
 - `.env*`, `.DS_Store`, `.insforge/`, `*.log`
 
 Because build output is excluded automatically, deploy the project source tree/root directory instead of pointing the command at `dist/`, `build/`, or `.next/`.
+
+### Custom excludes with `.vercelignore`
+
+To exclude additional files, add a `.vercelignore` file to the deploy source directory. It uses `.gitignore` syntax, including `!` negation:
+
+```gitignore
+# .vercelignore
+*.md
+drafts/
+!IMPORTANT.md
+```
+
+Notes:
+- Patterns apply on top of the built-in excludes above; the built-ins always stay excluded and cannot be re-included with `!`.
+- The `.vercelignore` file itself is never uploaded.
+- If the project was previously deployed directly with the Vercel CLI, an existing `.vercelignore` is honored as-is.
 
 ## Environment Variables Are Required
 
