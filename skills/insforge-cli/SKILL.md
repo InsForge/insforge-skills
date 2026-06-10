@@ -251,9 +251,9 @@ For application code with InsForge or `@insforge/sdk`, use the `insforge` app-in
 
 ## PostHog
 
-- `npx @insforge/cli posthog setup` ensures the dashboard has a PostHog connection and prints the official PostHog wizard command.
-- The wizard is interactive and may open a browser. Ask the user to run it in their real terminal if needed.
-- If setup is unavailable for the project, report the rollout/backend limitation. Do not substitute an unrelated PostHog key into app env vars as a workaround.
+- `npx @insforge/cli posthog setup` ensures the dashboard has a PostHog connection, then prints the official PostHog wizard command plus the connected project's public `phc_` API key and host.
+- ⚠️ `posthog setup` alone does NOT instrument the app: no env vars, no SDK, no events until the wizard step happens. The wizard is interactive and may open a browser; ask the user to run it in their real terminal, or instrument manually using the printed `phc_` key/host (PostHog's public client key, safe in frontend env vars).
+- Cloud only: self-hosted backends don't expose the integration. Do not substitute a `phc_` key from a separate PostHog account into app env vars — the Analytics page reads from the server-side connection that only `posthog setup` populates; use the key it prints.
 
 ## Non-Interactive CI/CD
 
