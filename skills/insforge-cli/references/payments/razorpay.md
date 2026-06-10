@@ -29,14 +29,14 @@ Use `--environment test` while building. Use `live` only after explicit producti
 
 Razorpay does not support InsForge-style automatic webhook registration with only API keys. Configure webhooks manually in the Razorpay Dashboard.
 
-Use the InsForge dashboard Payments settings to copy:
+From the InsForge dashboard (Dashboard -> Payments -> Settings -> Webhooks), copy:
 
 - Webhook URL, for example `/api/webhooks/razorpay/test`
 - Webhook secret
 
 Razorpay can only deliver webhooks to a public HTTPS URL. Localhost will not receive Razorpay webhooks.
 
-Select these events in Razorpay:
+Create a webhook in the Razorpay Dashboard with that URL and secret, and select these events:
 
 - `payment.authorized`
 - `payment.captured`

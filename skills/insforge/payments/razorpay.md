@@ -103,41 +103,43 @@ Create an app-owned pending record first, then create a Razorpay Order:
 
 ```typescript
 const { data: order, error: orderError } = await insforge.database
-  .from('orders')
-  .insert([{ team_id: teamId, status: 'pending' }])
+  .from("orders")
+  .insert([{ team_id: teamId, status: "pending" }])
   .select()
-  .single()
+  .single();
 
-if (orderError) throw orderError
+if (orderError) throw orderError;
 
-const { data, error } = await insforge.payments.razorpay.createOrder('test', {
+const { data, error } = await insforge.payments.razorpay.createOrder("test", {
   amount: 50000,
-  currency: 'INR',
-  receipt: `order:${order.id}`,
-  subject: { type: 'team', id: teamId },
+  currency: "INR",
+  subject: { type: "team", id: teamId },
   customerName: user.name ?? null,
   customerEmail: user.email ?? null,
-  metadata: { order_id: order.id }
-})
+  notes: { order_id: order.id },
+});
 
-if (error) throw error
+if (error) throw error;
 
 const checkout = new Razorpay({
   ...data.checkoutOptions,
   handler: async (response) => {
-    const verified = await insforge.payments.razorpay.verifyOrder('test', {
+    const verified = await insforge.payments.razorpay.verifyOrder("test", {
       orderId: response.razorpay_order_id,
       paymentId: response.razorpay_payment_id,
-      signature: response.razorpay_signature
-    })
+      signature: response.razorpay_signature,
+    });
 
-    if (verified.error) throw verified.error
-    window.location.assign(`/orders/${order.id}`)
-  }
-})
+    if (verified.error) throw verified.error;
+    window.location.assign(`/orders/${order.id}`);
+  },
+});
 
-checkout.open()
+checkout.open();
 ```
+
+Do not put UUIDs in Razorpay `receipt`. Razorpay limits `receipt` to a unique internal reference of at most 40 characters.
+Omit it unless the app already has a short unique receipt number such as `RCP-10042`; keep app UUIDs in Razorpay `notes`.
 
 After verification, show pending or processing state until the app-owned order is updated by webhook fulfillment.
 
@@ -146,31 +148,37 @@ After verification, show pending or processing state until the app-owned order i
 Create or sync the Razorpay Plan first. Then create the subscription and open Checkout:
 
 ```typescript
-const { data, error } = await insforge.payments.razorpay.createSubscription('test', {
-  planId: 'plan_123',
-  totalCount: 12,
-  subject: { type: 'team', id: teamId },
-  customerName: user.name ?? null,
-  customerEmail: user.email ?? null
-})
+const { data, error } = await insforge.payments.razorpay.createSubscription(
+  "test",
+  {
+    planId: "plan_123",
+    totalCount: 12,
+    subject: { type: "team", id: teamId },
+    customerName: user.name ?? null,
+    customerEmail: user.email ?? null,
+  },
+);
 
-if (error) throw error
+if (error) throw error;
 
 const checkout = new Razorpay({
   ...data.checkoutOptions,
   handler: async (response) => {
-    const verified = await insforge.payments.razorpay.verifySubscription('test', {
-      subscriptionId: response.razorpay_subscription_id,
-      paymentId: response.razorpay_payment_id,
-      signature: response.razorpay_signature
-    })
+    const verified = await insforge.payments.razorpay.verifySubscription(
+      "test",
+      {
+        subscriptionId: response.razorpay_subscription_id,
+        paymentId: response.razorpay_payment_id,
+        signature: response.razorpay_signature,
+      },
+    );
 
-    if (verified.error) throw verified.error
-    window.location.assign('/billing')
-  }
-})
+    if (verified.error) throw verified.error;
+    window.location.assign("/billing");
+  },
+});
 
-checkout.open()
+checkout.open();
 ```
 
 ## Subscription Management
@@ -178,23 +186,24 @@ checkout.open()
 Razorpay does not have a hosted Billing Portal equivalent. Use backend routes through the SDK:
 
 ```typescript
-await insforge.payments.razorpay.cancelSubscription('test', 'sub_123', {
-  cancelAtCycleEnd: false
-})
+await insforge.payments.razorpay.cancelSubscription("test", "sub_123", {
+  cancelAtCycleEnd: false,
+});
 
-await insforge.payments.razorpay.pauseSubscription('test', 'sub_123')
-await insforge.payments.razorpay.resumeSubscription('test', 'sub_123')
+await insforge.payments.razorpay.pauseSubscription("test", "sub_123");
+await insforge.payments.razorpay.resumeSubscription("test", "sub_123");
 ```
 
 These routes evaluate `UPDATE` policies on `payments.razorpay_subscriptions`; they do not let the user directly mutate provider-managed subscription state.
 
 ## Webhooks And Fulfillment
 
-Razorpay webhook setup is manual in the Razorpay Dashboard. Use Dashboard -> Payments -> Settings -> Webhooks to copy:
+Razorpay webhook setup is manual. From the InsForge dashboard (Dashboard -> Payments -> Settings -> Webhooks), copy:
 
 - Webhook URL, for example `/api/webhooks/razorpay/test`
 - Webhook secret
-- Recommended events
+
+Then create a webhook in the Razorpay Dashboard with that URL and secret, and select the events InsForge handles.
 
 Razorpay can only deliver webhooks to a public HTTPS URL.
 
@@ -270,11 +279,11 @@ Use `payments.transactions` only for admin/debug dashboards and provider referen
 
 ## Common Mistakes
 
-| Mistake | Fix |
-|---------|-----|
-| Expecting a hosted Checkout URL | Load Razorpay Checkout.js and pass `checkoutOptions` |
-| Treating `verifyOrder` as fulfillment | Use verified webhook rows in `payments.webhook_events` |
-| Using Stripe Prices for Razorpay subscriptions | Use Razorpay Items and Plans |
-| Forgetting manual webhook setup | Configure Razorpay Dashboard webhook URL, secret, and events |
-| Letting users manage another team's subscription | Add `UPDATE` RLS on `payments.razorpay_subscriptions` |
-| Reading `payments.transactions` as app state | Maintain app-owned order or entitlement tables |
+| Mistake                                          | Fix                                                          |
+| ------------------------------------------------ | ------------------------------------------------------------ |
+| Expecting a hosted Checkout URL                  | Load Razorpay Checkout.js and pass `checkoutOptions`         |
+| Treating `verifyOrder` as fulfillment            | Use verified webhook rows in `payments.webhook_events`       |
+| Using Stripe Prices for Razorpay subscriptions   | Use Razorpay Items and Plans                                 |
+| Forgetting manual webhook setup                  | Configure Razorpay Dashboard webhook URL, secret, and events |
+| Letting users manage another team's subscription | Add `UPDATE` RLS on `payments.razorpay_subscriptions`        |
+| Reading `payments.transactions` as app state     | Maintain app-owned order or entitlement tables               |
