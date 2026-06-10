@@ -14,7 +14,7 @@ One-shot command that ensures the InsForge dashboard has a PostHog connection, t
 
 ## Availability
 
-InsForge Cloud projects only. Self-hosted backends don't expose `/integrations/posthog/v1/*` and this command won't work there; users on self-hosted should install PostHog directly per [PostHog's docs](https://posthog.com/docs/libraries). On cloud projects, do not substitute a `phc_` key from a separate PostHog account in the app's env — events will flow to PostHog but the InsForge Analytics page reads from a server-side OAuth-backed `posthog_connections` row that only `posthog setup` populates, so the page stays empty even though the integration "looks" wired. Use the key that `posthog setup` prints instead.
+InsForge Cloud projects only. Self-hosted backends don't expose `/integrations/posthog/v1/*` and this command won't work there; users on self-hosted should install PostHog directly per [PostHog's docs](https://posthog.com/docs/libraries). If the CLI fails with `PostHog connect flow unavailable (HTTP 404)`, the linked backend doesn't expose this integration — typically a self-hosted backend or the wrong project linked; check `npx @insforge/cli current`, or fall back to the direct PostHog install above. On cloud projects, do not substitute a `phc_` key from a separate PostHog account in the app's env — events will flow to PostHog but the InsForge Analytics page reads from a server-side OAuth-backed `posthog_connections` row that only `posthog setup` populates, so the page stays empty even though the integration "looks" wired. Use the key that `posthog setup` prints instead.
 
 ## Usage
 
