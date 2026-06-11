@@ -37,7 +37,7 @@ This skill covers integrating **third-party providers** with InsForge. Currently
 
 ### Auth providers
 1. **Provider signs or issues a JWT** containing the user's ID
-2. **JWT is passed to InsForge** via `edgeFunctionToken` in `createClient()`
+2. **JWT is passed to InsForge** via `accessToken` in `createClient()` (deprecated alias: `edgeFunctionToken`)
 3. **InsForge exposes claims** through `auth.jwt()` in SQL
 4. **RLS policies** use a `requesting_user_id()` function to enforce row-level security
 
@@ -81,7 +81,7 @@ Refer to the specific `references/<provider>.md` file for complete examples.
 **Auth**
 - All auth provider user IDs are strings (not UUIDs) — always use `TEXT` columns for `user_id`
 - Use `requesting_user_id()` instead of `auth.uid()` for RLS policies
-- Set `edgeFunctionToken` as an async function (Clerk) or server-signed JWT (Auth0, WorkOS, Kinde, Stytch)
+- Pass the JWT via `accessToken` — a static string, not a function; for short-lived tokens (Clerk) sync refreshes with `client.setAccessToken()`
 - Always get the JWT secret via `npx @insforge/cli secrets get JWT_SECRET`
 
 **Payment facilitators (x402)**

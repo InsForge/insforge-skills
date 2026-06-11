@@ -1,7 +1,7 @@
 
 # InsForge + Stytch Integration Guide
 
-Stytch handles authentication via email magic links on the client side. On the server, the Stytch Node SDK validates the session cookie, retrieves the user ID, and signs a JWT with InsForge's secret. The token is passed to InsForge as `edgeFunctionToken`.
+Stytch handles authentication via email magic links on the client side. On the server, the Stytch Node SDK validates the session cookie, retrieves the user ID, and signs a JWT with InsForge's secret. The token is passed to InsForge as `accessToken` (deprecated alias: `edgeFunctionToken`).
 
 ## Key packages
 
@@ -131,7 +131,7 @@ export default function Authenticate() {
 - Validate the session via `stytchClient.sessions.authenticate({ session_token })`
 - Sign a JWT with `jsonwebtoken` using `INSFORGE_JWT_SECRET`
 - Required claims: `sub` (from `session.user_id`), `role: "authenticated"`, `aud: "insforge-api"`
-- Pass the signed token as `edgeFunctionToken` to `createClient`
+- Pass the signed token as `accessToken` to `createClient`
 
 ```typescript
 // lib/insforge.ts
@@ -167,7 +167,7 @@ export async function createInsForgeClient() {
 
   return createClient({
     baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL!,
-    edgeFunctionToken: insforgeToken,
+    accessToken: insforgeToken,
   });
 }
 ```

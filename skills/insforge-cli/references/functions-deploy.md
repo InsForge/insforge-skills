@@ -108,7 +108,7 @@ export default async function(req: Request): Promise<Response> {
   // Create client with user's token for authenticated access
   const client = createClient({
     baseUrl: Deno.env.get('INSFORGE_BASE_URL'),
-    edgeFunctionToken: userToken
+    accessToken: userToken
   });
 
   // Get authenticated user

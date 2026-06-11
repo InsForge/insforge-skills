@@ -1,7 +1,7 @@
 
 # InsForge + Auth0 Integration Guide
 
-Auth0 signs an InsForge-compatible JWT inside a **Post Login Action**, embeds it as a custom claim on the ID token, and the Next.js app extracts it to pass to the InsForge client as `edgeFunctionToken`. InsForge validates the token and uses the `sub` claim for Row Level Security.
+Auth0 signs an InsForge-compatible JWT inside a **Post Login Action**, embeds it as a custom claim on the ID token, and the Next.js app extracts it to pass to the InsForge client as `accessToken` (deprecated alias: `edgeFunctionToken`). InsForge validates the token and uses the `sub` claim for Row Level Security.
 
 ## Key packages
 
@@ -123,7 +123,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
 ## InsForge client
 
-- Create a utility at `lib/insforge.ts` that calls `auth0.getSession()`, reads the token from `session.user["https://insforge.dev/insforge_token"]`, and passes it as `edgeFunctionToken` to `createClient`
+- Create a utility at `lib/insforge.ts` that calls `auth0.getSession()`, reads the token from `session.user["https://insforge.dev/insforge_token"]`, and passes it as `accessToken` to `createClient`
 
 ```typescript
 // lib/insforge.ts
@@ -136,7 +136,7 @@ export async function createInsForgeClient() {
 
   return createClient({
     baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL,
-    edgeFunctionToken: insforgeToken,
+    accessToken: insforgeToken,
   });
 }
 ```

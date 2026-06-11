@@ -1,7 +1,7 @@
 
 # InsForge + WorkOS Integration Guide
 
-WorkOS AuthKit handles authentication via middleware. On the server, `withAuth()` retrieves the authenticated user, and a JWT is signed with InsForge's secret containing the user's ID. The token is passed to InsForge as `edgeFunctionToken`.
+WorkOS AuthKit handles authentication via middleware. On the server, `withAuth()` retrieves the authenticated user, and a JWT is signed with InsForge's secret containing the user's ID. The token is passed to InsForge as `accessToken` (deprecated alias: `edgeFunctionToken`).
 
 ## Key packages
 
@@ -79,7 +79,7 @@ export async function GET() {
 - Sign a JWT with `jsonwebtoken` using `INSFORGE_JWT_SECRET`
 - Required claims: `sub` (from `user.id`), `role: "authenticated"`, `aud: "insforge-api"`
 - Set expiration to 1 hour
-- Pass the signed token as `edgeFunctionToken` to `createClient`
+- Pass the signed token as `accessToken` to `createClient`
 
 ```typescript
 // lib/insforge.ts
@@ -103,7 +103,7 @@ export async function createInsForgeClient() {
 
   return createClient({
     baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL!,
-    edgeFunctionToken: insforgeToken,
+    accessToken: insforgeToken,
   });
 }
 ```

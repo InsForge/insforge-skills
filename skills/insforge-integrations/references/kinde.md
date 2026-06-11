@@ -1,7 +1,7 @@
 
 # InsForge + Kinde Integration Guide
 
-Kinde **does not support custom JWT signing keys**, so you sign a separate JWT server-side using `jsonwebtoken`. The flow: get the Kinde user from the server session → sign a JWT with InsForge's secret → pass it to InsForge as `edgeFunctionToken`.
+Kinde **does not support custom JWT signing keys**, so you sign a separate JWT server-side using `jsonwebtoken`. The flow: get the Kinde user from the server session → sign a JWT with InsForge's secret → pass it to InsForge as `accessToken` (deprecated alias: `edgeFunctionToken`).
 
 ## Key packages
 
@@ -54,7 +54,7 @@ export const GET = handleAuth();
 - Sign a JWT with `jsonwebtoken` using `process.env.INSFORGE_JWT_SECRET`
 - Required claims: `sub` (from `user.id`), `role: "authenticated"`, `aud: "insforge-api"`, `email`
 - Set `expiresIn: '1h'`
-- Pass the signed token as `edgeFunctionToken` to `createClient`
+- Pass the signed token as `accessToken` to `createClient`
 
 ```typescript
 // lib/insforge.ts
@@ -66,9 +66,9 @@ export async function createInsForgeClient() {
   const { getUser } = getKindeServerSession();
   const user = await getUser();
 
-  let edgeFunctionToken: string | undefined;
+  let accessToken: string | undefined;
   if (user) {
-    edgeFunctionToken = jwt.sign(
+    accessToken = jwt.sign(
       {
         sub: user.id,
         role: 'authenticated',
@@ -82,7 +82,7 @@ export async function createInsForgeClient() {
 
   return createClient({
     baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL!,
-    edgeFunctionToken,
+    accessToken,
   });
 }
 ```
