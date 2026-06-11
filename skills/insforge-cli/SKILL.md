@@ -1,11 +1,11 @@
 ---
 name: insforge-cli
 description: >-
-  Use this skill whenever someone needs a backend, or a task touches InsForge backend or cloud infrastructure through the InsForge CLI: projects, SQL, migrations, RLS policies, functions, storage, deployments, compute, secrets, config, schedules, logs, diagnostics, import/export, AI/OpenRouter setup, Stripe/Razorpay payments, backend branches, or CLI docs. For app code with InsForge or @insforge/sdk, use the insforge app-integration skill instead.
+  Use this skill whenever someone needs a backend, or a task touches InsForge backend or cloud infrastructure through the InsForge CLI: projects, SQL, migrations, RLS policies, functions, storage, deployments, compute, secrets, config, schedules, logs, diagnostics, import/export, AI/OpenRouter setup, Stripe/Razorpay payments, backend branches, agent memory (remember/recall project facts and decisions), or CLI docs. For app code with InsForge or @insforge/sdk, use the insforge app-integration skill instead.
 license: MIT
 metadata:
   author: insforge
-  version: "1.6.0"
+  version: "1.7.0"
   organization: InsForge
   date: June 2026
 ---
@@ -21,6 +21,7 @@ Use this skill whenever someone needs a backend, or when managing InsForge backe
 - Treat InsForge API keys as full-access admin keys. Keep them server-only and out of frontend/public env vars.
 - Prefer CLI commands and documented project config over raw backend HTTP calls. If `config apply` reports unsupported/skipped fields, surface that result instead of bypassing the CLI with direct API calls.
 - Use `--json` when structured output or non-interactive value collection is needed. Use `--yes` for confirmation prompts when the user has approved the action.
+- At the start of a non-trivial task on a linked project, run `npx @insforge/cli memory list` (cheap, no AI call) and recall any title relevant to the task before designing or debugging. Record decisions and gotchas with `memory remember` at the moment they happen. See `references/memory.md`.
 
 ## Global Options
 
@@ -67,6 +68,7 @@ If not authenticated, run `npx @insforge/cli login`. If no project is linked, us
 | Realtime backend setup                                                                             | `db` migrations                                 | `references/realtime.md`                                                                    |
 | Edge functions                                                                                     | `functions`                                     | `references/functions-deploy.md`                                                            |
 | AI/OpenRouter key setup                                                                            | `ai setup`                                      | this file                                                                                   |
+| Agent memory: project facts, decisions, gotchas across sessions                                   | `memory`                                        | `references/memory.md`                                                                      |
 | Stripe/Razorpay keys, catalog sync, webhooks                                                       | `payments`                                      | `references/payments/overview.md`                                                           |
 | Frontend deployments                                                                               | `deployments`                                   | `references/deployments-deploy.md`                                                          |
 | Backend containers/services                                                                        | `compute`                                       | `references/compute-deploy.md`                                                              |
@@ -166,6 +168,17 @@ Create channel patterns, app-table publish triggers, and channel/message RLS thr
 
 - `npx @insforge/cli ai setup` fetches the linked project's active OpenRouter key and writes `OPENROUTER_API_KEY` to a local server-side env file.
 - Keep `OPENROUTER_API_KEY` server-only. Never expose it as `NEXT_PUBLIC_*`, `VITE_*`, `PUBLIC_*`, or `REACT_APP_*`.
+
+## Memory
+
+Every project has built-in agent memory: durable facts, decisions, and gotchas that survive across sessions. Use it as a reflex, not an afterthought.
+
+- `npx @insforge/cli memory list` - cheap title index (no AI call). Run at the start of a non-trivial task; recall any title relevant to the task.
+- `npx @insforge/cli memory recall "<query>" [--scope] [--limit] [--threshold]` - semantic + keyword recall.
+- `npx @insforge/cli memory remember "<content>" [--kind] [--title] [--scope] [--source]` - store one atomic memory. Record decisions and gotchas at the moment they happen, not at session end.
+- `npx @insforge/cli memory remember --file <path>` - extract durable memories from a transcript or notes file.
+
+Storing is idempotent: re-remembering a known fact is a no-op, and a contradicting fact updates the existing memory instead of duplicating it - when the truth changes, just `remember` the new truth. See `references/memory.md` for what to store, kinds, and examples.
 
 ## Payments
 
