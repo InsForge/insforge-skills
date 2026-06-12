@@ -17,6 +17,8 @@ metadata:
 
 # InsForge Verify
 
+> 🔒 **Private preview.** This skill is experimental and not yet generally available. It depends on `insforge preview` commands that are still rolling out (older CLI versions won't have them) and uses manual workarounds for seeding auth — see Known gaps. Behavior and commands may change. Ask the InsForge team for early access.
+
 Verify an InsForge full-stack change the way a real user would: in an **isolated
 preview** (a branch backend + the frontend pointed at it), driving a **real
 browser** through real flows — not unit tests, not mocked backends.
