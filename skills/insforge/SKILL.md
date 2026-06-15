@@ -203,7 +203,7 @@ All SDK methods return `{ data, error }`.
 ## Important Notes
 
 - **Database inserts require array format**: `insert([{...}])`
-- **Next.js / SSR auth**: Use `@insforge/sdk/ssr` helpers (`createBrowserClient`, `createServerClient`, `createRefreshAuthRouter`, `updateSession`). Keep the refresh token httpOnly and let the browser read the short-lived access token for Storage/Realtime. See [auth/ssr-integration.md](auth/ssr-integration.md)
+- **Next.js / SSR auth**: Use `@insforge/sdk/ssr` helpers (`createBrowserClient`, `createServerClient`, `createRefreshAuthRouter`) and import `updateSession` from `@insforge/sdk/ssr/middleware` in Proxy/Middleware. Keep the refresh token httpOnly and let the browser read the short-lived access token for Storage/Realtime. See [auth/ssr-integration.md](auth/ssr-integration.md)
 - **Storage**: Save both `url` AND `key` to database for download/delete operations
 - **Functions invoke URL**: `/functions/{slug}`
 - **Email delivery**: Auth emails (signup verification, password reset, magic links, invites) ship on **every plan**. Custom email via `insforge.emails.send()` ships on **every paid plan**. Use the platform-managed delivery path; custom sender domain is dashboard config. See [email/sdk-integration.md](email/sdk-integration.md).

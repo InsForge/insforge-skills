@@ -362,7 +362,7 @@ Only render the reset form when `insforge_status=ready` and `token` is present.
 ## Important Notes
 
 - **SPA Web vs Mobile**: Root browser SDK flows use httpOnly refresh cookies + CSRF; mobile/desktop returns refreshToken in response
-- **SSR apps should use `@insforge/sdk/ssr`**: For Next.js and similar SSR frameworks, use the SSR helpers for client creation, refresh routes, Proxy/Middleware session updates, and auth cookies. See [ssr-integration.md](ssr-integration.md)
+- **SSR apps should use SDK SSR helpers**: For Next.js and similar SSR frameworks, use `@insforge/sdk/ssr` for client creation, refresh routes, and auth cookies; use `@insforge/sdk/ssr/middleware` for Proxy/Middleware session updates. See [ssr-integration.md](ssr-integration.md)
 - All methods return `{ data, error }` — always check for errors
 - OAuth uses PKCE flow for security
 
@@ -406,7 +406,7 @@ Only render the reset form when `insforge_status=ready` and `token` is present.
    - Keep `insforge_refresh_token` httpOnly and server-owned
    - Let `insforge_access_token` be browser-readable so Storage and Realtime can authenticate from Client Components
    - Use `createServerClient()` for Server Components / Route Handlers and `createBrowserClient()` for Client Components
-   - Add `/api/auth/refresh` with `createRefreshAuthRouter()` and use `updateSession()` in Proxy/Middleware
+   - Add `/api/auth/refresh` with `createRefreshAuthRouter()` and use `updateSession()` from `@insforge/sdk/ssr/middleware` in Proxy/Middleware
    - Use [ssr-integration.md](ssr-integration.md) as the reference implementation
 
 ## Common Mistakes
@@ -420,7 +420,7 @@ Only render the reset form when `insforge_status=ready` and `token` is present.
 | Treating link verification like code verification | Handle the redirect result and send the user to sign in |
 | Signing in again after code-based `verifyEmail()` | Use the session returned by `verifyEmail()` |
 | Hardcoding OAuth providers | Render providers from `oAuthProviders` |
-| Handling SSR auth like a browser-only flow | Use `@insforge/sdk/ssr` helpers and write cookies from Route Handlers, Server Actions, or Proxy/Middleware |
+| Handling SSR auth like a browser-only flow | Use `@insforge/sdk/ssr` helpers for clients/routes and `@insforge/sdk/ssr/middleware` for Proxy/Middleware session updates |
 | Passing `apiKey` to `createClient()` | Use `createAdminClient({ apiKey })` in trusted server-only code |
 
 ## Conditional Implementation Guide

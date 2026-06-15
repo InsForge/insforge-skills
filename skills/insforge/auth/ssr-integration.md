@@ -4,7 +4,10 @@ Use this reference for Next.js SSR auth. The same cookie/session concepts can be
 
 ## Recommended Pattern
 
-- Use `@insforge/sdk/ssr` as the standard SSR auth entrypoint.
+- Use `@insforge/sdk/ssr` as the standard SSR auth entrypoint for browser,
+  server, refresh-route, and cookie helpers.
+- Use `@insforge/sdk/ssr/middleware` for Proxy/Middleware `updateSession()`;
+  this keeps the middleware bundle from pulling in the full SDK client.
 - Let the SDK helpers manage the InsForge auth cookie names and expiration.
 - Keep `insforge_refresh_token` httpOnly and server-owned.
 - Allow `insforge_access_token` to be browser-readable so browser SDK calls and Realtime can authenticate.
@@ -97,7 +100,7 @@ Use `updateSession()` so Server Components see fresh cookies before rendering. N
 // proxy.ts on Next.js 16+
 // middleware.ts on Next.js 15 and earlier
 import { NextResponse, type NextRequest } from 'next/server'
-import { updateSession } from '@insforge/sdk/ssr'
+import { updateSession } from '@insforge/sdk/ssr/middleware'
 
 export async function proxy(request: NextRequest) {
   const response = NextResponse.next({ request })
@@ -110,6 +113,11 @@ export async function proxy(request: NextRequest) {
   return response
 }
 ```
+
+Import `updateSession()` from `@insforge/sdk/ssr/middleware` in Proxy/Middleware
+files. Keep the full `@insforge/sdk/ssr` entrypoint for `createBrowserClient()`,
+`createServerClient()`, `createRefreshAuthRouter()`, `refreshAuth()`, and cookie
+helpers in route handlers or server/client modules.
 
 For `middleware.ts`, export the same handler body as `middleware`.
 
@@ -243,7 +251,7 @@ For server-mediated uploads, use a backend route to create a signed upload path 
 - Keep the default refresh path `/api/auth/refresh` unless the app has an existing auth namespace.
 - Use `createRefreshAuthRouter()` for standard apps.
 - Use `refreshAuth()` only when the route needs custom side effects.
-- Use `updateSession()` in Proxy/Middleware to keep Server Components and browser cookies aligned.
+- Use `updateSession()` from `@insforge/sdk/ssr/middleware` in Proxy/Middleware to keep Server Components and browser cookies aligned without bundling the full SDK client.
 - Validate post-auth redirects and only allow safe internal paths.
 
 ## Common Mistakes
@@ -255,7 +263,7 @@ For server-mediated uploads, use a backend route to create a signed upload path 
 | Missing the browser refresh route | Use `/api/auth/refresh` with `createRefreshAuthRouter()` |
 | Manually guessing cookie lifetimes | Use `setAuthCookies()` so cookie expiry follows JWT `exp` |
 | Appending `Set-Cookie` through `response.headers` in Next.js | Pass `response.cookies` to `setAuthCookies()` |
-| Server Components reading stale cookies | Use `updateSession()` in Proxy/Middleware before rendering |
+| Server Components reading stale cookies | Use `updateSession()` from `@insforge/sdk/ssr/middleware` in Proxy/Middleware before rendering |
 | Client Components creating an unauthenticated SDK client | Use `createBrowserClient()` so the app refresh route can refresh access |
 | Sending OAuth users back to the backend URL | Set `redirectTo` to the app URL where the user lands after auth |
 | Exchanging OAuth codes in a Client Component | Initiate and exchange OAuth on the server, then set cookies |
