@@ -56,6 +56,30 @@ const { data, error } = await insforge.storage
 // data.key: "myfile-1705315200000-abc123.jpg"
 ```
 
+## Content Type (avoid `application/octet-stream`)
+
+The stored `mimeType` comes from the uploaded blob's `type` property. The SDK
+does **not** sniff bytes or guess from the file extension — when `type` is empty,
+the object is stored as `application/octet-stream`.
+
+- **Browser**: a `File` from an `<input type="file">` or drag-and-drop already
+  carries the correct `type`. Nothing to do.
+- **Node / server-side / generated content**: a bare `new Blob([data])` has an
+  **empty** `type`. Always set it, or the object is stored as octet-stream:
+
+```javascript
+// ✅ type is set → stored as image/png
+const blob = new Blob([bytes], { type: 'image/png' })
+await insforge.storage.from('images').upload('posts/cover.png', blob)
+
+// ❌ no type → stored as application/octet-stream
+await insforge.storage.from('images').upload('posts/cover.png', new Blob([bytes]))
+
+// In Node, a typed File works the same way:
+const file = new File([bytes], 'cover.png', { type: 'image/png' })
+await insforge.storage.from('images').uploadAuto(file)
+```
+
 ## Download File
 
 ```javascript
@@ -114,6 +138,7 @@ await insforge.database
 | Uploading before the bucket exists | Verify the bucket via admin API before uploading |
 | Saving only the returned URL | Save both `data.url` and `data.key` |
 | Using the URL for download/delete operations | Use the stored `key` |
+| Uploading a typeless `Blob` from Node/server (stored as `application/octet-stream`) | Construct the blob with its type: `new Blob([data], { type: 'image/png' })` |
 | Creating a plain browser client in SSR Client Components | Use `createBrowserClient()` so access refresh flows through `/api/auth/refresh` and the refresh token remains httpOnly |
 
 ## Recommended Workflow
