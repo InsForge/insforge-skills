@@ -56,6 +56,7 @@ https domain, isolated from prod) and is removed when the branch is torn down.
 # A branch gets its OWN anon key (fresh per branch — NOT the parent's):
 ANON=$(curl -s -X POST "$BRANCH_URL/api/auth/tokens/anon" -H "Authorization: Bearer $ADMIN_KEY" \
   | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>console.log(JSON.parse(d).accessToken))")
+[ -n "$ANON" ] || { echo "ERROR: could not fetch branch anon key — aborting (a blank anon key bakes a broken frontend that fails every API call)" >&2; exit 1; }
 npx @insforge/cli deployments deploy . \
   --env "{\"NEXT_PUBLIC_INSFORGE_URL\":\"$BRANCH_URL\",\"NEXT_PUBLIC_INSFORGE_ANON_KEY\":\"$ANON\"}"
 ```
@@ -120,6 +121,9 @@ the admin key let you confirm the UI against ground truth.
     -d "{\"email\":\"$1\",\"password\":\"Test1234!pass\"}" \
     | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{const j=JSON.parse(d);console.log(j.accessToken||(j.data&&j.data.accessToken)||'')})"; }
   A_TOKEN=$(login verify-a@example.com); B_TOKEN=$(login verify-b@example.com)
+  # Tokens MUST be non-empty before probing — an empty token turns every probe into an
+  # anonymous request, which "passes" isolation (empty result) and silently false-passes.
+  [ -n "$A_TOKEN" ] && [ -n "$B_TOKEN" ] || { echo "ERROR: login returned an empty token — abort, do not trust the isolation result" >&2; exit 1; }
   ```
 
   - User B lists a user-scoped table (Bearer `$B_TOKEN`) -> only B's own rows appear.
@@ -141,7 +145,7 @@ a UI case or a backend-truth check reveals an actual defect:
 1. **Locate it in the source** (the change you're verifying is the prime suspect).
 2. **Fix the app code** (you, the main session — not a subagent).
 3. **Redeploy the branch frontend** so the fix is live (still in branch context;
-   `$BRANCH_URL` / `$ANON` are from step 3 — re-derive them if you're in a fresh shell):
+   `$BRANCH_URL` is from step 2, `$ANON` from step 3 — re-derive both if you're in a fresh shell):
    `npx @insforge/cli deployments deploy . --env "{\"NEXT_PUBLIC_INSFORGE_URL\":\"$BRANCH_URL\",\"NEXT_PUBLIC_INSFORGE_ANON_KEY\":\"$ANON\"}"`
 4. **Re-verify by re-running the existing spec**, not the planner:
    `npx playwright test tests/<the-failing-spec>.spec.ts` — plus the backend-truth read
