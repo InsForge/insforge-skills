@@ -48,7 +48,7 @@ import { createBrowserClient } from '@insforge/sdk/ssr'
 export const insforge = createBrowserClient()
 ```
 
-`createBrowserClient()` reads `insforge_access_token`, uses it for SDK calls and Realtime, and refreshes through `/api/auth/refresh` when the access token is missing, expired, near expiry, or rejected with an auth-expired response. Its TypeScript auth surface is read-only (`getCurrentUser()`, `getProfile()`, and `getPublicAuthConfig()`); perform sign-in, sign-up, sign-out, OAuth exchange, ID-token sign-in, and email verification on the server with `createAuthActions()`.
+`createBrowserClient()` reads `insforge_access_token`, uses it for SDK calls and Realtime, and refreshes through `/api/auth/refresh` when the access token is missing, expired, near expiry, or rejected with an auth-expired response. Its TypeScript auth surface is read-only (`getCurrentUser()`, `getProfile()`, and `getPublicAuthConfig()`); perform sign-in, sign-up, sign-out, OAuth initiation/exchange, ID-token sign-in, and email verification on the server with `createAuthActions()`.
 
 ## Server Client
 
@@ -123,7 +123,7 @@ For `middleware.ts`, export the same handler body as `middleware`.
 
 ## Sign-In Route Or Server Action
 
-Because the refresh token is httpOnly, sign-in, sign-up, sign-out, OAuth exchange, ID-token sign-in, and email verification flows that establish or clear a session should run where cookies can be written. Prefer `createAuthActions()` for these auth mutations.
+Because the refresh token is httpOnly, sign-in, sign-up, sign-out, OAuth initiation/exchange, ID-token sign-in, and email verification flows that establish or clear a session should run where cookies can be written. Prefer `createAuthActions()` for these auth mutations. Return only safe app data from Server Actions; do not return token-bearing low-level auth responses.
 
 For Next.js 14+ Server Actions:
 
@@ -136,11 +136,12 @@ import { createAuthActions } from '@insforge/sdk/ssr'
 
 export async function signIn(formData: FormData) {
   const auth = createAuthActions({ cookies: await cookies() })
-
-  return auth.signInWithPassword({
+  const { data, error } = await auth.signInWithPassword({
     email: String(formData.get('email')),
     password: String(formData.get('password'))
   })
+
+  return { user: data?.user ?? null, error }
 }
 
 export async function signOut() {
@@ -153,7 +154,7 @@ For Route Handlers, pass separate request and response cookie stores:
 
 ```typescript
 // app/api/auth/sign-in/route.ts
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 import { createAuthActions } from '@insforge/sdk/ssr'
 
 export async function POST(request: NextRequest) {
@@ -188,11 +189,12 @@ The browser SDK auto-detects `insforge_code` for SPA flows. In SSR apps, handle 
 
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { createServerClient } from '@insforge/sdk/ssr'
+import { createAuthActions } from '@insforge/sdk/ssr'
 
 export async function initiateOAuth(provider: string) {
-  const client = createServerClient()
-  const { data, error } = await client.auth.signInWithOAuth(provider, {
+  const cookieStore = await cookies()
+  const auth = createAuthActions({ cookies: cookieStore })
+  const { data, error } = await auth.signInWithOAuth(provider, {
     redirectTo: new URL('/api/auth/callback', process.env.NEXT_PUBLIC_APP_URL).toString(),
     // additionalParams: { prompt: 'select_account' }, // optional provider-specific hints
     skipBrowserRedirect: true
@@ -202,7 +204,6 @@ export async function initiateOAuth(provider: string) {
     throw new Error(error?.message ?? 'OAuth init failed')
   }
 
-  const cookieStore = await cookies()
   cookieStore.set('insforge_code_verifier', data.codeVerifier, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -224,7 +225,7 @@ Set `redirectTo` to your app URL. The backend appends `?insforge_code=<code>` an
 ```typescript
 // app/api/auth/callback/route.ts
 import { cookies } from 'next/headers'
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 import { createAuthActions } from '@insforge/sdk/ssr'
 
 export async function GET(request: NextRequest) {

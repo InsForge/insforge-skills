@@ -403,7 +403,7 @@ Only render the reset form when `insforge_status=ready` and `token` is present.
 
 5. **Use `@insforge/sdk/ssr` for SSR auth**
    - For Next.js or other SSR frameworks, perform auth mutations where cookies can be written
-   - Use `createAuthActions()` for sign-in, sign-up, sign-out, OAuth exchange, ID-token sign-in, and email verification flows that create or clear sessions
+   - Use `createAuthActions()` for sign-in, sign-up, sign-out, OAuth initiation/exchange, ID-token sign-in, and email verification flows that create or clear sessions
    - Keep `insforge_refresh_token` httpOnly and server-owned
    - Let `insforge_access_token` be browser-readable so Storage and Realtime can authenticate from Client Components
    - Use `createServerClient()` for Server Components / Route Handlers and `createBrowserClient()` for Client Components; the SSR browser client exposes read-only auth methods only
