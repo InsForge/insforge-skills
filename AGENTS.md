@@ -31,6 +31,8 @@ agent-skills/
 │           │   └── razorpay.md
 │           ├── deployments-deploy.md
 │           └── ...
+│   └── insforge-verify/    # Full-stack preview e2e verification (private preview)
+│       └── SKILL.md        # Verify flow: preview env + test agents + backend truth
 ├── AGENTS.md               # This file
 ├── CONTRIBUTING.md         # Contribution guidelines
 ├── LICENSE                 # MIT License

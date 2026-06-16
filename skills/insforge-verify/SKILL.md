@@ -19,7 +19,7 @@ metadata:
 # InsForge Verify
 
 > 🔒 **Private preview.** Experimental, not yet generally available. Depends on
-> `insforge preview` commands that are still rolling out (older CLI versions
+> `npx @insforge/cli preview` commands that are still rolling out (older CLI versions
 > won't have them) and uses a manual workaround for the auth session — see Known
 > gaps. Behavior and commands may change. Ask the InsForge team for early access.
 
@@ -68,7 +68,7 @@ step 4.
 ### 1. Stand up an isolated branch backend
 
 ```bash
-insforge preview create <name>
+npx @insforge/cli preview create <name>
 ```
 
 Branches the linked project — a real backend plus a copy of its data. All your
@@ -84,14 +84,14 @@ create verified accounts directly with the branch admin key. **Stay in branch
 context** until teardown.
 
 ```bash
-insforge branch switch <name>      # context + admin key + deploy target -> the branch
+npx @insforge/cli branch switch <name>      # context + admin key + deploy target -> the branch
 BRANCH_URL=$(node -e "console.log(require('./.insforge/project.json').oss_host)")
 ADMIN_KEY=$(node -e "console.log(require('./.insforge/project.json').api_key)")
 
 # Did your change include a migration (schema / RLS / functions)? The branch is a
 # snapshot from create time, so apply pending local migrations to it before testing —
 # otherwise you verify the old backend (a loosened RLS policy would still look correct).
-insforge db migrations up --all
+npx @insforge/cli db migrations up --all
 
 # Seed a verified account (repeat for a second account to test cross-user isolation):
 curl -s -X POST "$BRANCH_URL/api/auth/users" -H "Authorization: Bearer $ADMIN_KEY" \
@@ -112,8 +112,11 @@ removed when the branch is torn down. `NEXT_PUBLIC_*` are baked at build time, s
 pass them with `--env` (the deploy excludes `.env.local`).
 
 ```bash
-ANON=<your project's NEXT_PUBLIC_INSFORGE_ANON_KEY>   # shared with the branch
-insforge deployments deploy . \
+# A branch gets its OWN anon key (fresh per branch — NOT the parent's). Fetch it
+# from the branch you switched to:
+ANON=$(curl -s -X POST "$BRANCH_URL/api/auth/tokens/anon" -H "Authorization: Bearer $ADMIN_KEY" \
+  | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>console.log(JSON.parse(d).accessToken))")
+npx @insforge/cli deployments deploy . \
   --env "{\"NEXT_PUBLIC_INSFORGE_URL\":\"$BRANCH_URL\",\"NEXT_PUBLIC_INSFORGE_ANON_KEY\":\"$ANON\"}"
 ```
 
@@ -144,7 +147,7 @@ re-verification (step 6) instead of re-running the planner.
 # RESTART Claude Code so planner/generator/healer load as usable subagents.
 # Subagents load at session start — running init-agents mid-session leaves them
 # unavailable ("Agent type 'playwright-test-planner' not found"). The CLI can do
-# this for you at link time: `insforge link --with-test-agents`.
+# this for you at link time: `npx @insforge/cli link --with-test-agents`.
 npx playwright init-agents --loop=claude
 ```
 
@@ -173,9 +176,18 @@ user-scoped tables and flows the UI exercised:
 
   UI asserts a state the backend doesn't reflect -> FALSE PASS. Fail it.
 
-- **Cross-user isolation (double-sided).** With two seeded users and the data API
-  (`/api/database/records/<table>`, PostgREST-style) plus each user's session token:
-  - User B lists a user-scoped table -> only B's own rows appear.
+- **Cross-user isolation (double-sided).** First sign the two seeded users in to get
+  their session tokens, then probe the data API (`/api/database/records/<table>`,
+  PostgREST-style) with each user's token:
+
+  ```bash
+  login() { curl -s -X POST "$BRANCH_URL/api/auth/sessions" -H "Content-Type: application/json" \
+    -d "{\"email\":\"$1\",\"password\":\"Test1234!pass\"}" \
+    | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{const j=JSON.parse(d);console.log(j.accessToken||(j.data&&j.data.accessToken)||'')})"; }
+  A_TOKEN=$(login verify-a@example.com); B_TOKEN=$(login verify-b@example.com)
+  ```
+
+  - User B lists a user-scoped table (Bearer `$B_TOKEN`) -> only B's own rows appear.
   - User B filters for user A's rows -> must be empty.
   - **Positive control:** user A reads A's own rows -> must be non-empty. This
     rules out "the API returns empty for everyone" — a fake isolation that would
@@ -195,7 +207,7 @@ When a UI case or a backend-truth check reveals an actual defect:
 1. **Locate it in the source** (the change you're verifying is the prime suspect).
 2. **Fix the app code** (you, the main session — not a subagent).
 3. **Redeploy the branch frontend** so the fix is live:
-   `insforge deployments deploy . --env "{…branch URL + anon key…}"` (still in
+   `npx @insforge/cli deployments deploy . --env "{…branch URL + anon key…}"` (still in
    branch context).
 4. **Re-verify by re-running the existing spec**, not the planner:
    `npx playwright test tests/<the-failing-spec>.spec.ts` — plus the backend-truth
@@ -208,8 +220,8 @@ Report the bug, the fix, and the passing re-verification.
 ### 7. Tear down
 
 ```bash
-insforge branch switch --parent    # leave branch context
-insforge preview teardown <name>   # deletes the branch — the branch-scoped deployment goes with it
+npx @insforge/cli branch switch --parent    # leave branch context
+npx @insforge/cli preview teardown <name>   # deletes the branch — the branch-scoped deployment goes with it
 ```
 
 ## Known gaps (private preview)
