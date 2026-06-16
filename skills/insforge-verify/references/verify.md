@@ -30,13 +30,18 @@ ADMIN_KEY=$(node -e "console.log(require('./.insforge/project.json').api_key)")
 # otherwise you verify the old backend (a loosened RLS policy would still look correct).
 npx @insforge/cli db migrations up --all
 
-# Seed a verified account (repeat for verify-b@example.com to test cross-user isolation):
-curl -s -X POST "$BRANCH_URL/api/auth/users" -H "Authorization: Bearer $ADMIN_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"email":"verify-a@example.com","password":"Test1234!pass","name":"verify a"}' >/dev/null
-curl -s -X POST "$BRANCH_URL/api/database/advance/rawsql" -H "Authorization: Bearer $ADMIN_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"query":"UPDATE auth.users SET email_verified=true WHERE email='"'"'verify-a@example.com'"'"'","params":[]}'
+# Seed TWO verified accounts as runnable code — A for the flow, B for the cross-user
+# isolation probe in step 5. Both must exist: step 5 logs in B, and an unseeded B yields
+# an empty token whose probes look like passing isolation (a silent false pass on the
+# highest-value check).
+for EMAIL in verify-a@example.com verify-b@example.com; do
+  curl -s -X POST "$BRANCH_URL/api/auth/users" -H "Authorization: Bearer $ADMIN_KEY" \
+    -H "Content-Type: application/json" \
+    -d "{\"email\":\"$EMAIL\",\"password\":\"Test1234!pass\",\"name\":\"$EMAIL\"}" >/dev/null
+  curl -s -X POST "$BRANCH_URL/api/database/advance/rawsql" -H "Authorization: Bearer $ADMIN_KEY" \
+    -H "Content-Type: application/json" \
+    -d "{\"query\":\"UPDATE auth.users SET email_verified=true WHERE email='$EMAIL'\",\"params\":[]}"
+done
 ```
 
 Hand the credentials to the test agent so it can sign in.
