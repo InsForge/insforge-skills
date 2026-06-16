@@ -140,9 +140,9 @@ a UI case or a backend-truth check reveals an actual defect:
 
 1. **Locate it in the source** (the change you're verifying is the prime suspect).
 2. **Fix the app code** (you, the main session — not a subagent).
-3. **Redeploy the branch frontend** so the fix is live:
-   `npx @insforge/cli deployments deploy . --env "{…branch URL + anon key…}"` (still in
-   branch context).
+3. **Redeploy the branch frontend** so the fix is live (still in branch context;
+   `$BRANCH_URL` / `$ANON` are from step 3 — re-derive them if you're in a fresh shell):
+   `npx @insforge/cli deployments deploy . --env "{\"NEXT_PUBLIC_INSFORGE_URL\":\"$BRANCH_URL\",\"NEXT_PUBLIC_INSFORGE_ANON_KEY\":\"$ANON\"}"`
 4. **Re-verify by re-running the existing spec**, not the planner:
    `npx playwright test tests/<the-failing-spec>.spec.ts` — plus the backend-truth read
    for that flow. Seconds, not minutes.
