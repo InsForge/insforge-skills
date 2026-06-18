@@ -2,12 +2,13 @@
 name: insforge-verify
 description: >-
   Use after making backend or full-stack changes to an InsForge project, when
-  you want to verify the change end-to-end before merging the branch to prod.
-  Spins up an isolated full-stack preview (a branch backend + the frontend
-  pointed at it) and an authenticated test session, then hands off to your own
-  browser test agent (Playwright Test Agents) to explore and verify the running
-  app, cross-checks against backend ground truth, and tears the preview down
-  afterward. Built for "full stack branch per git branch, easy to verify."
+  you want to verify the change before shipping it. Seeds authenticated test
+  users on your dev backend, drives the changed UI flow of your running app in a
+  real browser, and — the key part — cross-checks the result against backend
+  ground truth: did the data actually persist, and does cross-user RLS isolation
+  still hold? That backend/RLS check catches "UI looks right but the backend is
+  wrong" false passes a pure UI/e2e test can't. Cleans up the seeded test data
+  afterward.
 license: MIT
 metadata:
   author: insforge
@@ -18,40 +19,48 @@ metadata:
 
 # InsForge Verify
 
-> 🔒 **Private preview.** Experimental, not yet generally available. Depends on
-> `npx @insforge/cli preview` commands that are still rolling out (older CLI versions
-> won't have them) and uses a manual workaround for the auth session — see Known
-> gaps. Behavior and commands may change. Ask the InsForge team for early access.
+> 🔒 **Private preview.** Experimental, not yet generally available. Runs against the
+> dev backend your project is linked to — it seeds test users and writes/reads test rows
+> there, so **never run against prod**. Drives the browser via the Playwright MCP
+> (`@playwright/mcp`, configured by default at `npx @insforge/cli link` / `create`) and uses
+> manual curl workarounds for seeding — see Known gaps. Behavior and commands may change.
+> Ask the InsForge team for early access.
 
-Verify an InsForge full-stack change the way a real user would: in an **isolated
-preview** (a branch backend + the frontend pointed at it), driven by a **real
-browser**, then **cross-checked against backend ground truth**. That backend
-cross-check (data persisted correctly? cross-user RLS still holds?) is the part a
-pure UI/e2e test structurally can't do — it's what catches a "UI looks right but the
-backend is wrong" false pass.
+Verify an InsForge full-stack change the way a real user would: drive the changed UI flow
+of your **running app** in a **real browser**, then **cross-check the result against
+backend ground truth** — did the data actually persist, and does cross-user RLS isolation
+still hold? That backend/RLS check is the part a pure UI/e2e test structurally can't do —
+it catches a "UI looks right but the backend is wrong" false pass, and it's where
+InsForge's value is.
 
-This skill does NOT write or run the tests. It sets up what your browser test agent
-**cannot get itself**, then gets out of the way:
+You drive the UI yourself (via the browser MCP — see the runbook); this skill gives you
+what you **can't get yourself**:
 
-| Your test agent does | This skill provides |
+| You do | The skill provides |
 | --- | --- |
-| Explore the app, write the test plan, drive the browser, judge results | An isolated full-stack environment (`preview create`) |
-| Decide what to test and how | The frontend wired to that environment |
-| | An authenticated test session (the login wall blocks autonomous testing) |
-| | Backend ground truth to check against, and teardown |
+| Drive the changed UI flow + assert | Seeded authenticated users (the login wall blocks autonomous testing) |
+| Decide what to test (scoped to the change) | Backend ground truth + cross-user RLS isolation to check against |
+| | Cleanup of the seeded test data afterward |
 
-> Don't prescribe a test plan here — let the test agent's planner discover the flows
-> from the live app. This skill only stands up a verifiable environment.
+> Scope to the change — drive the flow you changed and its edge cases, don't explore the
+> whole app. The runbook is in [references/verify.md](references/verify.md).
 
 ## When to use
 
 After changing schema / RLS / functions / frontend, to confirm the app actually works
-before merging the branch to prod.
+before shipping the change.
+
+**Run it at a checkpoint, don't wait to be asked.** When you've made a backend or
+full-stack change and are about to **declare the task done** or **deploy**, verify first —
+that's the moment the change is complete enough to check. A change that only touches the
+backend can still break the frontend (a dropped column, a tightened RLS policy that
+silently empties a user's data), so don't skip verify just because "I only changed the
+backend."
 
 ## Scope — test only what changed
 
-Do NOT explore and test the whole app. A full-app exploration takes the planner tens
-of minutes; a focused run takes a few. Before testing, narrow the scope:
+Do NOT explore and test the whole app — verify confirms a *known* change, so driving the
+whole app is slow and pointless. Before testing, narrow the scope:
 
 1. **Find what changed.** Prefer `git diff --name-only` / `git diff`; if the repo
    isn't git or the diff is unclear, ask the user what they changed.
@@ -62,27 +71,68 @@ of minutes; a focused run takes a few. Before testing, narrow the scope:
 3. **Stay safe.** If you can't tell what a change affects, widen by one adjacent flow
    rather than miss it; only fall back to full-app testing as a last resort.
 
-Pass this narrow scope into the planner task in step 4 of the runbook.
+Drive only this scoped flow (and its edge cases) in step 3 of the runbook.
 
 ## How to run
 
 Follow the full runbook: **[references/verify.md](references/verify.md)**. The flow:
 
-1. **Stand up an isolated preview** — `preview create`, switch to the branch, apply
-   migrations, seed verified users, deploy the frontend to the branch's https slug.
-2. **Drive the UI** with Playwright Test Agents, scoped to the change.
-3. **Cross-check backend truth** — read the branch DB directly + run the cross-user
-   RLS isolation probe. A green UI over a wrong backend is a false pass.
-4. **Fix → re-verify** if anything fails.
-5. **Tear down** — `preview teardown` removes the branch and its deployment.
+1. **Prepare the backend** — against the dev backend your project is linked to (**never
+   prod**): apply your change, seed two verified users, get their tokens + the anon key.
+2. **Point the browser at your running app** — your local dev server or existing deploy,
+   pointed at that same backend.
+3. **Drive the changed UI flow yourself** (via the browser MCP), scoped to the change and
+   its edge cases — no spec generation, no `.spec.ts` files.
+4. **Cross-check backend truth** — read the DB directly + run the cross-user RLS isolation
+   probe. A green UI over a wrong backend is a false pass.
+5. **Fix → re-verify** if anything fails.
+6. **Clean up** — delete the seeded users and any test rows the run created.
+
+## What to assert — target what agents miss
+
+A coding agent's blind spots are exactly where verify earns its keep, so point your
+assertions there (not at generic UI):
+
+- **Did it persist?** A write can return 200 + optimistic UI while the DB never changed.
+- **Cross-user isolation.** Agents code single-user; another user must not see/modify A's
+  rows (and A *must* see A's own — positive control).
+- **Did the error path surface?** Agents swallow errors (happy-path only). Drive an error
+  case and confirm it's actually rejected/shown, not silently a 200.
+- **Boundaries / the "second item".** Empty, max/limit, the inverse action — agents pass
+  the one example and miss the rest.
 
 ## References
 
 - **[references/verify.md](references/verify.md)** — the full step-by-step runbook.
 
+## Common Mistakes
+
+- ❌ **Running verify against your prod project.** It seeds users and writes test rows. ✅
+  Run against a dev/staging project, and clean up afterward (step 6).
+- ❌ **Trusting a green UI on its own.** A write can return 200 + optimistic UI while the
+  DB never changed. ✅ Every UI assertion must be confirmed against backend ground truth.
+- ❌ **Single-user isolation "test".** Reading your own rows with your own token passes
+  even under a wide-open `using(true)` policy. ✅ Bring in user B — B must not see A's
+  rows, and A *must* see A's own (positive control).
+- ❌ **Probing with an empty token/anon.** A failed/missing login yields an empty token,
+  turning every probe into an anonymous request that "passes" isolation silently. ✅ Assert
+  both tokens (and the anon key) are non-empty before probing; seed BOTH users as runnable
+  code, not a prose hint.
+- ❌ **Verifying the old backend.** If your change had a migration you didn't apply to this
+  backend, you test the pre-change schema. ✅ `db migrations up --all` before driving.
+- ❌ **Hand-rolling a fragile probe script** (e.g. an unbound var under `set -u` silently
+  fails the read). ✅ Use `npx @insforge/cli verify rls/truth` — it runs the deterministic probe and
+  records the finding; you supply only the table/owner.
+- ❌ **`must be owner` when applying an RLS migration** — the table is `postgres`-owned
+  (common on template-scaffolded apps). ✅ `ALTER TABLE … OWNER TO project_admin` once
+  (what backend migration 046 does), then `db migrations up` works.
+
 ## Known gaps (private preview)
 
-1. `preview create --seed-user` not built — user seeding is a manual workaround.
-2. `preview create` doesn't output the branch admin/anon key — hence `branch switch`.
-3. Deploy MUST happen in branch context. A deploy in parent context targets the prod
-   site and isn't cleaned up by teardown — don't switch back to parent before deploying.
+1. **No isolation** — verify runs against the real dev backend your project is linked to.
+   Seeded users and test rows land there; clean them up manually (step 6). Don't run
+   against prod.
+2. **Manual seeding** — user seeding is a curl workaround; the backend-truth / RLS probes
+   use the `npx @insforge/cli verify rls/truth` helpers.
+3. **You point the browser at your running app yourself** — verify doesn't deploy or start
+   it; make sure it's running and aimed at the same backend you seeded.
