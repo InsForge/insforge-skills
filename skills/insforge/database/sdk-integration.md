@@ -57,6 +57,12 @@ const { data } = await insforge.database
   .select()
 ```
 
+When a table has RLS enabled, `.insert(...).select()` behaves like
+`INSERT ... RETURNING`: the new row must pass both the `INSERT` policy and the
+`SELECT` policy. If `WITH CHECK` looks correct but the call still fails with
+`new row violates row-level security policy`, make sure the returned row is
+also visible to the caller.
+
 ### Update
 
 ```javascript
@@ -147,7 +153,7 @@ When creating tables via `insforge db query` (CLI), use these built-in reference
 -- Create table with user ownership
 CREATE TABLE posts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL DEFAULT auth.uid() REFERENCES auth.users(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   content TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -158,10 +164,23 @@ CREATE TABLE posts (
 ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
 
 -- Policies (see the insforge-cli database access-control reference for advanced patterns)
-CREATE POLICY "users_own_posts" ON posts
-  FOR ALL TO authenticated
+CREATE POLICY "users_can_insert_own_posts" ON posts
+  FOR INSERT TO authenticated
+  WITH CHECK (user_id = auth.uid());
+
+-- Needed when app code uses .insert(...).select()
+CREATE POLICY "users_can_read_own_posts" ON posts
+  FOR SELECT TO authenticated
+  USING (user_id = auth.uid());
+
+CREATE POLICY "users_can_update_own_posts" ON posts
+  FOR UPDATE TO authenticated
   USING (user_id = auth.uid())
   WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY "users_can_delete_own_posts" ON posts
+  FOR DELETE TO authenticated
+  USING (user_id = auth.uid());
 
 -- Allow authenticated SDK callers to reach the table; RLS still filters rows
 GRANT USAGE ON SCHEMA public TO authenticated;
