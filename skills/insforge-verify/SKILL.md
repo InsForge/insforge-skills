@@ -119,13 +119,13 @@ assertions there (not at generic UI):
   both tokens (and the anon key) are non-empty before probing; seed BOTH users as runnable
   code, not a prose hint.
 - ❌ **Verifying the old backend.** If your change had a migration you didn't apply to this
-  backend, you test the pre-change schema. ✅ `db migrations up --all` before driving.
+  backend, you test the pre-change schema. ✅ `npx @insforge/cli db migrations up --all` before driving.
 - ❌ **Hand-rolling a fragile probe script** (e.g. an unbound var under `set -u` silently
   fails the read). ✅ Use `npx @insforge/cli verify rls/truth` — it runs the deterministic probe and
   records the finding; you supply only the table/owner.
 - ❌ **`must be owner` when applying an RLS migration** — the table is `postgres`-owned
   (common on template-scaffolded apps). ✅ `ALTER TABLE … OWNER TO project_admin` once
-  (what backend migration 046 does), then `db migrations up` works.
+  (what backend migration 046 does), then `npx @insforge/cli db migrations up` works.
 
 ## Known gaps (private preview)
 
