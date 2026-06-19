@@ -75,6 +75,10 @@ Drive only this scoped flow (and its edge cases) in step 3 of the runbook.
 
 ## How to run
 
+**Default: run this as a background detection subagent** (see *Execution mode* below) so the
+slow UI-driving doesn't block your main session — only drive it inline yourself when the user
+asks to watch it run. Either way the underlying flow is the same.
+
 Follow the full runbook: **[references/verify.md](references/verify.md)**. The flow:
 
 1. **Prepare the backend** — against the dev backend your project is linked to (**never
@@ -87,6 +91,55 @@ Follow the full runbook: **[references/verify.md](references/verify.md)**. The f
    probe. A green UI over a wrong backend is a false pass.
 5. **Fix → re-verify** if anything fails.
 6. **Clean up** — delete the seeded users and any test rows the run created.
+
+## Execution mode — default to a background subagent
+
+**This is the default way to run verify.** The UI-driving is slow (minutes), so unless the
+user asks to watch it run, you **must** hand that off to a background detection subagent
+rather than driving it inline and blocking the main session. Do the foreground prep
+yourself, then **dispatch and stop — do not keep driving the flow inline.** Finishing it
+yourself defeats the point: once prep is done, dispatching *is* the next action, not more
+driving. Run inline in the foreground **only** when the user explicitly asks to watch it /
+run it in the main session.
+
+Why this is the default: a passing verify never interrupts you; a failing one pulls you back
+**only** when there's a real finding to fix — which is exactly when you want the interrupt.
+
+The split is fixed:
+- **You, foreground (prep — can't move to the subagent):** scope the change (*Scope*
+  above), pre-authorize the wildcards (below), seed the users + apply any migration to the
+  dev backend (step 1), and clean up afterward (step 6). These need your context or a
+  permission prompt, so they stay with you.
+- **Subagent, background (the slow part you hand off):** drive the changed UI flow and
+  cross-check backend truth/RLS (steps 2–4), then return a **structured findings report**.
+  Pass it the scope explicitly — it starts fresh, so hand over the `git diff` / changed
+  files + which flow to drive. Have it run the probes with `--json` (`npx @insforge/cli
+  verify rls/truth --json`) and return those verdicts verbatim — e.g. `false_pass on
+  cart_items: UI=3, DB=1` plus evidence. The finding is still recorded by the CLI regardless
+  of who invokes it, so telemetry is unaffected.
+- **You (fix).** The subagent does **not** edit code — it reports. You own the change
+  context and the files, so you apply the fix, then re-dispatch the subagent to re-verify.
+  This avoids two subagents editing the same files concurrently and avoids handing your
+  change rationale to a fresh agent.
+- **Give the subagent its own browser.** The Playwright MCP is stateful — a verify
+  subagent must drive its **own headless browser instance**, not share the session you're
+  using, or the two will fight over browser state.
+- **Pre-authorize in the foreground first — a background subagent can't prompt.** Running
+  unattended, the subagent has no way to surface a permission request, so any command not
+  already allowed is silently auto-denied (you'll see it drive the browser but the `verify`
+  probes fail). Before dispatching, make sure both of these are allowed **as wildcards** in
+  your agent's permission allowlist — approving one specific command tends to record a
+  one-off exact string (with that run's table/id baked in) that the next run's different
+  args won't match, so it must be a pattern:
+  - `npx @insforge/cli verify *` — the probes
+  - the browser MCP tools (e.g. `mcp__playwright__*`)
+
+  Authorize these once in the foreground, where permission prompts work; the wildcard makes
+  it a one-time step. Then dispatch — the subagent inherits the same allowlist and runs
+  silently, leaving your main session free.
+
+This makes verify *asynchronous*, not faster — the subagent still spends the same minutes
+driving the UI; you just aren't blocked while it does.
 
 ## What to assert — target what agents miss
 
