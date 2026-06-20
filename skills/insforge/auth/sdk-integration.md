@@ -385,7 +385,7 @@ Only render the reset form when `insforge_status=ready` and `token` is present.
 
 3. **Render OAuth from configured providers**
    - Check `oAuthProviders` array in config
-   - The array contains enabled provider names (e.g., `["google", "github"]`)
+   - The array contains enabled provider names (e.g., `["google", "github", "microsoft"]`)
 
 4. **Handle the sign-up response correctly**
    ```javascript
@@ -448,7 +448,7 @@ if (data?.requireEmailVerification) {
 
 ```javascript
 // oAuthProviders is already an array of enabled provider names
-// e.g., ["google", "github"]
+// e.g., ["google", "github", "microsoft"]
 const enabledProviders = authConfig.oAuthProviders
 
 // Show OAuth buttons from enabled providers:
@@ -457,6 +457,9 @@ if (enabledProviders.includes('google')) {
 }
 if (enabledProviders.includes('github')) {
   // Show GitHub login button
+}
+if (enabledProviders.includes('microsoft')){
+  // Show Microsoft login button
 }
 ```
 
