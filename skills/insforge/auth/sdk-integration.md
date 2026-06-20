@@ -458,7 +458,7 @@ if (enabledProviders.includes('google')) {
 if (enabledProviders.includes('github')) {
   // Show GitHub login button
 }
-if (enabledProviders.includes('microsoft')){
+if (enabledProviders.includes('microsoft')) {
   // Show Microsoft login button
 }
 ```
