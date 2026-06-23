@@ -5,7 +5,7 @@ description: >-
 license: MIT
 metadata:
   author: insforge
-  version: "1.6.0"
+  version: "1.7.0"
   organization: InsForge
   date: June 2026
 ---
@@ -61,6 +61,10 @@ If not authenticated, run `npx @insforge/cli login`. If no project is linked, us
 | -------------------------------------------------------------------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------- |
 | Login, logout, current user                                                                        | `login`, `logout`, `whoami`                     | `references/login.md`                                                                       |
 | Create/link/list/current project                                                                   | `create`, `link`, `list`, `current`, `metadata` | `references/create.md`                                                                      |
+| Project lifecycle: status, rename, delete, pause-restore, version update, instance resize           | `projects`                                      | this file                                                                                   |
+| Subscription/plan, credits, organization usage                                                      | `billing`, `usage`                              | this file                                                                                   |
+| Organizations and members (create, update, invite, roles)                                          | `orgs`                                          | this file                                                                                   |
+| Project backups (create, list, restore)                                                            | `backups`                                       | this file                                                                                   |
 | Schema, SQL, RLS, triggers, indexes, imports, exports                                              | `db`                                            | `references/database/*`                                                                     |
 | Auth redirects, password policy, SMTP, storage size, realtime/schedule retention, subdomain config | `config`                                        | `references/config.md`                                                                      |
 | Storage buckets and objects                                                                        | `storage`                                       | this file                                                                                   |
@@ -134,11 +138,53 @@ Project commands:
 - `npx @insforge/cli current` - show current linked project.
 - `npx @insforge/cli metadata --json` - inspect backend metadata when discovery is needed.
 
+Project lifecycle (operates on the linked project unless `--project <id>` is given):
+
+- `npx @insforge/cli projects get [--project <id>]` - show a project's current status, in-flight `operation_status`, region, instance type, and version. Use this to poll after an async operation (restore, version update, instance resize) until `operation_status` clears.
+- `npx @insforge/cli projects update [--name <name>] [--domain <domain>] [--storage-size <gib>] [--project <id>]` - rename or change project settings.
+- `npx @insforge/cli projects restore [--project <id>]` - bring a paused project back online. Only paused projects can be restored.
+- `npx @insforge/cli projects update-version [--wait] [--project <id>]` - update the backend to the latest InsForge version (resolved automatically; no-op if already current). Causes a brief restart. Add `--wait` to block until it finishes instead of returning while queued.
+- `npx @insforge/cli projects upgrade-instance <type> [--project <id>]` - change the instance class. Valid: `nano`, `micro`, `small`, `medium`, `large`, `xl` (`xl` is the ceiling). Restarts the project and changes the bill.
+- `npx @insforge/cli projects delete --project <id>` - permanently delete a project and all of its resources. `--project` is required (it will not default to the linked project); pair with `-y` to skip confirmation. Irreversible.
+
 Configuration:
 
 - Use `npx @insforge/cli config export`, `config plan`, and `config apply` for supported `insforge.toml` knobs.
 - TOML is for config values only. SQL belongs in `db migrations`; function code belongs in `functions deploy`; frontend code belongs in `deployments deploy`; compute code/images belong in `compute deploy`.
 - If `config apply` returns `skipped[]`, report the skipped items and required backend upgrade. Do not retry with raw HTTP.
+
+## Organizations and Members
+
+Org-scoped commands resolve the organization in this order: `--org-id` flag, `INSFORGE_ORG_ID`, the linked project's org, the configured default org, then a prompt (or single-org auto-select). Pass `--org-id <id>` to act on a specific org.
+
+- `npx @insforge/cli orgs list` - list organizations you belong to.
+- `npx @insforge/cli orgs create <name> [--type personal|team|company]` - create an organization (default type `team`).
+- `npx @insforge/cli orgs update [--name <name>] [--type <type>] [--org-id <id>]` - rename or change an organization's type.
+- `npx @insforge/cli orgs members list [--org-id <id>]` - list members and pending invitations.
+- `npx @insforge/cli orgs members invite <email> [--role administrator|developer] [--org-id <id>]` - invite a member (default role `developer`).
+- `npx @insforge/cli orgs members role <memberId> <role> [--org-id <id>]` - change a member's role (`administrator` or `developer`).
+- `npx @insforge/cli orgs members remove <memberId> [--org-id <id>]` - remove a member. Confirm intent first.
+
+## Billing and Usage
+
+Read-only views of the organization's plan and consumption. Org resolution matches the Organizations section.
+
+- `npx @insforge/cli billing status [--org-id <id>]` - show the current subscription/plan and period.
+- `npx @insforge/cli billing credits [--org-id <id>]` - show the credit balance and recent credit transactions.
+- `npx @insforge/cli usage [--org-id <id>]` - show consumption for the current billing period (summary plus per-project breakdown: database, storage, egress, etc.).
+
+To change a plan or payment method, direct the user to the InsForge dashboard — the CLI does not perform checkout.
+
+## Backups
+
+Operates on the linked project unless `--project <id>` is given.
+
+- `npx @insforge/cli backups list [--project <id>]` - list backups.
+- `npx @insforge/cli backups latest [--project <id>]` - show the most recent backup.
+- `npx @insforge/cli backups create [--name <name>] [--wait] [--project <id>]` - create a backup. `--name` is 1–64 chars; `--wait` blocks until it finishes instead of returning while queued.
+- `npx @insforge/cli backups rename <backupId> <name> [--project <id>]` - rename a backup (pass `""` to clear the name).
+- `npx @insforge/cli backups delete <backupId> [--project <id>]` - delete a backup. Confirm intent first.
+- `npx @insforge/cli backups restore <backupId> [--project <id>]` - restore the project from a backup. This OVERWRITES the project's current database and storage; data written since that backup is lost. Confirm intent first.
 
 ## Storage
 
@@ -148,6 +194,9 @@ Configuration:
 - `npx @insforge/cli storage list-objects <bucket> [--prefix] [--search] [--limit] [--sort]` - inspect objects.
 - `npx @insforge/cli storage upload <file> --bucket <name> [--key <objectKey>]` - upload an object.
 - `npx @insforge/cli storage download <objectKey> --bucket <name> [--output <path>]` - download an object.
+- `npx @insforge/cli storage s3-keys list` - list S3-compatible access keys (secret values are never shown).
+- `npx @insforge/cli storage s3-keys create [--description <text>]` - create an S3 access key. The secret access key is shown ONCE on creation — capture it immediately.
+- `npx @insforge/cli storage s3-keys delete <id>` - delete an S3 access key. Tools using it stop working. Confirm intent first.
 
 For storage access-control behavior implemented through Postgres policies, use the storage-specific product docs or feature guidance. Do not treat storage internals as generic public-schema database tables unless the referenced storage docs explicitly say to.
 
@@ -211,6 +260,7 @@ Backend compute services:
 - `npx @insforge/cli secrets add <key> <value> [--reserved] [--expires <ISO date>]` - create a secret.
 - `npx @insforge/cli secrets update <key> [--value] [--active] [--reserved] [--expires]` - update a secret.
 - `npx @insforge/cli secrets delete <key>` - soft-delete a secret. Confirm intent first.
+- `npx @insforge/cli secrets rotate <api-key|anon-key> [--grace-hours <n>]` - rotate the project API key or anon key. The new key is printed ONCE — capture it. The old key keeps working during the grace period (server default if `--grace-hours` is omitted); update all consumers before it expires.
 
 ## Schedules
 
