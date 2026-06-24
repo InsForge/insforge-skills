@@ -5,7 +5,7 @@ description: >-
 license: MIT
 metadata:
   author: insforge
-  version: "1.7.0"
+  version: "1.8.0"
   organization: InsForge
   date: June 2026
 ---
@@ -61,8 +61,8 @@ If not authenticated, run `npx @insforge/cli login`. If no project is linked, us
 | -------------------------------------------------------------------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------- |
 | Login, logout, current user                                                                        | `login`, `logout`, `whoami`                     | `references/login.md`                                                                       |
 | Create/link/list/current project                                                                   | `create`, `link`, `list`, `current`, `metadata` | `references/create.md`                                                                      |
-| Project lifecycle: status, rename, delete, restore, version update, instance resize                 | `projects`                                      | this file                                                                                   |
-| Subscription/plan, credits, organization usage                                                      | `billing`, `usage`                              | this file                                                                                   |
+| Project lifecycle: status, rename, delete, restore, version update, instance resize, transfer       | `projects`                                      | this file                                                                                   |
+| Subscription/plan, credits, usage, payment history, billing cycles, plan upgrade, billing portal    | `billing`, `usage`                              | this file                                                                                   |
 | Organizations and members (create, update, invite, roles)                                          | `orgs`                                          | this file                                                                                   |
 | Project backups (list, latest, create, rename, delete, restore)                                    | `backups`                                       | this file                                                                                   |
 | Schema, SQL, RLS, triggers, indexes, imports, exports                                              | `db`                                            | `references/database/*`                                                                     |
@@ -146,6 +146,7 @@ Project lifecycle (operates on the linked project unless `--project <id>` is giv
 - `npx @insforge/cli projects update-version [--wait] [--project <id>]` - update the backend to the latest InsForge version (resolved automatically; no-op if already current). Causes a brief restart. Add `--wait` to block until it finishes instead of returning while queued.
 - `npx @insforge/cli projects upgrade-instance <type> [--project <id>]` - change the instance class. Valid: `nano`, `micro`, `small`, `medium`, `large`, `xl` (`xl` is the ceiling). Restarts the project and changes the bill.
 - `npx @insforge/cli projects delete --project <id>` - permanently delete a project and all of its resources. `--project` is required (it will not default to the linked project). Irreversible — confirm the exact project id with the user first; this is a guarded, human-in-the-loop operation, so do not auto-bypass the confirmation.
+- `npx @insforge/cli projects transfer <targetOrgId> --project <id>` - move a project to another organization (billing and access move with it). `--project` is required (it will not default to the linked project). Guarded, human-in-the-loop — confirm the source project and target org first.
 
 Configuration:
 
@@ -167,13 +168,15 @@ Org-scoped commands resolve the organization in this order: `--org-id` flag, `IN
 
 ## Billing and Usage
 
-Read-only views of the organization's plan and consumption. Org resolution matches the Organizations section.
+Inspect the organization's plan/consumption and manage its subscription. Org resolution matches the Organizations section.
 
 - `npx @insforge/cli billing status [--org-id <id>]` - show the current subscription/plan and period.
 - `npx @insforge/cli billing credits [--org-id <id>]` - show the credit balance and recent credit transactions.
+- `npx @insforge/cli billing history [--org-id <id>]` - list past payments / invoices.
+- `npx @insforge/cli billing cycles [--org-id <id>]` - show the current and previous billing-cycle windows.
 - `npx @insforge/cli usage [--org-id <id>]` - show consumption for the current billing period (summary plus per-project breakdown: database, storage, egress, etc.).
-
-To change a plan or payment method, direct the user to the InsForge dashboard — the CLI does not perform checkout.
+- `npx @insforge/cli billing upgrade <plan> [--org-id <id>]` - start a Stripe checkout to change the plan (e.g. `starter`, `pro`, `team`, `enterprise`). Opens the hosted checkout URL in the browser and also prints it; with `--json` the URL is printed only (headless/CI). No charge happens until the user completes checkout, and the backend validates the plan and admin permission.
+- `npx @insforge/cli billing manage [--org-id <id>]` - open the Stripe customer portal to manage the subscription, payment method, or cancellation (prints/opens a portal URL).
 
 ## Backups
 
