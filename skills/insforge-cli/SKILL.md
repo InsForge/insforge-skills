@@ -175,8 +175,8 @@ Inspect the organization's plan/consumption and manage its subscription. Org res
 - `npx @insforge/cli billing history [--org-id <id>]` - list past payments / invoices.
 - `npx @insforge/cli billing cycles [--org-id <id>]` - show the current and previous billing-cycle windows.
 - `npx @insforge/cli usage [--org-id <id>]` - show consumption for the current billing period (summary plus per-project breakdown: database, storage, egress, etc.).
-- `npx @insforge/cli billing upgrade <plan> [--org-id <id>]` - start a Stripe checkout to change the plan (e.g. `starter`, `pro`, `team`, `enterprise`). Opens the hosted checkout URL in the browser and also prints it; with `--json` the URL is printed only (headless/CI). No charge happens until the user completes checkout, and the backend validates the plan and admin permission.
-- `npx @insforge/cli billing manage [--org-id <id>]` - open the Stripe customer portal to manage the subscription, payment method, or cancellation (prints/opens a portal URL).
+- `npx @insforge/cli billing upgrade <plan> [--org-id <id>]` - start a Stripe checkout to change the plan (`free | starter | pro | team | enterprise`). Opens the hosted checkout URL in the browser and also prints it. With `--json` it prints a JSON object (`{ checkoutUrl, sessionId }`) and does not open a browser — use this in headless/CI. No charge happens until the user completes checkout; the backend validates the plan and admin permission.
+- `npx @insforge/cli billing manage [--org-id <id>]` - open the Stripe customer portal to manage the subscription, payment method, or cancellation. Opens the portal URL in the browser and also prints it. With `--json` it prints a JSON object (`{ portalUrl }`) and does not open a browser — use this in headless/CI.
 
 ## Backups
 
