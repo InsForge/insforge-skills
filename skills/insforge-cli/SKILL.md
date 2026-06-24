@@ -61,10 +61,10 @@ If not authenticated, run `npx @insforge/cli login`. If no project is linked, us
 | -------------------------------------------------------------------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------- |
 | Login, logout, current user                                                                        | `login`, `logout`, `whoami`                     | `references/login.md`                                                                       |
 | Create/link/list/current project                                                                   | `create`, `link`, `list`, `current`, `metadata` | `references/create.md`                                                                      |
-| Project lifecycle: status, rename, delete, pause-restore, version update, instance resize           | `projects`                                      | this file                                                                                   |
+| Project lifecycle: status, rename, delete, restore, version update, instance resize                 | `projects`                                      | this file                                                                                   |
 | Subscription/plan, credits, organization usage                                                      | `billing`, `usage`                              | this file                                                                                   |
 | Organizations and members (create, update, invite, roles)                                          | `orgs`                                          | this file                                                                                   |
-| Project backups (create, list, restore)                                                            | `backups`                                       | this file                                                                                   |
+| Project backups (list, latest, create, rename, delete, restore)                                    | `backups`                                       | this file                                                                                   |
 | Schema, SQL, RLS, triggers, indexes, imports, exports                                              | `db`                                            | `references/database/*`                                                                     |
 | Auth redirects, password policy, SMTP, storage size, realtime/schedule retention, subdomain config | `config`                                        | `references/config.md`                                                                      |
 | Storage buckets and objects                                                                        | `storage`                                       | this file                                                                                   |
@@ -145,7 +145,7 @@ Project lifecycle (operates on the linked project unless `--project <id>` is giv
 - `npx @insforge/cli projects restore [--project <id>]` - bring a paused project back online. Only paused projects can be restored.
 - `npx @insforge/cli projects update-version [--wait] [--project <id>]` - update the backend to the latest InsForge version (resolved automatically; no-op if already current). Causes a brief restart. Add `--wait` to block until it finishes instead of returning while queued.
 - `npx @insforge/cli projects upgrade-instance <type> [--project <id>]` - change the instance class. Valid: `nano`, `micro`, `small`, `medium`, `large`, `xl` (`xl` is the ceiling). Restarts the project and changes the bill.
-- `npx @insforge/cli projects delete --project <id>` - permanently delete a project and all of its resources. `--project` is required (it will not default to the linked project); pair with `-y` to skip confirmation. Irreversible.
+- `npx @insforge/cli projects delete --project <id>` - permanently delete a project and all of its resources. `--project` is required (it will not default to the linked project). Irreversible — confirm the exact project id with the user first; this is a guarded, human-in-the-loop operation, so do not auto-bypass the confirmation.
 
 Configuration:
 
@@ -181,7 +181,7 @@ Operates on the linked project unless `--project <id>` is given.
 
 - `npx @insforge/cli backups list [--project <id>]` - list backups.
 - `npx @insforge/cli backups latest [--project <id>]` - show the most recent backup.
-- `npx @insforge/cli backups create [--name <name>] [--wait] [--project <id>]` - create a backup. `--name` is 1–64 chars; `--wait` blocks until it finishes instead of returning while queued.
+- `npx @insforge/cli backups create [--name <name>] [--wait] [--project <id>]` - create a backup. `--name` is optional; when provided it must be 1–64 chars. `--wait` blocks until it finishes instead of returning while queued.
 - `npx @insforge/cli backups rename <backupId> <name> [--project <id>]` - rename a backup (pass `""` to clear the name).
 - `npx @insforge/cli backups delete <backupId> [--project <id>]` - delete a backup. Confirm intent first.
 - `npx @insforge/cli backups restore <backupId> [--project <id>]` - restore the project from a backup. This OVERWRITES the project's current database and storage; data written since that backup is lost. Confirm intent first.
