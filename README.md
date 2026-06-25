@@ -4,6 +4,17 @@ Agent Skills to help developers using AI agents build applications with [InsForg
 
 ## Installation
 
+### Codex plugin marketplace
+
+Add this repository as a Codex plugin marketplace, then install the InsForge plugin:
+
+```bash
+codex plugin marketplace add InsForge/insforge-skills
+codex plugin add insforge@insforge
+```
+
+After installing, start a new Codex thread and ask Codex to use InsForge or one of the bundled skills.
+
 ### Using the skills registry
 
 ```bash

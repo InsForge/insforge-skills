@@ -1,0 +1,52 @@
+{
+  "name": "insforge",
+  "version": "1.2.0",
+  "description": "InsForge skills for building AI-native apps with Postgres, auth, storage, compute, hosting, AI gateway, realtime, payments, integrations, and diagnostics.",
+  "author": {
+    "name": "InsForge",
+    "url": "https://insforge.dev"
+  },
+  "homepage": "https://insforge.dev",
+  "repository": "https://github.com/InsForge/insforge-skills",
+  "license": "MIT",
+  "keywords": [
+    "insforge",
+    "ai-native",
+    "coding-agents",
+    "backend-as-a-service",
+    "baas",
+    "postgres",
+    "auth",
+    "storage",
+    "compute",
+    "hosting",
+    "ai-gateway",
+    "edge-functions",
+    "stripe",
+    "razorpay",
+    "rls"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "InsForge",
+    "shortDescription": "Build AI-native apps on InsForge.",
+    "longDescription": "Use InsForge skills to build full-stack applications with InsForge Backend-as-a-Service. The plugin covers app integration with @insforge/sdk, CLI infrastructure workflows, diagnostics, and third-party auth or payment integrations across database, auth, storage, functions, AI, realtime, email, payments, deployments, and RLS.",
+    "developerName": "InsForge",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "websiteURL": "https://insforge.dev",
+    "privacyPolicyURL": "https://insforge.dev/privacy",
+    "termsOfServiceURL": "https://insforge.dev/terms",
+    "brandColor": "#17B26A",
+    "composerIcon": "./assets/insforge-favicon.png",
+    "logo": "./assets/insforge-favicon.png",
+    "defaultPrompt": [
+      "Use InsForge to add authentication and database CRUD to this app.",
+      "Use InsForge CLI to create tables, RLS policies, and deploy functions.",
+      "Use InsForge Debug to diagnose this backend error."
+    ]
+  }
+}
