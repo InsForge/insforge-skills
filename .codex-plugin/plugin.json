@@ -6,9 +6,9 @@
     "name": "InsForge",
     "url": "https://insforge.dev"
   },
-  "homepage": "https://insforge.dev",
+  "homepage": "https://docs.insforge.dev",
   "repository": "https://github.com/InsForge/insforge-skills",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "keywords": [
     "insforge",
     "ai-native",
@@ -30,7 +30,7 @@
   "interface": {
     "displayName": "InsForge",
     "shortDescription": "Build AI-native apps on InsForge.",
-    "longDescription": "Use InsForge skills to build full-stack applications with InsForge Backend-as-a-Service. The plugin covers app integration with @insforge/sdk, CLI infrastructure workflows, diagnostics, and third-party auth or payment integrations across database, auth, storage, functions, AI, realtime, email, payments, deployments, and RLS.",
+    "longDescription": "Use InsForge skills to build full-stack applications with InsForge Backend-as-a-Service. The plugin covers app integration with `@insforge/sdk`, CLI infrastructure workflows, diagnostics, and third-party auth or payment integrations across database, auth, storage, functions, AI, realtime, email, payments, deployments, and RLS.",
     "developerName": "InsForge",
     "category": "Developer Tools",
     "capabilities": [
