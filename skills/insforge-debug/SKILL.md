@@ -8,7 +8,7 @@ description: >-
   audits (security/RLS review, performance/index review, system health check,
   pre-launch readiness), or when the user has an error but doesn't know where
   to start.
-license: MIT
+license: Apache-2.0
 metadata:
   author: insforge
   version: "2.0.0"

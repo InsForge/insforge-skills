@@ -21,7 +21,7 @@ Every skill must have a `SKILL.md` file with:
 name: skill-name           # Required: lowercase, hyphens only, matches directory name
 description: |             # Required: clear description of what the skill does
   Description here...
-license: MIT               # Optional: license identifier
+license: Apache-2.0        # Optional: license identifier
 metadata:                  # Optional: additional metadata
   author: insforge
   version: "1.0.0"

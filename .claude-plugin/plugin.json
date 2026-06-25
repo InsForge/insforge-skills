@@ -6,9 +6,9 @@
     "name": "InsForge",
     "url": "https://insforge.dev"
   },
-  "homepage": "https://insforge.dev",
+  "homepage": "https://docs.insforge.dev",
   "repository": "https://github.com/InsForge/insforge-skills",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "keywords": [
     "insforge",
     "ai-native",

@@ -2,7 +2,7 @@
 name: insforge
 description: >-
   Use this skill when writing app code with InsForge or @insforge/sdk: database CRUD, auth, storage uploads/storage RLS, functions, OpenRouter AI, realtime, emails, Stripe or Razorpay payments, or pointing S3-compatible tooling (aws CLI, AWS SDKs, rclone, Terraform, boto3) at InsForge Storage. Trigger on requests like add auth, fetch data, upload files, make a bucket public, add checkout, sell subscriptions, or send email. For infrastructure, SQL migrations, CLI commands, or payment provider setup, use insforge-cli instead.
-license: MIT
+license: Apache-2.0
 metadata:
   author: insforge
   version: "1.4.0"

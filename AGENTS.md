@@ -35,7 +35,7 @@ agent-skills/
 │           └── ...
 ├── AGENTS.md               # This file
 ├── CONTRIBUTING.md         # Contribution guidelines
-├── LICENSE                 # MIT License
+├── LICENSE                 # Apache License 2.0
 └── README.md               # Repository documentation
 ```
 

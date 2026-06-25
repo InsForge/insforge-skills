@@ -4,7 +4,7 @@ description: >-
   Use when wiring an external auth provider (Clerk, Auth0, WorkOS, Kinde,
   Stytch, Better Auth) into InsForge for JWT-based RLS, or when adding the
   OKX x402 payment facilitator for onchain pay-per-use billing.
-license: MIT
+license: Apache-2.0
 metadata:
   author: insforge
   version: "1.2.0"

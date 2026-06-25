@@ -76,15 +76,17 @@ Diagnose errors, bugs, and performance issues in InsForge projects. This skill g
 <details>
 <summary><strong>insforge-integrations</strong> - Third-Party Auth Provider Integrations</summary>
 
-Integrate third-party authentication providers with InsForge for Row Level Security (RLS). Each integration covers JWT configuration, token signing, and InsForge client setup:
+Connect external providers to InsForge. The auth-provider guides cover JWT configuration, token signing, and InsForge client setup for Row Level Security (RLS); the OKX x402 guide is a separate onchain payment-facilitator flow:
 
 - **Auth0**: Post Login Action, Auth0 v4 SDK, custom claim embedding
 - **Clerk**: JWT Template config, client-side `getToken()` flow
 - **Kinde**: Server-side JWT signing (no custom signing key support)
 - **Stytch**: Magic link flow, server-side session validation
 - **WorkOS**: AuthKit middleware, server-side JWT signing
+- **Better Auth**: Framework-agnostic auth/bridge primitives, RLS policies, client hook
+- **OKX x402**: Onchain pay-per-use billing via the x402 payment facilitator (not an auth provider)
 
-**Key distinction**: Use these guides when connecting an external auth provider to InsForge. For InsForge's built-in authentication, use the **insforge** skill instead.
+**Key distinction**: Use these guides when connecting an external auth provider (or the x402 payment facilitator) to InsForge. For InsForge's built-in authentication, use the **insforge** skill instead.
 
 </details>
 
@@ -139,6 +141,13 @@ skills/
 │       ├── auth.md
 │       ├── login.md
 │       ├── create.md
+│       ├── config.md
+│       ├── realtime.md
+│       ├── compute-deploy.md
+│       ├── schedules.md
+│       ├── diagnostics.md
+│       ├── posthog.md
+│       ├── functions-deploy.md
 │       ├── database/
 │       │   ├── migrations.md
 │       │   ├── query.md
@@ -151,7 +160,6 @@ skills/
 │       │   ├── overview.md
 │       │   ├── merge.md
 │       │   └── reset.md
-│       ├── functions-deploy.md
 │       ├── payments/
 │       │   ├── overview.md
 │       │   ├── stripe.md
@@ -160,18 +168,27 @@ skills/
 │           ├── deploy.md
 │           └── domains.md
 ├── insforge-debug/
-│   └── SKILL.md              # Debug & diagnostics skill
+│   ├── SKILL.md              # Debug & diagnostics skill manifest
+│   └── references/
+│       ├── error-objects.md
+│       ├── logs.md
+│       ├── metrics.md
+│       ├── db-health.md
+│       ├── advisor.md
+│       ├── policies.md
+│       ├── metadata.md
+│       ├── deploy-state.md
+│       └── ai-assisted.md
 └── insforge-integrations/
-    ├── auth0/
-    │   └── SKILL.md          # Auth0 integration guide
-    ├── clerk/
-    │   └── SKILL.md          # Clerk integration guide
-    ├── kinde/
-    │   └── SKILL.md          # Kinde integration guide
-    ├── stytch/
-    │   └── SKILL.md          # Stytch integration guide
-    └── workos/
-        └── SKILL.md          # WorkOS integration guide
+    ├── SKILL.md              # Integrations skill manifest
+    └── references/
+        ├── auth0.md          # Auth0 integration guide
+        ├── clerk.md          # Clerk integration guide
+        ├── kinde.md          # Kinde integration guide
+        ├── stytch.md         # Stytch integration guide
+        ├── workos.md         # WorkOS integration guide
+        ├── better-auth.md    # Better Auth integration guide
+        └── okx-x402.md       # OKX x402 payment facilitator guide
 ```
 
 ### Documentation Pattern
@@ -191,4 +208,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on adding or improving ski
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
+Apache License 2.0 - see [LICENSE](LICENSE) for details.
