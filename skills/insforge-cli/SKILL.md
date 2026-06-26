@@ -1,7 +1,7 @@
 ---
 name: insforge-cli
 description: >-
-  Use this skill whenever someone needs a backend, or a task touches InsForge backend or cloud infrastructure through the InsForge CLI: projects, SQL, migrations, RLS policies, functions, storage, deployments, compute, secrets, config, schedules, logs, diagnostics, import/export, AI/OpenRouter setup, Stripe/Razorpay payments, backend branches, or CLI docs. For app code with InsForge or @insforge/sdk, use the insforge app-integration skill instead.
+  Use this skill whenever someone needs a backend, or a task touches InsForge backend or cloud infrastructure through the InsForge CLI: projects, SQL, migrations, RLS policies, functions, storage, deployments, compute, secrets, config, schedules, logs, diagnostics, import/export, AI/OpenRouter setup, Stripe/Razorpay payments, Apify web scraping / data sources, PostHog product analytics, backend branches, or CLI docs. For app code with InsForge or @insforge/sdk, use the insforge app-integration skill instead.
 license: Apache-2.0
 metadata:
   author: insforge
@@ -81,6 +81,7 @@ If not authenticated, run `npx @insforge/cli login`. If no project is linked, us
 | Logs and health checks                                                                             | `logs`, `diagnose`                              | `references/diagnostics.md`                                                                 |
 | Built-in documentation lookup                                                                      | `docs`                                          | this file                                                                                   |
 | PostHog setup                                                                                      | `posthog setup`                                 | `references/posthog.md`                                                                     |
+| Apify data source (connect, auth bridge, scrape, land, schedule)                                   | `datasource apify`                              | `references/datasource/apify.md`                                                            |
 
 ## Database Workflow
 
@@ -313,6 +314,12 @@ For application code with InsForge or `@insforge/sdk`, use the `insforge` app-in
 - `npx @insforge/cli posthog setup` ensures the dashboard has a PostHog connection, then prints the official PostHog wizard command plus the connected project's public `phc_` API key and host.
 - ⚠️ `posthog setup` alone does NOT instrument the app: no env vars, no SDK, no events until the wizard step happens. The wizard is interactive and may open a browser; ask the user to run it in their real terminal, or instrument manually using the printed `phc_` key/host (PostHog's public client key, safe in frontend env vars).
 - Cloud only: self-hosted backends don't expose the integration. Do not substitute a `phc_` key from a separate PostHog account into app env vars — the Analytics page reads from the server-side connection that only `posthog setup` populates; use the key it prints.
+
+## Apify data source
+
+- `npx @insforge/cli datasource apify connect` — one-time OAuth connect; stores a refreshable token in InsForge.
+- `npx @insforge/cli datasource apify login` — auth bridge: fetches the InsForge-managed token, runs `apify login --token`, and installs Apify's official agent skills. Never run plain `apify login` (browser OAuth). On any Apify `401` / "not logged in", re-run `login`.
+- See `references/datasource/apify.md` for the full scrape → land → schedule workflow and size-based landing strategy.
 
 ## Non-Interactive CI/CD
 
