@@ -88,6 +88,31 @@ const { error } = await insforge.database
 const { data, error } = await insforge.database.rpc('get_user_stats', { user_id: '123' })
 ```
 
+## Selecting a Schema
+
+Queries hit the `public` schema by default. To target a custom schema, chain `.schema()` — the table name stays bare (it maps to PostgREST's `Accept-Profile`/`Content-Profile` headers):
+
+```javascript
+const { data } = await insforge.database
+  .schema('analytics')
+  .from('events')
+  .select('*')
+
+await insforge.database.schema('analytics').rpc('rollup', { day: '2026-01-01' })
+```
+
+Or set a default schema for every query on the client:
+
+```javascript
+const insforge = createClient({
+  baseUrl: '...',
+  anonKey: '...',
+  db: { schema: 'analytics' },
+})
+```
+
+The schema must exist on the backend. Access is gated by grants + RLS exactly like `public`: a custom schema is reachable over the data API, but its tables stay unreadable to `anon`/`authenticated` until you grant them (e.g. in the migration that creates the table). On an older backend that doesn't expose the schema, the request fails with PostgREST `PGRST106` ("schema must be one of: public") rather than silently falling back.
+
 ## Filters
 
 | Filter | Example |
