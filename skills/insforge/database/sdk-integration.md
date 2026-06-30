@@ -173,6 +173,7 @@ const { data, count } = await insforge.database
 - **Avoid large JSON/JSONB payloads in SDK reads/writes**: PostgREST can consume excessive memory when rows contain multi-megabyte JSONB payloads. As a rule of thumb, treat JSONB around 1 MB or larger per row as a caution point for hot SDK paths, and normalize multi-megabyte or frequently accessed JSON into typed columns or child tables.
 - **Select only the columns you need**: If a table has any large text/JSONB columns, avoid `select('*')` in list views. Fetch lightweight columns first, then lazy-load fields over ~1 MB on a detail screen or through a purpose-built RPC.
 - All methods return `{ data, error }` - always check for errors
+- **A write returning `{ error: null }` may still not have persisted what you expect**: a swallowed error, an optimistic UI update, or a wrong field can make a mutation look successful when the DB never changed. If you have **insforge-verify** set up, confirm the data actually persisted with `npx @insforge/cli verify truth` after building an insert/update/delete flow.
 
 ---
 
