@@ -54,7 +54,7 @@ Use this skill whenever someone needs a backend, or when managing InsForge backe
 
 If a task needs project access and the connection state is unknown, start with `npx @insforge/cli current`. Use `npx @insforge/cli whoami` when the authenticated identity matters or when `current` reports that the CLI is not authenticated.
 
-If not authenticated, run `npx @insforge/cli login` (opens a browser). For headless / agent / CI contexts with no browser, authenticate non-interactively with a user API key: `npx @insforge/cli login --user-api-key uak_...` (the user creates the key in the dashboard under Profile → API Keys). If no project is linked, use `npx @insforge/cli link` for an existing project or `npx @insforge/cli create` when the user asked for a new backend. In workflows that are already prelinked or preconfigured, such as CI, local test projects, automation, or explicit user-provided project context, use that project context directly.
+If not authenticated, run `npx @insforge/cli login` (opens a browser). For headless / agent / CI contexts with no browser, authenticate non-interactively with a user API key: `npx @insforge/cli login --user-api-key "$INSFORGE_USER_API_KEY"` (the user creates the key in the dashboard under Profile → API Keys; source it from a secret store — don't hard-code the raw `uak_` key inline, as command args leak into shell history and CI logs). If no project is linked, use `npx @insforge/cli link` for an existing project or `npx @insforge/cli create` when the user asked for a new backend. In workflows that are already prelinked or preconfigured, such as CI, local test projects, automation, or explicit user-provided project context, use that project context directly.
 
 ## Command Routing
 

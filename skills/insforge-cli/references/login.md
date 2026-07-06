@@ -30,13 +30,16 @@ The CLI starts a local callback server, opens the browser, and waits up to 5 min
 
 ### User API Key (direct) — recommended for headless / agent / CI
 
-No browser, no interactive prompt. Create a key in the dashboard (Profile → API Keys), then:
+No browser, no interactive prompt. Create a key in the dashboard (Profile → API Keys) and pass it in from a secret store rather than hard-coding it:
 
 ```bash
-npx @insforge/cli login --user-api-key uak_...
+# INSFORGE_USER_API_KEY holds your uak_ key, sourced from a secret manager
+npx @insforge/cli login --user-api-key "$INSFORGE_USER_API_KEY"
 ```
 
-The key is stored and sent directly as the bearer credential on every request — it authenticates as your account with full access (it is not org-scoped). There is no token exchange or refresh: if the key is revoked or expires, the CLI asks you to log in again.
+> ⚠️ This key grants full, non-org-scoped account access. Passing it as a literal argument (`--user-api-key uak_...`) leaks it into shell history, `ps` / `/proc/<pid>/cmdline`, and CI logs — reference it from an env var / secret store as above, and never commit or hard-code it.
+
+The key is stored and sent directly as the bearer credential on every request — it authenticates as your account with full access. There is no token exchange or refresh: if the key is revoked or expires, the CLI asks you to log in again.
 
 ### Email/Password
 
@@ -64,8 +67,9 @@ Plus user info (id, name, email). OAuth/email sessions refresh their JWT automat
 # Interactive OAuth login (recommended for humans)
 npx @insforge/cli login
 
-# Headless / agent / CI: authenticate with a user API key (no browser)
-npx @insforge/cli login --user-api-key uak_... --json
+# Headless / agent / CI: authenticate with a user API key (no browser).
+# Source the key from a secret store — don't paste it inline (see caution above).
+npx @insforge/cli login --user-api-key "$INSFORGE_USER_API_KEY" --json
 
 # Email/password login
 npx @insforge/cli login --email
