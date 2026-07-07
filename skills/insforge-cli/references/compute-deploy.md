@@ -56,8 +56,12 @@ npx @insforge/cli compute deploy --image <url> --name <name> [options]
 | `--region <region>` | Fly.io region | `iad` |
 | `--env <json>` | Env vars as JSON object. Mutually exclusive with `--env-file`. | none |
 | `--env-file <path>` | Standard `.env` file (KEY=VALUE per line; `#` comments, blank lines, quoted values supported). Mutually exclusive with `--env`. | none |
+| `--always-on` | Keep the machine running 24/7 instead of scaling to zero when idle. No cold starts; billed for the full uptime. Mutually exclusive with `--scale-to-zero`. | off (scale to zero) |
+| `--scale-to-zero` | Explicitly switch an always-on service back to scale-to-zero on a redeploy. Only needed to revert `--always-on`; new services scale to zero by default. | — |
 
 Exactly one of `[dir]` or `--image` must be provided.
+
+Omitting both scaling flags keeps the existing behavior: new services scale to zero, and redeploys of an existing service keep whatever setting it already has.
 
 ## Quick examples
 
@@ -270,7 +274,7 @@ A: Use `compute update <service-id> --image <new-image-url>`. The machine is res
 A: It's down. InsForge runs your containers on Fly's infrastructure — Fly's uptime is your uptime. For HA, you'd typically deploy multiple services in different regions (future feature).
 
 **Q: Why is the first request after idle slow?**
-A: v1 services scale to zero when idle and wake on the next request (~1s cold start on `shared-1x`). No flag to disable in v1; contact support if you need always-on.
+A: Services scale to zero when idle by default and wake on the next request (~1s cold start on `shared-1x`). If the service can't tolerate cold starts, redeploy with `--always-on` to keep the machine running 24/7 (you're billed for the full uptime). Revert later with `--scale-to-zero`.
 
 **Q: I see `MANIFEST_UNKNOWN` in a stack trace. What is it?**
 A: After `flyctl` pushes your image, Fly asynchronously aliases the digest from the builder's namespace to your app's namespace. Until that propagates (usually < 8 s) the Machines API returns `400 MANIFEST_UNKNOWN` even though the digest is correct. The InsForge cloud silently retries 4 times with backoff `[2s, 4s, 8s]`, so you almost never see it. If retries exhaust, you get a structured `COMPUTE_IMAGE_NOT_AVAILABLE` 400 with `nextActions` telling you to re-run — re-runs are idempotent and typically succeed instantly because the alias has had time to propagate.
