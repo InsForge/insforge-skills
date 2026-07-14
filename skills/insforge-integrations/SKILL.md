@@ -81,7 +81,7 @@ Refer to the specific `references/<provider>.md` file for complete examples.
 **Auth**
 - All auth provider user IDs are strings (not UUIDs) — always use `TEXT` columns for `user_id`
 - Use `requesting_user_id()` instead of `auth.uid()` for RLS policies
-- Pass the JWT via `accessToken` — a static string, not a function; for short-lived tokens (Clerk) sync refreshes with `client.setAccessToken()`
+- Pass the JWT via `accessToken` — a static string, not a function; for short-lived tokens (Clerk) sync refreshes with `client.setAccessToken(token, AuthChangeEvent.TOKEN_REFRESHED)` after the initial same-user sign-in
 - Always get the JWT secret via `npx @insforge/cli secrets get JWT_SECRET`
 
 **Payment facilitators (x402)**

@@ -266,7 +266,7 @@ export async function GET(request: NextRequest) {
 
 ## Storage And Realtime
 
-For browser uploads, downloads, and Realtime subscriptions, use `createBrowserClient()`. Keep the refresh token server-owned and route browser refresh through `/api/auth/refresh`. When the access token expires, the browser client receives a fresh access token, updates the SDK token, and Realtime reconnects with the new token. Do not call auth mutations from Client Components; use `createAuthActions()` on the server.
+For browser uploads, downloads, and Realtime subscriptions, use `createBrowserClient()`. Keep the refresh token server-owned and route browser refresh through `/api/auth/refresh`. When the access token expires, the browser client receives a fresh access token and updates the SDK with token-refresh semantics, so active Realtime sockets stay connected and the fresh JWT is used on the next handshake. Do not call auth mutations from Client Components; use `createAuthActions()` on the server.
 
 For server-mediated uploads, use a backend route to create a signed upload path or otherwise proxy the operation. Use direct browser SDK upload when the app wants user-scoped Storage/RLS checks and the browser has the access token cookie.
 

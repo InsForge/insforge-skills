@@ -182,22 +182,22 @@ Same shape as the Clerk integration. Better Auth's `useSession()` provides react
 // lib/insforge.ts
 'use client';   // Next.js — drop this directive in Vite / non-Next setups
 
-import { createClient, type InsForgeClient } from '@insforge/sdk';
+import { AuthChangeEvent, createClient, type InsForgeClient } from '@insforge/sdk';
 import { authClient } from './auth-client';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 const REFRESH_INTERVAL_MS = 50 * 60 * 1000;   // 50 min for a 1h bridge JWT
 
-// Bridge JWT → both HTTP and realtime auth.
-// SDK ≥ 1.3.0: client.setAccessToken(token) updates the HTTP client AND the
-// realtime token manager in one call (pass null to clear on sign-out). Skipping
-// realtime is the classic bug — the WebSocket keeps using the anon key and
-// senderId shows the anon UUID instead of the Better Auth id.
+// Bridge JWT → HTTP auth and realtime handshake auth.
+// SDK ≥ 1.4.4: default setAccessToken(token) means SIGNED_IN. For same-user
+// bridge JWT rotation, pass AuthChangeEvent.TOKEN_REFRESHED so Realtime keeps
+// the current socket and uses the fresh JWT on the next handshake.
 // On SDK < 1.3.0 the public method doesn't exist — see the legacy fallback below.
 
 export function useInsforgeClient(): { client: InsForgeClient; isReady: boolean } {
   const session = authClient.useSession();
   const [isReady, setIsReady] = useState(false);
+  const currentUserIdRef = useRef<string | null>(null);
 
   const client = useMemo(
     () =>
@@ -212,8 +212,19 @@ export function useInsforgeClient(): { client: InsForgeClient; isReady: boolean 
   useEffect(() => {
     if (!session.data?.user) {
       client.setAccessToken(null);
+      currentUserIdRef.current = null;
       setIsReady(false);
       return;
+    }
+
+    const userId = session.data.user.id;
+
+    // User switched (A → B) without signing out first: drop the previous user's
+    // token and mark not-ready before the async fetch, so no request goes out
+    // authenticated as the old user while the new token is in flight.
+    if (currentUserIdRef.current !== null && currentUserIdRef.current !== userId) {
+      client.setAccessToken(null);
+      setIsReady(false);
     }
 
     let cancelled = false;
@@ -224,11 +235,17 @@ export function useInsforgeClient(): { client: InsForgeClient; isReady: boolean 
         const { token } = await res.json();
         if (cancelled) return;
         if (typeof token !== 'string' || !token) throw new Error('bridge: no token in response');
-        client.setAccessToken(token);
+        const event =
+          currentUserIdRef.current === userId
+            ? AuthChangeEvent.TOKEN_REFRESHED
+            : AuthChangeEvent.SIGNED_IN;
+        client.setAccessToken(token, event);
+        currentUserIdRef.current = userId;
         setIsReady(true);
       } catch {
         if (cancelled) return;
         client.setAccessToken(null);
+        currentUserIdRef.current = null;
         setIsReady(false);
       }
     };
@@ -245,7 +262,7 @@ export function useInsforgeClient(): { client: InsForgeClient; isReady: boolean 
 }
 ```
 
-> **SDK version note.** `client.setAccessToken(token)` is public as of SDK **1.3.0** and updates both the HTTP client and the realtime `TokenManager` in one call. On older SDKs (< 1.3.0) the public method doesn't exist — it lives on the internal `TokenManager`, and you must update both the HTTP client and realtime manually with this fallback helper:
+> **SDK version note.** `client.setAccessToken(token, event)` supports explicit auth event semantics as of SDK **1.4.4**. Use `AuthChangeEvent.TOKEN_REFRESHED` only for same-user JWT rotation; use the default `SIGNED_IN` behavior for the first token or a changed user. `client.setAccessToken(token)` is public as of SDK **1.3.0**. On older SDKs (< 1.3.0) the public method doesn't exist, and you must update both the HTTP client and realtime manually with this fallback helper:
 
 ```ts
 // Legacy fallback for SDK < 1.3.0 only — on 1.3.0+ call client.setAccessToken(token) directly.
@@ -383,7 +400,7 @@ INSERT INTO realtime.channels (pattern, description, enabled)
 
 The channel pattern uses SQL `LIKE` syntax — `chat:%` matches `chat:lobby`, `chat:dm:user_xyz`, etc.
 
-`client.setAccessToken(token)` (Pattern A) propagates the token to the realtime `TokenManager` as well as the HTTP client — that's why we call it on every refresh, not just when realtime is in use. Pattern B (`createClient({ accessToken: ... })`) handles both automatically because the SDK pipes the config token into the `TokenManager` at construction time (`edgeFunctionToken` is the deprecated alias).
+`client.setAccessToken(token, event)` (Pattern A) updates the HTTP token and the token used for future realtime handshakes. Use the default event for the first token or a changed Better Auth user, and `AuthChangeEvent.TOKEN_REFRESHED` for periodic same-user bridge JWT rotation so an active Realtime socket is not needlessly reconnected. Pattern B (`createClient({ accessToken: ... })`) handles construction-time auth automatically (`edgeFunctionToken` is the deprecated alias).
 
 After the SQL fixes above: a two-user realtime broadcast verifies end-to-end — `senderId` on the received message equals the publisher's Better Auth `id`.
 
@@ -646,7 +663,7 @@ Server-only vars (read via `process.env` in the BA process) are the same across 
 | ❌ Forgetting `credentials: 'same-origin'` (or `'include'` cross-origin) on the bridge fetch | ✅ Without credentials, the Better Auth cookie isn't sent and the bridge always returns 401. |
 | ❌ Cross-origin without `sameSite: 'none'; secure` on the BA cookie | ✅ The browser drops the cookie on cross-origin requests by default. Configure Better Auth's cookies for cross-origin explicitly. |
 | ❌ Missing `Origin` header on direct `fetch`/`curl` to Better Auth POSTs | ✅ Better Auth requires `Origin` for CSRF. Browsers send it automatically; server-side clients must add `'Origin: <baseURL>'`. |
-| ❌ Realtime client shows `senderId` as the anon UUID instead of the user's BA id (Pattern A only) | ✅ On SDK ≥ 1.3.0 call `client.setAccessToken(token)` — it updates the HTTP client and the realtime token manager together. (On SDK < 1.3.0 the public method doesn't exist; use the `setBridgeToken` legacy fallback from Pattern A, which updates the HTTP client plus the private realtime `tokenManager` via a cast.) Pattern B's `accessToken` already pipes into both. |
+| ❌ Realtime client shows `senderId` as the anon UUID instead of the user's BA id (Pattern A only) | ✅ On SDK ≥ 1.4.4 call `client.setAccessToken(token)` for initial/changed-user auth and `client.setAccessToken(token, AuthChangeEvent.TOKEN_REFRESHED)` for same-user rotation. On SDK 1.3.x, `client.setAccessToken(token)` updates HTTP and realtime auth but refreshes may reconnect realtime. On SDK < 1.3.0 use the `setBridgeToken` legacy fallback from Pattern A. Pattern B's `accessToken` already pipes into both. |
 | ❌ Realtime publish silently fails for authenticated users (`UNAUTHORIZED`) | ✅ `realtime.messages.sender_id` is `uuid` in core InsForge; Better Auth IDs are strings. One-time fix: `ALTER TABLE realtime.messages ALTER COLUMN sender_id TYPE text;` |
 | ❌ Vite SPA proxying to a separate BA server, sign-out (or any state-changing endpoint) returns 403 | ✅ BA's CSRF check compares the request's `Origin` against its `baseURL`. Either rewrite the proxy's `Origin` header to BA's URL (Vite `proxy.configure`) or add the SPA origin to BA's `trustedOrigins`. Sign-up has looser handling and won't trip this — the bug shows up later. |
 | ❌ Cross-origin missing `trustedOrigins` even with `sameSite: 'none'; secure: true` | ✅ Cookie config alone isn't enough — BA's CSRF gate also reads `trustedOrigins`. Add the SPA's full origin (no trailing slash) to the array. |

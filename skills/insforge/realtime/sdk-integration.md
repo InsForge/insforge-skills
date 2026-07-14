@@ -23,7 +23,7 @@ import { createBrowserClient } from '@insforge/sdk/ssr'
 const insforge = createBrowserClient()
 ```
 
-Use `createBrowserClient()` for authenticated browser Realtime connections. It reads `insforge_access_token`, refreshes through `/api/auth/refresh`, calls `setAccessToken()` internally, and Realtime reconnects with the new token.
+Use `createBrowserClient()` for authenticated browser Realtime connections. It reads `insforge_access_token`, refreshes through `/api/auth/refresh`, and applies same-user refreshes with `AuthChangeEvent.TOKEN_REFRESHED` internally so active Realtime sockets stay connected; the fresh JWT is used on the next handshake.
 
 ## Backend Setup
 
