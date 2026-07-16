@@ -29,8 +29,10 @@ license: Apache-2.0        # Optional: license identifier
 
 Do not add a `metadata:` block to the frontmatter — the OpenAI plugin
 submission portal rejects skills that carry one. User-facing interface
-settings (display name, short description, brand color) belong in the
-skill's `agents/openai.yaml` under `interface:` instead.
+settings (display name, short description, brand color, default prompt)
+belong in the skill's `agents/openai.yaml` under `interface:` instead.
+Keep `short_description` between 25 and 64 characters, and have
+`default_prompt` reference the skill as `$skill-name`.
 
 ### Documentation Files
 
