@@ -1,4 +1,5 @@
 interface:
   display_name: "InsForge Debug"
-  short_description: "Diagnose InsForge backend failures and run proactive security, performance, and health audits."
+  short_description: "Diagnose InsForge backend errors and run health audits."
   brand_color: "#17B26A"
+  default_prompt: "Use InsForge Debug to diagnose this backend error."

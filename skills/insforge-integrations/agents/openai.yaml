@@ -1,4 +1,5 @@
 interface:
   display_name: "InsForge Integrations"
-  short_description: "Wire external auth providers (Clerk, Auth0, WorkOS, Kinde, Stytch, Better Auth) or OKX x402 payments into InsForge."
+  short_description: "Wire external auth or x402 payments into InsForge."
   brand_color: "#17B26A"
+  default_prompt: "Wire Clerk into InsForge for JWT-based RLS."
