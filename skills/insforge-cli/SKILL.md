@@ -251,6 +251,7 @@ Runtime checkout, subscriptions, customer portal flows, and app code belong in t
 
 Frontend deployments:
 
+- **Before deploying a backend or full-stack change, verify it first** with `npx @insforge/cli verify` (see insforge-verify, if set up) — a deploy ships whatever you have, so catch persistence/RLS false passes before they go live, not after.
 - Build locally first when the app has a build step.
 - Ensure frontend runtime env vars are configured with the correct framework prefix before deployment.
 - Use `npx @insforge/cli deployments deploy <dir>` for frontend source directories. Do not deploy generated output directories unless the deployment reference explicitly calls for it.
