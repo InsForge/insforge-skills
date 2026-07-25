@@ -227,7 +227,7 @@ Every project has built-in agent memory: durable facts, decisions, and gotchas t
 
 - `npx @insforge/cli memory list` - cheap title index (no AI call). Run at the start of a non-trivial task; recall any title relevant to the task.
 - `npx @insforge/cli memory recall "<query>" [--scope] [--limit] [--threshold]` - semantic + keyword recall.
-- `npx @insforge/cli memory remember "<content>" [--kind] [--title] [--scope] [--source]` - store one atomic memory. Record decisions and gotchas at the moment they happen, not at session end.
+- `npx @insforge/cli memory remember "<content>" [--kind] [--title] [--scope] [--source]` - store one atomic memory. Record decisions and gotchas at the moment they happen, not at session end. `--kind` accepts only `fact`, `decision`, `preference`, or `reference` - store gotchas as `fact` (or `decision` when recording a choice).
 - `npx @insforge/cli memory remember --file <path>` - extract durable memories from a transcript or notes file.
 
 Storing is idempotent: re-remembering a known fact is a no-op, and a contradicting fact updates the existing memory instead of duplicating it - when the truth changes, just `remember` the new truth. See `references/memory.md` for what to store, kinds, and examples.
