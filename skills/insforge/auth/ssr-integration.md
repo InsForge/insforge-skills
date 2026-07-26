@@ -251,7 +251,7 @@ export async function GET(request: NextRequest) {
     responseCookies: response.cookies
   })
   const { data, error } = await auth.exchangeOAuthCode(code, codeVerifier)
-  if (error || !data?.accessToken) {
+  if (error || !data?.user) {
     if (error) {
       console.error('OAuth code exchange failed', error)
     }
