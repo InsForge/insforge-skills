@@ -44,6 +44,34 @@ npx @insforge/cli db query "SELECT count(*) FROM posts" --json
 - **Human:** Formatted table
 - **JSON:** `{ "rows": [...] }`
 
+## Restrictions
+
+- Do not include transaction control statements in the SQL.
+- `db query` rejects `BEGIN`, `COMMIT`, `ROLLBACK`, and `SAVEPOINT` with the error `Transaction control statements are not allowed.`
+- Each `db query` call already runs as a single statement in its own transaction, so an explicit `BEGIN ... ROLLBACK` block is not needed for atomicity.
+
+### Rollback Rehearsal (Dry Run) Pattern
+
+To rehearse a guarded data change without committing it, run one `DO` block that performs the mutation, validates the result, and ends with `RAISE EXCEPTION` so PostgreSQL rolls the whole statement back:
+
+```bash
+npx @insforge/cli db query "DO \$\$
+DECLARE
+  updated_count integer;
+BEGIN
+  UPDATE posts SET status = 'draft' WHERE status IS NULL;
+  GET DIAGNOSTICS updated_count = ROW_COUNT;
+  IF updated_count > 100 THEN
+    RAISE EXCEPTION 'guard failed: % rows matched, expected at most 100', updated_count;
+  END IF;
+  -- Validation passed; raise anyway so the statement rolls back
+  RAISE EXCEPTION 'rehearsal ok: % rows would be updated (rolled back)', updated_count;
+END
+\$\$"
+```
+
+The `BEGIN` inside the `DO` block is the PL/pgSQL block keyword, not a transaction statement, so it is allowed. Once the rehearsal output looks correct, rerun the mutation as a plain `db query` statement to apply it.
+
 ## Permission Model and Schema Changes
 
 `db query` runs as `project_admin`.
