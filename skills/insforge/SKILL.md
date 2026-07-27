@@ -201,7 +201,7 @@ All SDK methods return `{ data, error }`.
 | Module               | Methods                                                                                              |
 | -------------------- | ---------------------------------------------------------------------------------------------------- |
 | `insforge.database`  | `.from().select()`, `.insert()`, `.update()`, `.delete()`, `.rpc()`                                  |
-| `insforge.auth`      | `.signUp()`, `.signInWithPassword()`, `.signInWithOAuth()`, `.signOut()`, `.getCurrentUser()`        |
+| `insforge.auth`      | `.signUp()`, `.signInWithPassword()`, `.signInWithOtp()` / `.verifyOtp()`, `.signInWithOAuth()`, `.signOut()`, `.getCurrentUser()`        |
 | `insforge.storage`   | `.from().upload()`, `.uploadAuto()`, `.download()`, `.remove()`                                      |
 | `insforge.functions` | `.invoke()`                                                                                          |
 | `insforge.ai`        | Deprecated fallback only: `.chat.completions.create()`, `.images.generate()`, `.embeddings.create()` |
