@@ -38,7 +38,7 @@ Mode is **fixed at create time** — `branch reset` uses the original dump. Need
 
 ### `branch create <name> [--mode full|schema-only] [--no-switch]`
 
-Creates a branch from the linked parent and auto-switches the directory's context to it (unless `--no-switch`). Provisioning takes 30–120 s for small DBs, longer for large.
+Creates a branch from the linked parent and auto-switches the directory's context to it (unless `--no-switch`). Provisioning typically takes 2–5 minutes and can run longer for large DBs — the CLI polls for up to 15 minutes before failing, so a branch staying in `creating` for several minutes is normal.
 
 `<name>`: 1–64 chars, `[a-zA-Z0-9-]`, must start with letter/digit, unique per parent.
 
@@ -53,7 +53,7 @@ Lists active branches of the parent (or, when on a branch, that branch's sibling
 
 | State       | Meaning                                                                                                                |
 | ----------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `creating`  | Provisioning EC2 + restoring pg_dump (30–120 s).                                                                       |
+| `creating`  | Provisioning EC2 + restoring pg_dump (typically 2–5 min; the CLI polls up to 15 min).                                  |
 | `ready`     | Usable — can be switched, modified, merged, or reset.                                                                  |
 | `merging`   | Merge in progress (usually < 30 s).                                                                                    |
 | `merged`    | Last merge succeeded. Dormant — `branch reset` rewinds to T0 and flips back to `ready` so the same slot can be reused. |
