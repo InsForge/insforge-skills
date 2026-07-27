@@ -101,7 +101,9 @@ if (error) {
 
 ## Passwordless Sign In (Email OTP)
 
-Two steps: request a code, then verify it. `verifyOtp()` returns `{ data: { user, accessToken }, error }` and **automatically saves the session** — the user is signed in on success. A brand-new email becomes a verified, passwordless user; `name` sets the display name only when the account is first created.
+> Requires `@insforge/sdk` 1.5.1+.
+
+Two steps: request a code, then verify it. `verifyOtp()` returns `{ data: { user, accessToken }, error }` and **automatically saves the session** — the user is signed in on success. When signups are enabled a brand-new email becomes a verified, passwordless user (with `disableSignup` on, `verifyOtp()` rejects unknown emails with a 403); `name` sets the display name only when the account is first created.
 
 ```javascript
 // 1. Request the 6-digit code. The response is generic whether or not an
@@ -126,7 +128,7 @@ if (error) {
 }
 ```
 
-> The code expires in 5 minutes, is single-use, and is invalidated after 3 failed attempts. On failure, have the user request a fresh code with `signInWithOtp()`.
+> The code expires in 5 minutes, is single-use, and is invalidated after 3 failed attempts. A wrong entry can be retried with the same code; once it expires or the three attempts are used up, have the user request a fresh one with `signInWithOtp()`.
 
 ## OAuth Sign In
 
