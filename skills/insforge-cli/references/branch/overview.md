@@ -25,6 +25,8 @@ Branching is **not free** — each branch consumes an EC2 instance. Use it when 
 - Edge-function logic-only changes covered by unit tests.
 - Anything `git revert` handles faster.
 
+**Can't branch** (parent on OSS < 2.1.0 and upgrading isn't an option right now): validate the risky change on the real backend inside a single transaction that ends with `ROLLBACK` — you see the error surface without persisting anything.
+
 ## Mode selection
 
 | Mode             | When                                                                                                                 |
@@ -39,6 +41,8 @@ Mode is **fixed at create time** — `branch reset` uses the original dump. Need
 ### `branch create <name> [--mode full|schema-only] [--no-switch]`
 
 Creates a branch from the linked parent and auto-switches the directory's context to it (unless `--no-switch`). Provisioning takes 30–120 s for small DBs, longer for large.
+
+**Prerequisite:** the parent must be on InsForge OSS ≥ 2.1.0 — older parents fail with `branch.parent_not_branchable`; run `npx @insforge/cli projects update-version --wait` first.
 
 `<name>`: 1–64 chars, `[a-zA-Z0-9-]`, must start with letter/digit, unique per parent.
 
@@ -90,7 +94,7 @@ See [branch reset](reset.md) for what reset does and does not touch.
 | Error                          | Meaning                                                        | Fix                         |
 | ------------------------------ | -------------------------------------------------------------- | --------------------------- |
 | `branch.quota_exceeded`        | Per-org cap (3 parents) or per-parent cap (2 branches) reached | Delete an old branch first  |
-| `branch.parent_not_branchable` | Parent is itself a branch / not active / pre-2.x               | Use a top-level 2.x project |
+| `branch.parent_not_branchable` | Parent is itself a branch / not active / OSS < 2.1.0           | Branch from the top-level project; if the parent is on OSS < 2.1.0, run `npx @insforge/cli projects update-version --wait` to upgrade it, then retry |
 | `branch.name_conflict`         | Branch name already exists on this parent                      | Pick a different name       |
 | `branch.not_found`             | No branch with that name on the parent                         | Check `branch list`         |
 | `branch.busy`                  | Branch is `creating` / `merging` / `resetting`                 | Wait for the in-flight op   |
