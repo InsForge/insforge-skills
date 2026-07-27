@@ -97,7 +97,7 @@ Each recipe is a primitive call sequence with one-line "look for X" at each step
 ### Recipe: Single slow query / one endpoint slow
 
 1. **logs** (`postgres.logs`) — find the query text and timestamp.
-2. **db-health** (`slow-queries`, `index-usage`) — confirm it's in `pg_stat_statements`; check for missing index.
+2. **db-health** (`slow-queries`, `index-usage`) — `slow-queries` reads `pg_stat_activity`, so it only catches the query while it is running >5s (point-in-time); check `index-usage` for a missing index. For slow queries that already finished, use `postgres.logs` (step 1) or **advisor** (`--category performance`).
 3. **policies** — if it's an RLS-gated table, verify the policy isn't adding hidden joins.
 
 ### Recipe: All responses slow / high CPU/memory (active incident)
