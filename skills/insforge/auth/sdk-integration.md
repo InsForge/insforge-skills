@@ -99,6 +99,37 @@ if (error) {
 }
 ```
 
+## Passwordless Sign In (Email OTP)
+
+> Requires `@insforge/sdk` 1.5.1+.
+
+Two steps: request a code, then verify it. `verifyOtp()` returns `{ data: { user, accessToken }, error }` and **automatically saves the session** — the user is signed in on success. When signups are enabled a brand-new email becomes a verified, passwordless user (with `disableSignup` on, `verifyOtp()` rejects unknown emails with a 403); `name` sets the display name only when the account is first created.
+
+```javascript
+// 1. Request the 6-digit code. The response is generic whether or not an
+//    account exists (prevents account enumeration) — always show the same
+//    "check your email" state.
+const { error: sendError } = await insforge.auth.signInWithOtp({
+  email: 'user@example.com'
+})
+if (sendError) console.error('Could not send code:', sendError.message)
+
+// 2. Verify the code the user typed in.
+const { data, error } = await insforge.auth.verifyOtp({
+  email: 'user@example.com',
+  otp: '123456',
+  name: 'Ada Lovelace' // optional; applied only when the account is first created
+})
+
+if (error) {
+  console.error('Invalid or expired code:', error.message)
+} else {
+  console.log('Signed in:', data.user.email)
+}
+```
+
+> The code expires in 5 minutes, is single-use, and is invalidated after 3 failed attempts. A wrong entry can be retried with the same code; once it expires or the three attempts are used up, have the user request a fresh one with `signInWithOtp()`.
+
 ## OAuth Sign In
 
 OAuth uses PKCE. The SDK handles code generation, redirect, and token exchange automatically in the browser.

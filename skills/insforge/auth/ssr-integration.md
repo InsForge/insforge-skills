@@ -48,7 +48,7 @@ import { createBrowserClient } from '@insforge/sdk/ssr'
 export const insforge = createBrowserClient()
 ```
 
-`createBrowserClient()` reads `insforge_access_token`, uses it for SDK calls and Realtime, and refreshes through `/api/auth/refresh` when the access token is missing, expired, near expiry, or rejected with an auth-expired response. Its TypeScript auth surface is read-only (`getCurrentUser()`, `getProfile()`, and `getPublicAuthConfig()`); perform sign-in, sign-up, sign-out, OAuth initiation/exchange, ID-token sign-in, and email verification on the server with `createAuthActions()`.
+`createBrowserClient()` reads `insforge_access_token`, uses it for SDK calls and Realtime, and refreshes through `/api/auth/refresh` when the access token is missing, expired, near expiry, or rejected with an auth-expired response. Its TypeScript auth surface is read-only (`getCurrentUser()`, `getProfile()`, and `getPublicAuthConfig()`); perform sign-in, sign-up, sign-out, OAuth initiation/exchange, ID-token sign-in, email verification, and email OTP sign-in on the server with `createAuthActions()`.
 
 ## Server Client
 
@@ -123,7 +123,7 @@ For `middleware.ts`, export the same handler body as `middleware`.
 
 ## Sign-In Route Or Server Action
 
-Because the refresh token is httpOnly, sign-in, sign-up, sign-out, OAuth initiation/exchange, ID-token sign-in, and email verification flows that establish or clear a session should run where cookies can be written. Prefer `createAuthActions()` for these auth mutations. Return only safe app data from Server Actions; do not return token-bearing low-level auth responses.
+Because the refresh token is httpOnly, sign-in, sign-up, sign-out, OAuth initiation/exchange, ID-token sign-in, email verification, and email OTP sign-in (`verifyOtp()`) flows that establish or clear a session should run where cookies can be written. Prefer `createAuthActions()` for these auth mutations. Return only safe app data from Server Actions; do not return token-bearing low-level auth responses.
 
 For Next.js 14+ Server Actions:
 
