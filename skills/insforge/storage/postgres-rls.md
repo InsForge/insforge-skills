@@ -19,7 +19,7 @@ The `auth.jwt()` helper returns the caller's full claims as `jsonb`. Most polici
 
 ### What ships by default
 
-- **Fresh installs**: zero policies on `storage.objects`. The table has RLS enabled but nothing matches, so end users can't do anything until you write a policy.
+- **Fresh installs**: zero policies on `storage.objects` and RLS **disabled** (since migration 047). Policies you create stay dormant until RLS is enabled — always include `ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;` in your policy migration, or the table grants let any authenticated user read every row.
 - **Existing projects** (any rows in `storage.buckets` at migration time): the owner-only set below is auto-installed so the upgrade does not silently break end-user uploads and reads.
 
 ### Managed Storage RLS
@@ -46,6 +46,12 @@ SELECT polname, polcmd,
        pg_get_expr(polwithcheck, polrelid) AS check_clause
 FROM pg_policy
 WHERE polrelid = 'storage.objects'::regclass;
+```
+
+Check whether RLS is actually enabled — policies are dormant while this is `false`:
+
+```sql
+SELECT relrowsecurity FROM pg_class WHERE oid = 'storage.objects'::regclass;
 ```
 
 ### Removing the auto-installed defaults
@@ -109,6 +115,8 @@ GRANT USAGE ON SCHEMA storage TO authenticated;
 | Anonymous (`anon`) | ✓ | ✗ | ✗ | ✗ |
 
 ```sql
+ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+
 DROP POLICY IF EXISTS storage_objects_owner_select ON storage.objects;
 
 CREATE POLICY storage_objects_public_read ON storage.objects
@@ -130,6 +138,8 @@ The bucket itself should also be marked `public` so the auth middleware fast-pat
 **Use when:** Each user owns a folder named after their `sub`, and the first path segment encodes ownership. Slack-style file URLs (`<user_id>/2024/photo.png`), per-user document trees.
 
 ```sql
+ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+
 DROP POLICY IF EXISTS storage_objects_owner_select ON storage.objects;
 DROP POLICY IF EXISTS storage_objects_owner_insert ON storage.objects;
 DROP POLICY IF EXISTS storage_objects_owner_update ON storage.objects;
@@ -182,6 +192,8 @@ CREATE TABLE IF NOT EXISTS team_members (
 );
 
 CREATE INDEX IF NOT EXISTS team_members_user_idx ON team_members (user_id);
+
+ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS storage_objects_owner_select ON storage.objects;
 -- (drop the rest of the owner-only set too)
@@ -296,7 +308,7 @@ Adding `WHERE uploaded_by = $1` in your service code on top of the RLS policy du
 
 Before shipping a storage RLS configuration, apply `storage.objects` policy changes with a custom migration.
 
-- [ ] `ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY` is in place (already true on InsForge installs since migration 036)
+- [ ] `ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY` is in your policy migration — fresh installs ship with RLS disabled (since migration 047), and the statement is idempotent, so always include it. Verify with `SELECT relrowsecurity FROM pg_class WHERE oid = 'storage.objects'::regclass;`
 - [ ] Policies target `storage.objects`
 - [ ] All four operations (SELECT, INSERT, UPDATE, DELETE) have policies — or you've consciously decided to deny one
 - [ ] `auth.jwt() ->> 'sub'` is wrapped in `(SELECT ...)` for performance
