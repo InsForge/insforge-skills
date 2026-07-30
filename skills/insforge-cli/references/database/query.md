@@ -44,6 +44,45 @@ npx @insforge/cli db query "SELECT count(*) FROM posts" --json
 - **Human:** Formatted table
 - **JSON:** `{ "rows": [...] }`
 
+## Restrictions
+
+- Do not include transaction control statements in the SQL.
+- `db query` rejects `BEGIN`, `COMMIT`, `ROLLBACK`, and `SAVEPOINT` with the error `Transaction control statements are not allowed.`
+- Each `db query` call already runs as a single statement in its own transaction, so an explicit `BEGIN ... ROLLBACK` block is not needed for atomicity.
+
+### Rollback Rehearsal (Dry Run) Pattern
+
+To rehearse a guarded data change without committing it, run one `DO` block that performs the mutation, validates the result, and ends with `RAISE EXCEPTION` so PostgreSQL rolls the whole statement back:
+
+```bash
+npx @insforge/cli db query "DO \$\$
+DECLARE
+  updated_count integer;
+BEGIN
+  UPDATE posts SET status = 'draft' WHERE status IS NULL;
+  GET DIAGNOSTICS updated_count = ROW_COUNT;
+  IF updated_count > 100 THEN
+    RAISE EXCEPTION 'guard failed: % rows matched, expected at most 100', updated_count;
+  END IF;
+  -- Validation passed; raise anyway so the statement rolls back
+  RAISE EXCEPTION 'rehearsal ok: % rows would be updated (rolled back)', updated_count;
+END
+\$\$"
+```
+
+The `BEGIN` inside the `DO` block is the PL/pgSQL block keyword, not a transaction statement, so it is allowed.
+
+**A rehearsal always ends as a failed command.** Rolling back means raising, so the command writes to stderr and exits non-zero (`1`) on both the pass and the fail path — that is the expected outcome, not a broken query. Read the message to tell them apart:
+
+| Output on stderr | Meaning |
+|------------------|---------|
+| `Error: rehearsal ok: 42 rows would be updated (rolled back)` | Validation passed; safe to apply |
+| `Error: guard failed: 250 rows matched, expected at most 100` | Validation failed; do not apply |
+
+Under `--json` the same text arrives on stderr as `{"error": "rehearsal ok: ...", "code": "INTERNAL_ERROR"}`. Do not treat the non-zero exit code as a reason to retry.
+
+Once the rehearsal reports `rehearsal ok:`, rerun the mutation as a plain `db query` statement to apply it.
+
 ## Permission Model and Schema Changes
 
 `db query` runs as `project_admin`.
