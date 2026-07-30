@@ -17,7 +17,7 @@ Use this skill whenever someone needs a backend, or when managing InsForge backe
 - Treat InsForge API keys as full-access admin keys. Keep them server-only and out of frontend/public env vars.
 - Prefer CLI commands and documented project config over raw backend HTTP calls. If `config apply` reports unsupported/skipped fields, surface that result instead of bypassing the CLI with direct API calls.
 - Use `--json` when structured output or non-interactive value collection is needed. Use `--yes` for confirmation prompts when the user has approved the action.
-- At the start of a non-trivial task on a linked project, run `npx @insforge/cli memory list` (cheap, no AI call) and recall any title relevant to the task before designing or debugging. Record decisions and gotchas with `memory remember` at the moment they happen. See `references/memory.md`.
+- At the start of a non-trivial task on a linked project, run `npx @insforge/cli memory list` (cheap, no AI call) and recall any title relevant to the task before designing or debugging. Record new facts and decisions with `memory remember` at the moment they happen. See `references/memory.md`.
 - When you hit a hurdle that is InsForge's fault — something that should work but doesn't, a capability you needed but isn't supported, instructions (docs/skill) that reality contradicts, or needless friction — report it with `npx @insforge/cli feedback` (see Feedback), then continue the user's task with a workaround. Never file feedback for problems in the user's own app code.
 
 ## Global Options
@@ -69,7 +69,7 @@ If not authenticated, run `npx @insforge/cli login` (opens a browser). For headl
 | Realtime backend setup                                                                             | `db` migrations                                 | `references/realtime.md`                                                                    |
 | Edge functions                                                                                     | `functions`                                     | `references/functions-deploy.md`                                                            |
 | AI/OpenRouter key setup                                                                            | `ai setup`                                      | this file                                                                                   |
-| Agent memory: project facts, decisions, gotchas across sessions                                   | `memory`                                        | `references/memory.md`                                                                      |
+| Agent memory: project facts, decisions, preferences, references across sessions                    | `memory`                                        | `references/memory.md`                                                                      |
 | Stripe/Razorpay keys, catalog sync, webhooks                                                       | `payments`                                      | `references/payments/overview.md`                                                           |
 | Frontend deployments                                                                               | `deployments`                                   | `references/deployments/deploy.md`                                                          |
 | Custom domains, Cloudflare Registrar, DNS sync, SSL verification                                    | `domains`                                       | `references/deployments/domains.md`                                                         |
@@ -223,11 +223,11 @@ Create channel patterns, app-table publish triggers, and channel/message RLS thr
 
 ## Memory
 
-Every project has built-in agent memory: durable facts, decisions, and gotchas that survive across sessions. Use it as a reflex, not an afterthought.
+Every project has built-in agent memory: durable facts, decisions, preferences, and references that survive across sessions. Use it as a reflex, not an afterthought.
 
 - `npx @insforge/cli memory list` - cheap title index (no AI call). Run at the start of a non-trivial task; recall any title relevant to the task.
 - `npx @insforge/cli memory recall "<query>" [--scope] [--limit] [--threshold]` - semantic + keyword recall.
-- `npx @insforge/cli memory remember "<content>" [--kind] [--title] [--scope] [--source]` - store one atomic memory. Record decisions and gotchas at the moment they happen, not at session end. `--kind` accepts only `fact`, `decision`, `preference`, or `reference` - store gotchas as `fact` (or `decision` when recording a choice).
+- `npx @insforge/cli memory remember "<content>" [--kind] [--title] [--scope] [--source]` - store one atomic memory. Record facts and decisions at the moment they happen, not at session end. `--kind` accepts only `fact`, `decision`, `preference`, or `reference` - a pitfall you discovered is a `fact`, a choice you made is a `decision`.
 - `npx @insforge/cli memory remember --file <path>` - extract durable memories from a transcript or notes file.
 
 Storing is idempotent: re-remembering a known fact is a no-op, and a contradicting fact updates the existing memory instead of duplicating it - when the truth changes, just `remember` the new truth. See `references/memory.md` for what to store, kinds, and examples.
