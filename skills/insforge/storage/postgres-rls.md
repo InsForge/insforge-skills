@@ -129,7 +129,7 @@ GRANT SELECT ON storage.objects TO anon;
 GRANT USAGE ON SCHEMA storage TO anon;
 ```
 
-The bucket itself should also be marked `public` so the auth middleware fast-paths anonymous downloads. RLS still gates the row read — the `public` flag is just a routing hint.
+Marking the bucket `public` does more than fast-path routing: direct object GETs on a public bucket are served with root access and **bypass `storage.objects` RLS entirely** — an anon SELECT policy does not gate those downloads. RLS still scopes list and metadata queries made through the user API, but it cannot restrict who fetches an object URL from a public bucket. Only mark a bucket `public` when every object in it may be world-readable. If visibility is conditional (e.g. files attached to draft content that becomes readable on publish), keep the bucket private and mint signed URLs after an RLS-scoped check — see Caveats below.
 
 ---
 
@@ -299,6 +299,7 @@ Adding `WHERE uploaded_by = $1` in your service code on top of the RLS policy du
 
 - **Per-operation policies are independent.** A permissive SELECT does NOT grant DELETE. The reverse is also true. Audit each of the four operations separately.
 - **Permissive vs restrictive policies.** Multiple matching policies OR together by default. If you want AND behavior, use `AS RESTRICTIVE`. Most storage policies are permissive (default).
+- **Public buckets bypass RLS on downloads.** When `storage.buckets.public` is true, the object-visibility check runs with root access: anonymous GETs of object URLs succeed even if a SELECT policy would deny the row. RLS on `storage.objects` still scopes list/metadata queries through the user API, but it never gates direct downloads from a public bucket. Conditionally-visible files (drafts, gated content) belong in a private bucket with signed URLs issued only after your RLS or app-level check passes.
 - **Out-of-band URLs bypass RLS.** Presigned S3 URLs and signed download links are redeemed against the storage backend directly — RLS does not fire on those redemptions. The platform code does an explicit RLS-scoped existence check before issuing the URL; if you build your own signed-URL flow, do the same.
 - **Admin always sees everything.** RLS only applies to `authenticated` and `anon`. API-key callers and dashboard inspectors bypass policies regardless of which pattern you pick.
 
@@ -314,6 +315,7 @@ Before shipping a storage RLS configuration, apply `storage.objects` policy chan
 - [ ] `auth.jwt() ->> 'sub'` is wrapped in `(SELECT ...)` for performance
 - [ ] `GRANT SELECT, INSERT, UPDATE, DELETE ON storage.objects TO authenticated` (and `anon` if your pattern allows it)
 - [ ] `GRANT USAGE ON SCHEMA storage TO authenticated` (and `anon` if applicable)
+- [ ] Buckets marked `public` contain only world-readable objects — direct GETs on a public bucket skip RLS, so conditionally-visible files live in a private bucket with signed URLs
 - [ ] Mixed REST + S3 buckets either (a) live in separate buckets, (b) include `uploaded_by IS NULL OR ...` in the SELECT policy, or (c) attribute ownership in an admin-side UPDATE after S3 ingest
 - [ ] Tested as `authenticated`, not as superuser/admin — `psql` by default connects with elevated rights
 
