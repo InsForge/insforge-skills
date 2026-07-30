@@ -70,7 +70,18 @@ END
 \$\$"
 ```
 
-The `BEGIN` inside the `DO` block is the PL/pgSQL block keyword, not a transaction statement, so it is allowed. Once the rehearsal output looks correct, rerun the mutation as a plain `db query` statement to apply it.
+The `BEGIN` inside the `DO` block is the PL/pgSQL block keyword, not a transaction statement, so it is allowed.
+
+**A rehearsal always ends as a failed command.** Rolling back means raising, so the command writes to stderr and exits non-zero (`1`) on both the pass and the fail path — that is the expected outcome, not a broken query. Read the message to tell them apart:
+
+| Output on stderr | Meaning |
+|------------------|---------|
+| `Error: rehearsal ok: 42 rows would be updated (rolled back)` | Validation passed; safe to apply |
+| `Error: guard failed: 250 rows matched, expected at most 100` | Validation failed; do not apply |
+
+Under `--json` the same text arrives on stderr as `{"error": "rehearsal ok: ...", "code": "INTERNAL_ERROR"}`. Do not treat the non-zero exit code as a reason to retry.
+
+Once the rehearsal reports `rehearsal ok:`, rerun the mutation as a plain `db query` statement to apply it.
 
 ## Permission Model and Schema Changes
 
