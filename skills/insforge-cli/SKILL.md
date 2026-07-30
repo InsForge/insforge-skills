@@ -17,7 +17,7 @@ Use this skill whenever someone needs a backend, or when managing InsForge backe
 - Treat InsForge API keys as full-access admin keys. Keep them server-only and out of frontend/public env vars.
 - Prefer CLI commands and documented project config over raw backend HTTP calls. If `config apply` reports unsupported/skipped fields, surface that result instead of bypassing the CLI with direct API calls.
 - Use `--json` when structured output or non-interactive value collection is needed. Use `--yes` for confirmation prompts when the user has approved the action.
-- At the start of a non-trivial task on a linked project, run `npx @insforge/cli memory list` (cheap, no AI call) and recall any title relevant to the task before designing or debugging. Record new facts and decisions with `memory remember` at the moment they happen. See `references/memory.md`.
+- At the start of a non-trivial task on a linked project, run `npx @insforge/cli memory list` (cheap, no AI call) and recall any title relevant to the task before designing or debugging. Record decisions and the gotchas you hit with `memory remember` at the moment they happen. See `references/memory.md`.
 - When you hit a hurdle that is InsForge's fault — something that should work but doesn't, a capability you needed but isn't supported, instructions (docs/skill) that reality contradicts, or needless friction — report it with `npx @insforge/cli feedback` (see Feedback), then continue the user's task with a workaround. Never file feedback for problems in the user's own app code.
 
 ## Global Options
@@ -227,7 +227,7 @@ Every project has built-in agent memory: durable facts, decisions, preferences, 
 
 - `npx @insforge/cli memory list` - cheap title index (no AI call). Run at the start of a non-trivial task; recall any title relevant to the task.
 - `npx @insforge/cli memory recall "<query>" [--scope] [--limit] [--threshold]` - semantic + keyword recall.
-- `npx @insforge/cli memory remember "<content>" [--kind] [--title] [--scope] [--source]` - store one atomic memory. Record facts and decisions at the moment they happen, not at session end. `--kind` accepts only `fact`, `decision`, `preference`, or `reference` - a pitfall you discovered is a `fact`, a choice you made is a `decision`.
+- `npx @insforge/cli memory remember "<content>" [--kind] [--title] [--scope] [--source]` - store one atomic memory. Record decisions and gotchas at the moment they happen, not at session end. `--kind` accepts only `fact`, `decision`, `preference`, or `reference` - store gotchas as `fact` (or `decision` when recording a choice).
 - `npx @insforge/cli memory remember --file <path>` - extract durable memories from a transcript or notes file.
 
 Storing is idempotent: re-remembering a known fact is a no-op, and a contradicting fact updates the existing memory instead of duplicating it - when the truth changes, just `remember` the new truth. See `references/memory.md` for what to store, kinds, and examples.
