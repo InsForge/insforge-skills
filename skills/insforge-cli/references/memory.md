@@ -1,6 +1,6 @@
 # Agent Memory
 
-Every InsForge project has built-in agent memory: a platform-managed store of durable facts, decisions, and gotchas that survive across sessions. It exists to solve the forgetting problem - the next session (or another agent) should not have to rediscover what this one already learned.
+Every InsForge project has built-in agent memory: a platform-managed store of durable facts, decisions, preferences, and references that survive across sessions. It exists to solve the forgetting problem - the next session (or another agent) should not have to rediscover what this one already learned.
 
 ## Commands
 
@@ -44,10 +44,12 @@ npx @insforge/cli memory remember \
 | `preference` | How the user wants things done | "Migrations only, never raw DDL in prod" |
 | `reference` | Where something lives | "Stripe staging secret location" |
 
+These four are the only valid `--kind` values. There is no `gotcha` kind: a gotcha is content, not a kind - store it as `fact` (or `decision` when it records a choice you made because of it).
+
 ## What to store
 
 - Decisions **with their rationale** - the "why" exists nowhere in the code and is the highest-value recall.
-- Non-obvious gotchas and behaviors you had to discover (cascade semantics, insert-format quirks, which key to use where).
+- Non-obvious gotchas and behaviors you had to discover (cascade semantics, insert-format quirks, which key to use where) - store these as `--kind fact`.
 - Where secrets, dashboards, and external resources live.
 - Reversals: "we changed X to Y after Z" - memory keeps the current truth plus the history of why it changed.
 
