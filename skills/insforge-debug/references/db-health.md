@@ -36,7 +36,7 @@ npx @insforge/cli diagnose db [--check <checks>]
 ## Boundaries
 
 - **Current snapshot, not history.** `pg_stat_*` resets on Postgres restart; numbers are cumulative since last reset, not a time series.
-- **`slow-queries` is point-in-time only.** It reads `pg_stat_activity`, so it lists only queries running for >5s *at the moment the check runs* — an empty result does not mean no slow queries have occurred. For historical slow queries, use [logs](logs.md) (`postgres.logs`) or [advisor](advisor.md) (`--category performance`).
+- **`slow-queries` is point-in-time only.** It reads `pg_stat_activity`, so it lists only queries running for >5s *at the moment the check runs* — an empty result does not mean no slow queries have occurred. For historical slow queries, [advisor](advisor.md) (`--category performance --json`) is where `pg_stat_statements` lives: its `performance/slow-query` rule reports the query text with mean/total exec time and call counts (silently skipped if the extension isn't installed). Use [logs](logs.md) (`postgres.logs`) when you need the timestamp of a specific occurrence — the advisor's aggregates don't carry one.
 - **Doesn't evaluate RLS.** For "which policy is making this query slow," use [policies](policies.md).
 
 ## Example
