@@ -1,4 +1,4 @@
-# npx @insforge/cli payments razorpay
+# npx -y @insforge/cli payments razorpay
 
 Use this reference when configuring or inspecting Razorpay payment infrastructure. For app order/subscription code, load `skills/insforge/payments/razorpay.md`.
 
@@ -7,20 +7,20 @@ Use this reference when configuring or inspecting Razorpay payment infrastructur
 Always start with status:
 
 ```bash
-npx @insforge/cli payments razorpay status
+npx -y @insforge/cli payments razorpay status
 ```
 
 If Razorpay is unconfigured, add Key ID and Key Secret. `config set` validates the keys and automatically syncs provider state when the key or account changes. Use `status` again after setup to verify key/account/sync/webhook health:
 
 ```bash
-npx @insforge/cli payments razorpay config set --environment test --key-id rzp_test_xxx --key-secret xxx
-npx @insforge/cli payments razorpay status
+npx -y @insforge/cli payments razorpay config set --environment test --key-id rzp_test_xxx --key-secret xxx
+npx -y @insforge/cli payments razorpay status
 ```
 
 Use `sync` later to manually refresh mirrored provider data or retry a failed sync:
 
 ```bash
-npx @insforge/cli payments razorpay sync --environment test
+npx -y @insforge/cli payments razorpay sync --environment test
 ```
 
 Use `--environment test` while building. Use `live` only after explicit production approval. Do not store Razorpay keys with generic `secrets` commands.
@@ -72,12 +72,12 @@ Razorpay catalog concepts are not Stripe concepts:
 Commands:
 
 ```bash
-npx @insforge/cli payments razorpay catalog --environment test
-npx @insforge/cli payments razorpay items list --environment test
-npx @insforge/cli payments razorpay items create --environment test --name "Pro Plan" --amount 200000 --currency inr
-npx @insforge/cli payments razorpay items update item_123 --environment test --active false
-npx @insforge/cli payments razorpay plans list --environment test
-npx @insforge/cli payments razorpay plans create --environment test --period monthly --interval 1 --item-name "Pro Plan" --item-amount 200000 --item-currency inr
+npx -y @insforge/cli payments razorpay catalog --environment test
+npx -y @insforge/cli payments razorpay items list --environment test
+npx -y @insforge/cli payments razorpay items create --environment test --name "Pro Plan" --amount 200000 --currency inr
+npx -y @insforge/cli payments razorpay items update item_123 --environment test --active false
+npx -y @insforge/cli payments razorpay plans list --environment test
+npx -y @insforge/cli payments razorpay plans create --environment test --period monthly --interval 1 --item-name "Pro Plan" --item-amount 200000 --item-currency inr
 ```
 
 Do not map Razorpay Plans to Stripe Prices. A Razorpay Plan is a subscription billing definition that wraps an Item.
@@ -87,11 +87,11 @@ Do not map Razorpay Plans to Stripe Prices. A Razorpay Plan is a subscription bi
 Use these for inspection and debugging:
 
 ```bash
-npx @insforge/cli payments razorpay customers --environment test
-npx @insforge/cli payments razorpay subscriptions --environment test
-npx @insforge/cli payments razorpay subscriptions --environment test --subject-type team --subject-id team_123
-npx @insforge/cli payments razorpay transactions --environment test
-npx @insforge/cli payments razorpay transactions --environment test --limit 20 --json
+npx -y @insforge/cli payments razorpay customers --environment test
+npx -y @insforge/cli payments razorpay subscriptions --environment test
+npx -y @insforge/cli payments razorpay subscriptions --environment test --subject-type team --subject-id team_123
+npx -y @insforge/cli payments razorpay transactions --environment test
+npx -y @insforge/cli payments razorpay transactions --environment test --limit 20 --json
 ```
 
 `--subject-type` and `--subject-id` are app billing subjects passed to InsForge, such as `team:team_123` or `user:user_123`. They are not Razorpay customer, order, payment, plan, or subscription IDs.

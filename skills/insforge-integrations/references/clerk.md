@@ -14,7 +14,7 @@ This guide targets **Next.js (App Router)**. The same pattern works in other Rea
 
 ```text
 1. Create Clerk application        → Clerk Dashboard (manual)
-2. Create/link InsForge project    → npx @insforge/cli create or link
+2. Create/link InsForge project    → npx -y @insforge/cli create or link
 3. Create JWT template in Clerk    → Clerk Dashboard (manual)
 4. Install deps + configure env    → npm install, .env.local
 5. Wire ClerkProvider + middleware → app/layout.tsx + middleware.ts
@@ -38,8 +38,8 @@ This guide targets **Next.js (App Router)**. The same pattern works in other Rea
 - Do NOT add `sub` or `iss` — they are reserved and auto-included
 
 ### InsForge Project
-- Create via `npx @insforge/cli create` or link via `npx @insforge/cli link --project-id <id>`
-- Get the JWT secret via CLI: `npx @insforge/cli secrets get JWT_SECRET`
+- Create via `npx -y @insforge/cli create` or link via `npx -y @insforge/cli link --project-id <id>`
+- Get the JWT secret via CLI: `npx -y @insforge/cli secrets get JWT_SECRET`
 - Note down **URL** and **Anon Key** from InsForge, then use the CLI output as the signing key in Clerk
 
 ## Next.js wiring

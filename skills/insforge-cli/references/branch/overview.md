@@ -1,4 +1,4 @@
-# Backend Branches — `npx @insforge/cli branch`
+# Backend Branches — `npx -y @insforge/cli branch`
 
 A branch is a full child of the parent project: own EC2, own PostgreSQL, own storage namespace. It shares the parent's `JWT_SECRET` (same users authenticate) but gets fresh `API_KEY` / `ANON_KEY`. Use it to test schema, RLS, auth, or function changes in isolation before merging back to parent.
 

@@ -1,16 +1,16 @@
-# npx @insforge/cli db migrations
+# npx -y @insforge/cli db migrations
 
 Manage developer database migration files for an InsForge project.
 
 ## Commands
 
 ```bash
-npx @insforge/cli db migrations list
-npx @insforge/cli db migrations fetch
-npx @insforge/cli db migrations new <migration-name>
-npx @insforge/cli db migrations up <migration-file-name-or-version>
-npx @insforge/cli db migrations up --to <migration-file-name-or-version>
-npx @insforge/cli db migrations up --all
+npx -y @insforge/cli db migrations list
+npx -y @insforge/cli db migrations fetch
+npx -y @insforge/cli db migrations new <migration-name>
+npx -y @insforge/cli db migrations up <migration-file-name-or-version>
+npx -y @insforge/cli db migrations up --to <migration-file-name-or-version>
+npx -y @insforge/cli db migrations up --all
 ```
 
 ## What Each Command Does
@@ -63,28 +63,28 @@ migrations/
 
 ```bash
 # View remote migration history
-npx @insforge/cli db migrations list
+npx -y @insforge/cli db migrations list
 
 # Fetch remote migration files into migrations/
-npx @insforge/cli db migrations fetch
+npx -y @insforge/cli db migrations fetch
 
 # Create the next migration file
-npx @insforge/cli db migrations new create-posts
+npx -y @insforge/cli db migrations new create-posts
 
 # Apply by exact filename
-npx @insforge/cli db migrations up 20260418091500_create-posts.sql
+npx -y @insforge/cli db migrations up 20260418091500_create-posts.sql
 
 # Apply by version
-npx @insforge/cli db migrations up 20260418091500
+npx -y @insforge/cli db migrations up 20260418091500
 
 # Apply all pending migrations through a target
-npx @insforge/cli db migrations up --to 20260418110000
+npx -y @insforge/cli db migrations up --to 20260418110000
 
 # Apply all pending migrations
-npx @insforge/cli db migrations up --all
+npx -y @insforge/cli db migrations up --all
 
 # JSON output
-npx @insforge/cli db migrations list --json
+npx -y @insforge/cli db migrations list --json
 ```
 
 ## Output
@@ -179,7 +179,7 @@ npx @insforge/cli db migrations list --json
 
 | Mistake | Solution |
 |---------|----------|
-| Naming files manually with underscores or spaces | Use `npx @insforge/cli db migrations new <migration-name>` |
+| Naming files manually with underscores or spaces | Use `npx -y @insforge/cli db migrations new <migration-name>` |
 | Reaching for `db query` to create or alter schema | Use migration files for schema changes; reserve `db query` for row changes |
 | Trying to alter InsForge-managed tables like app-owned tables | Keep generic schema, RLS, trigger, function, and grant changes on `public` application objects; use feature-specific docs for managed module hooks or RLS |
 | Storing large app state or repeated nested objects in one JSONB column | Normalize into typed columns and child tables before exposing the table through SDK/PostgREST CRUD |
@@ -192,10 +192,10 @@ npx @insforge/cli db migrations list --json
 ## Recommended Workflow
 
 ```text
-1. Check remote history             → npx @insforge/cli db migrations list
-2. Sync applied files when useful   → npx @insforge/cli db migrations fetch
-3. Create the next migration file   → npx @insforge/cli db migrations new <migration-name>
+1. Check remote history             → npx -y @insforge/cli db migrations list
+2. Sync applied files when useful   → npx -y @insforge/cli db migrations fetch
+3. Create the next migration file   → npx -y @insforge/cli db migrations new <migration-name>
 4. Edit the SQL file                → migrations/<version>_<migration-name>.sql
-5. Apply the migration              → npx @insforge/cli db migrations up <filename> or --all
+5. Apply the migration              → npx -y @insforge/cli db migrations up <filename> or --all
 6. If apply fails, read the error, fix the migration, and retry the migration.
 ```

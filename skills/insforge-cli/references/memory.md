@@ -5,10 +5,10 @@ Every InsForge project has built-in agent memory: a platform-managed store of du
 ## Commands
 
 ```bash
-npx @insforge/cli memory list                  # title index of stored memories (cheap - no AI call)
-npx @insforge/cli memory recall "<query>"      # semantic + keyword recall; --scope, --limit, --threshold
-npx @insforge/cli memory remember "<content>"  # store a memory; --kind, --title, --scope, --source
-npx @insforge/cli memory remember --file <f>   # extract durable memories from a transcript/notes file
+npx -y @insforge/cli memory list                  # title index of stored memories (cheap - no AI call)
+npx -y @insforge/cli memory recall "<query>"      # semantic + keyword recall; --scope, --limit, --threshold
+npx -y @insforge/cli memory remember "<content>"  # store a memory; --kind, --title, --scope, --source
+npx -y @insforge/cli memory remember --file <f>   # extract durable memories from a transcript/notes file
 ```
 
 All commands honor `--json`.
@@ -18,19 +18,19 @@ All commands honor `--json`.
 **At the start of every non-trivial task** - check what past sessions already learned:
 
 ```bash
-npx @insforge/cli memory list
+npx -y @insforge/cli memory list
 ```
 
 This is cheap (no LLM or embedding call). Scan the titles; if any look relevant, recall the details before designing or debugging:
 
 ```bash
-npx @insforge/cli memory recall "how are snippet tags filtered"
+npx -y @insforge/cli memory recall "how are snippet tags filtered"
 ```
 
 **When you make a decision, hit a gotcha, or change something** - record it at the moment it happens, not at the end of the session:
 
 ```bash
-npx @insforge/cli memory remember \
+npx -y @insforge/cli memory remember \
   --kind decision --title "Tags as text[] not join table" \
   "Snippet tags are a text[] column with a GIN index, not a join table. Chosen because tags are free-form per owner with no shared vocabulary; revisit if tag analytics are needed."
 ```

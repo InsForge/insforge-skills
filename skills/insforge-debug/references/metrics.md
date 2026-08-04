@@ -5,7 +5,7 @@ EC2 instance time-series telemetry: CPU, memory, disk, network. The primary prim
 ## Command
 
 ```bash
-npx @insforge/cli diagnose metrics [--range 1h|6h|24h|7d] [--metrics <list>]
+npx -y @insforge/cli diagnose metrics [--range 1h|6h|24h|7d] [--metrics <list>]
 ```
 
 Default range: `1h`.
@@ -48,13 +48,13 @@ User reports: "API has been slow for the last 2 hours."
 
 ```bash
 # 1. Check resource pressure over the right window
-npx @insforge/cli diagnose metrics --range 6h
+npx -y @insforge/cli diagnose metrics --range 6h
 
 # 2. If CPU/memory spiked at a timestamp, line it up with errors
-npx @insforge/cli diagnose logs --limit 200
+npx -y @insforge/cli diagnose logs --limit 200
 
 # 3. If DB is the bottleneck (Postgres-heavy CPU patterns)
-npx @insforge/cli diagnose db
+npx -y @insforge/cli diagnose db
 ```
 
 ## Frequently paired with

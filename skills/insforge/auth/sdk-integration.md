@@ -8,7 +8,7 @@ User authentication, registration, and session management via `insforge.auth`.
 
 ## Setup
 
-First, ensure your `.env` file is configured with your InsForge URL and anon key. Get the anon key with `npx @insforge/cli secrets get ANON_KEY`. See the main [SKILL.md](../SKILL.md) for framework-specific variable names and full setup steps.
+First, ensure your `.env` file is configured with your InsForge URL and anon key. Get the anon key with `npx -y @insforge/cli secrets get ANON_KEY`. See the main [SKILL.md](../SKILL.md) for framework-specific variable names and full setup steps.
 
 ```javascript
 import { createClient } from '@insforge/sdk'
@@ -402,9 +402,9 @@ Only render the reset form when `insforge_status=ready` and `token` is present.
 ## Best Practices
 
 1. **Always check auth config first** before implementing
-   - Run `npx @insforge/cli metadata --json` to get auth config (`requireEmailVerification`, `verifyEmailMethod`, `resetPasswordMethod`, `oAuthProviders`, `allowedRedirectUrls`)
+   - Run `npx -y @insforge/cli metadata --json` to get auth config (`requireEmailVerification`, `verifyEmailMethod`, `resetPasswordMethod`, `oAuthProviders`, `allowedRedirectUrls`)
    - This tells you what features to implement
-   - To change supported project config such as redirect URLs, verification flags, password policy, or auth SMTP settings, use `npx @insforge/cli config apply` — see the **insforge-cli** skill's Configuration section. OAuth providers and external app setup are dashboard/provider-managed.
+   - To change supported project config such as redirect URLs, verification flags, password policy, or auth SMTP settings, use `npx -y @insforge/cli config apply` — see the **insforge-cli** skill's Configuration section. OAuth providers and external app setup are dashboard/provider-managed.
 
 2. **The sign-up page must handle the full registration flow**
    - After calling `signUp()`, if `requireEmailVerification` is true, branch on `verifyEmailMethod`
@@ -494,7 +494,7 @@ if (enabledProviders.includes('github')) {
 ## Recommended Workflow
 
 ```
-1. Get auth config           → npx @insforge/cli metadata --json
+1. Get auth config           → npx -y @insforge/cli metadata --json
 2. Check what's enabled      → Email verification? Which OAuth providers?
 3. Build appropriate UI      → Code input vs magic link, OAuth buttons
 4. Implement sign-up         → Handle requireEmailVerification response

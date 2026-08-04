@@ -5,7 +5,7 @@ Static-scan engine that audits the project against a rule catalog and returns is
 ## Command
 
 ```bash
-npx @insforge/cli diagnose advisor [--severity critical|warning|info] [--category security|performance|health] [--limit <n>] [--json]
+npx -y @insforge/cli diagnose advisor [--severity critical|warning|info] [--category security|performance|health] [--limit <n>] [--json]
 ```
 
 Default limit: 50. Requires Platform login — **not available on backends linked via `--api-key`**.
@@ -70,17 +70,17 @@ Pre-launch audit:
 
 ```bash
 # Full scan, critical only first
-npx @insforge/cli diagnose advisor --severity critical
+npx -y @insforge/cli diagnose advisor --severity critical
 
 # Security focus
-npx @insforge/cli diagnose advisor --category security
+npx -y @insforge/cli diagnose advisor --category security
 
 # Performance focus (often pairs with db-health to verify)
-npx @insforge/cli diagnose advisor --category performance
-npx @insforge/cli diagnose db --check slow-queries,index-usage
+npx -y @insforge/cli diagnose advisor --category performance
+npx -y @insforge/cli diagnose db --check slow-queries,index-usage
 
 # Re-scan after fixes
-npx @insforge/cli diagnose advisor --severity critical
+npx -y @insforge/cli diagnose advisor --severity critical
 ```
 
 ## Frequently paired with

@@ -1,4 +1,4 @@
-# npx @insforge/cli compute deploy — deploy a backend container
+# npx -y @insforge/cli compute deploy — deploy a backend container
 
 > 🔒 **Private preview.** Compute services are not yet generally available.
 > Access is gated per-project; the API, CLI flags, error codes, and quotas
@@ -10,14 +10,14 @@
 > InsForge runs containers on Fly.io under the hood, but the Fly account, org,
 > IPs, and machine ownership all live on the InsForge cloud. Using `flyctl`
 > with your own credentials will land in the wrong Fly org and fail with
-> `unauthorized`. Use `npx @insforge/cli compute …` instead.
+> `unauthorized`. Use `npx -y @insforge/cli compute …` instead.
 
 Deploy a backend service. Two modes:
 1. **Source mode** (`compute deploy [dir]`): you have a Dockerfile. CLI shells out to `flyctl deploy --remote-only --build-only` using a short-lived per-app deploy token minted by InsForge cloud. Build runs on Fly's remote builder; image is pushed to `registry.fly.io`. Cloud then launches the machine. **No local Docker daemon needed** — only `flyctl` on PATH.
 2. **Image mode** (`compute deploy --image <url>`): deploy a pre-built image from any registry. **Nothing needed locally** beyond the InsForge CLI.
 
 > Looking to deploy a **frontend** (static site / SPA / Next.js to Vercel)? Use
-> `npx @insforge/cli deployments deploy` instead — see
+> `npx -y @insforge/cli deployments deploy` instead — see
 > [deployments/deploy.md](deployments/deploy.md).
 
 ## Two modes
@@ -37,10 +37,10 @@ Both deploy to the same Fly.io infrastructure with the same options (`--port`, `
 # Source mode — flyctl remote build + push, then cloud launches the machine.
 # Requires `flyctl` on PATH (curl -L https://fly.io/install.sh | sh). NO Docker daemon needed.
 # Cloud mints a 20-min per-app token attenuated to one app + builder/wg with `else: deny`.
-npx @insforge/cli compute deploy <dir> --name <name> [options]
+npx -y @insforge/cli compute deploy <dir> --name <name> [options]
 
 # Image mode — deploy pre-built image (nothing needed locally).
-npx @insforge/cli compute deploy --image <url> --name <name> [options]
+npx -y @insforge/cli compute deploy --image <url> --name <name> [options]
 ```
 
 ## Options
@@ -63,13 +63,13 @@ Exactly one of `[dir]` or `--image` must be provided.
 
 ```bash
 # Source mode — your project, your Dockerfile, flyctl on PATH (no Docker needed)
-npx @insforge/cli compute deploy . --name my-api --port 8000
+npx -y @insforge/cli compute deploy . --name my-api --port 8000
 
 # Off-the-shelf image
-npx @insforge/cli compute deploy --image nginx:alpine --name proxy --port 80
+npx -y @insforge/cli compute deploy --image nginx:alpine --name proxy --port 80
 
 # Pre-built image from GHCR
-npx @insforge/cli compute deploy \
+npx -y @insforge/cli compute deploy \
   --image ghcr.io/your-org/your-app:v1 \
   --name my-api \
   --port 8000 \
@@ -78,13 +78,13 @@ npx @insforge/cli compute deploy \
   --env '{"OPENAI_API_KEY": "sk-..."}'
 
 # Bigger machine (8 cores + 4 GB RAM)
-npx @insforge/cli compute deploy ./worker \
+npx -y @insforge/cli compute deploy ./worker \
   --name batch \
   --port 8080 \
   --cpu performance-8x --memory 4096
 
 # Env vars from a .env file (preferred for >1 secret)
-npx @insforge/cli compute deploy \
+npx -y @insforge/cli compute deploy \
   --image ghcr.io/your-org/your-app:v1 \
   --name my-api \
   --port 8000 \
@@ -97,14 +97,14 @@ The `GET` path never returns env values (encrypted at rest, no decrypt endpoint)
 
 ```bash
 # Partial merge — keeps untouched keys intact (repeatable flags)
-npx @insforge/cli compute update <id> \
+npx -y @insforge/cli compute update <id> \
   --env-set DATABASE_URL=postgres://new-host \
   --env-set API_KEY=sk-... \
   --env-unset OLD_DEBUG_TOKEN
 
 # Wholesale replace — clears anything not in the JSON. Mutually exclusive
 # with --env-set / --env-unset.
-npx @insforge/cli compute update <id> --env '{"NODE_ENV":"production","DATABASE_URL":"..."}'
+npx -y @insforge/cli compute update <id> --env '{"NODE_ENV":"production","DATABASE_URL":"..."}'
 ```
 
 ## Source mode — worked example
@@ -115,7 +115,7 @@ $ ls
 Dockerfile  app.py  requirements.txt
 
 # Deploy:
-$ npx @insforge/cli compute deploy . --name my-bot --port 8080
+$ npx -y @insforge/cli compute deploy . --name my-bot --port 8080
 ✓ Detected Dockerfile at /path/to/Dockerfile
 ✓ Creating service "my-bot"...
 ✓ Created Fly app my-bot-projAbc
@@ -157,7 +157,7 @@ docker build -t ghcr.io/<your-gh-username>/<app-name>:v1 .
 echo $GITHUB_TOKEN | docker login ghcr.io -u <your-gh-username> --password-stdin
 docker push ghcr.io/<your-gh-username>/<app-name>:v1
 
-npx @insforge/cli compute deploy \
+npx -y @insforge/cli compute deploy \
   --image ghcr.io/<your-gh-username>/<app-name>:v1 \
   --name <app-name> \
   --port <port>

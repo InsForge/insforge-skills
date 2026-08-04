@@ -10,7 +10,7 @@ Send custom transactional HTML emails via `insforge.emails.send`. Routes through
 
 ## Setup
 
-Ensure your `.env` is configured with your InsForge URL and anon key. Get the anon key with `npx @insforge/cli secrets get ANON_KEY`. See the main [SKILL.md](../SKILL.md) for framework-specific variable names.
+Ensure your `.env` is configured with your InsForge URL and anon key. Get the anon key with `npx -y @insforge/cli secrets get ANON_KEY`. See the main [SKILL.md](../SKILL.md) for framework-specific variable names.
 
 ```javascript
 import { createClient } from '@insforge/sdk'

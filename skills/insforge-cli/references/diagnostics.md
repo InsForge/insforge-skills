@@ -5,12 +5,12 @@ Use `diagnose` for backend health checks and `logs` for source-specific runtime 
 ## Diagnostics
 
 ```bash
-npx @insforge/cli diagnose
-npx @insforge/cli diagnose --ai "<issue description>"
-npx @insforge/cli diagnose metrics --range 24h
-npx @insforge/cli diagnose advisor --severity critical
-npx @insforge/cli diagnose db --check bloat,slow-queries
-npx @insforge/cli diagnose logs --limit 100
+npx -y @insforge/cli diagnose
+npx -y @insforge/cli diagnose --ai "<issue description>"
+npx -y @insforge/cli diagnose metrics --range 24h
+npx -y @insforge/cli diagnose advisor --severity critical
+npx -y @insforge/cli diagnose db --check bloat,slow-queries
+npx -y @insforge/cli diagnose logs --limit 100
 ```
 
 - `diagnose` - full health report across all checks.
@@ -23,10 +23,10 @@ npx @insforge/cli diagnose logs --limit 100
 ## Logs
 
 ```bash
-npx @insforge/cli logs function.logs --limit 50
-npx @insforge/cli logs postgres.logs --limit 50
-npx @insforge/cli logs insforge.logs --limit 50
-npx @insforge/cli logs postgrest.logs --limit 50
+npx -y @insforge/cli logs function.logs --limit 50
+npx -y @insforge/cli logs postgres.logs --limit 50
+npx -y @insforge/cli logs insforge.logs --limit 50
+npx -y @insforge/cli logs postgrest.logs --limit 50
 ```
 
 | Source                 | Description                   |

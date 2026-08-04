@@ -77,7 +77,7 @@ Refer to the specific `references/<provider>.md` file for complete examples.
 - All auth provider user IDs are strings (not UUIDs) — always use `TEXT` columns for `user_id`
 - Use `requesting_user_id()` instead of `auth.uid()` for RLS policies
 - Pass the JWT via `accessToken` — a static string, not a function; for short-lived tokens (Clerk) sync refreshes with `client.setAccessToken(token, AuthChangeEvent.TOKEN_REFRESHED)` after the initial same-user sign-in
-- Always get the JWT secret via `npx @insforge/cli secrets get JWT_SECRET`
+- Always get the JWT secret via `npx -y @insforge/cli secrets get JWT_SECRET`
 
 **Payment facilitators (x402)**
 - Always check the result of the database `insert(...)` after settlement — settlement takes money onchain before the insert runs; a silent DB failure loses the record
@@ -93,7 +93,7 @@ Refer to the specific `references/<provider>.md` file for complete examples.
 |---------|----------|
 | Using `auth.uid()` for RLS | Use `requesting_user_id()` — third-party IDs are strings, not UUIDs |
 | Using UUID columns for `user_id` | Use `TEXT` — all supported providers use string-format IDs |
-| Hardcoding the JWT secret | Always retrieve via `npx @insforge/cli secrets get JWT_SECRET` |
+| Hardcoding the JWT secret | Always retrieve via `npx -y @insforge/cli secrets get JWT_SECRET` |
 | Missing `requesting_user_id()` function | Must be created before RLS policies will work |
 
 **Payments (x402)**

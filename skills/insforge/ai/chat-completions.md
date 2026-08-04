@@ -13,7 +13,7 @@ Official OpenRouter references:
 
 ## Setup
 
-Start with [overview.md](overview.md): run `npx @insforge/cli ai setup`, keep
+Start with [overview.md](overview.md): run `npx -y @insforge/cli ai setup`, keep
 `OPENROUTER_API_KEY` server-side, and initialize the OpenAI SDK with
 `baseURL: 'https://openrouter.ai/api/v1'`.
 

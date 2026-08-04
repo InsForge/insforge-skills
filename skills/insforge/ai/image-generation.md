@@ -11,7 +11,7 @@ Official OpenRouter references:
 
 ## Setup
 
-Start with [overview.md](overview.md): run `npx @insforge/cli ai setup` and keep
+Start with [overview.md](overview.md): run `npx -y @insforge/cli ai setup` and keep
 `OPENROUTER_API_KEY` server-side. Check image-capable models before use:
 
 ```bash

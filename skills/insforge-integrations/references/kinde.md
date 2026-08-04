@@ -13,7 +13,7 @@ Kinde **does not support custom JWT signing keys**, so you sign a separate JWT s
 
 ```text
 1. Create Kinde application        → Kinde Dashboard (manual)
-2. Create/link InsForge project    → npx @insforge/cli create or link
+2. Create/link InsForge project    → npx -y @insforge/cli create or link
 3. Install deps + configure env    → npm install, .env.local
 4. Create Kinde auth route         → app/api/auth/[kindeAuth]/route.js
 5. Create InsForge client utility  → lib/insforge.ts (server-side JWT signing)
@@ -32,8 +32,8 @@ Kinde **does not support custom JWT signing keys**, so you sign a separate JWT s
 - Note down **Domain**, **Client ID**, **Client Secret** from App Keys
 
 ### InsForge Project
-- Create via `npx @insforge/cli create` or link via `npx @insforge/cli link --project-id <id>`
-- Get the JWT secret via CLI: `npx @insforge/cli secrets get JWT_SECRET`
+- Create via `npx -y @insforge/cli create` or link via `npx -y @insforge/cli link --project-id <id>`
+- Get the JWT secret via CLI: `npx -y @insforge/cli secrets get JWT_SECRET`
 - Note down **URL** and **Anon Key** from InsForge, then export the CLI value as `INSFORGE_JWT_SECRET`
 
 ## Kinde auth route
@@ -115,7 +115,7 @@ $$;
 | `KINDE_POST_LOGIN_REDIRECT_URL` | `http://localhost:3000` |
 | `NEXT_PUBLIC_INSFORGE_URL` | InsForge Dashboard |
 | `NEXT_PUBLIC_INSFORGE_ANON_KEY` | InsForge Dashboard |
-| `INSFORGE_JWT_SECRET` | InsForge CLI (`npx @insforge/cli secrets get JWT_SECRET`) |
+| `INSFORGE_JWT_SECRET` | InsForge CLI (`npx -y @insforge/cli secrets get JWT_SECRET`) |
 
 ## Common Mistakes
 

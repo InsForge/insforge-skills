@@ -1,11 +1,11 @@
-# npx @insforge/cli login
+# npx -y @insforge/cli login
 
 Authenticate with the InsForge platform.
 
 ## Syntax
 
 ```bash
-npx @insforge/cli login [options]
+npx -y @insforge/cli login [options]
 ```
 
 ## Options
@@ -24,7 +24,7 @@ npx @insforge/cli login [options]
 Opens your browser for OAuth 2.0 authentication with PKCE:
 
 ```bash
-npx @insforge/cli login
+npx -y @insforge/cli login
 ```
 
 The CLI starts a local callback server, opens the browser, and waits up to 5 minutes for you to authorize.
@@ -37,7 +37,7 @@ In sandboxed environments (the ChatGPT app, remote/SSH sessions, containers), th
 
 ```bash
 # Step 1 — capture the verification link (process is killed after 15s; that's expected)
-timeout 15 npx @insforge/cli login --device --json 2>&1 || true
+timeout 15 npx -y @insforge/cli login --device --json 2>&1 || true
 ```
 
 Output includes the link and code, e.g.:
@@ -54,17 +54,17 @@ Relay that link and code to the user. They open it, check the code matches, and 
 
 ```bash
 # Step 2 — after relaying (or once the user says they approved): resume and complete
-npx @insforge/cli login --device --json
+npx -y @insforge/cli login --device --json
 ```
 
-If the user already approved, step 2 completes immediately with the `--json` success object; otherwise it polls until they do. Codes expire after 15 minutes; both steps must run with the same `$HOME`. In an interactive terminal (a human at a shell), skip the two-step dance — just run `npx @insforge/cli login --device` and wait.
+If the user already approved, step 2 completes immediately with the `--json` success object; otherwise it polls until they do. Codes expire after 15 minutes; both steps must run with the same `$HOME`. In an interactive terminal (a human at a shell), skip the two-step dance — just run `npx -y @insforge/cli login --device` and wait.
 
 ### User API Key (direct) — recommended for headless / agent / CI
 
 No browser, no interactive prompt. Create a key in the dashboard (Profile → API Keys):
 
 ```bash
-npx @insforge/cli login --user-api-key "$INSFORGE_USER_API_KEY"
+npx -y @insforge/cli login --user-api-key "$INSFORGE_USER_API_KEY"
 ```
 
 The key is stored and sent directly as the bearer credential on every request — it authenticates as your account with full access. There is no token exchange or refresh: if the key is revoked or expires, the CLI asks you to log in again.
@@ -72,13 +72,13 @@ The key is stored and sent directly as the bearer credential on every request �
 ### Email/Password
 
 ```bash
-npx @insforge/cli login --email
+npx -y @insforge/cli login --email
 ```
 
 Prompts for email and password interactively. For non-interactive use (CI/CD), set environment variables:
 
 ```bash
-INSFORGE_EMAIL=user@example.com INSFORGE_PASSWORD=secret npx @insforge/cli login --email
+INSFORGE_EMAIL=user@example.com INSFORGE_PASSWORD=secret npx -y @insforge/cli login --email
 ```
 
 ## Credential Storage
@@ -93,18 +93,18 @@ Plus user info (id, name, email). OAuth/email sessions refresh their JWT automat
 
 ```bash
 # Interactive OAuth login (recommended for humans)
-npx @insforge/cli login
+npx -y @insforge/cli login
 
 # Headless / agent / CI: user API key login (no browser)
-npx @insforge/cli login --user-api-key "$INSFORGE_USER_API_KEY" --json
+npx -y @insforge/cli login --user-api-key "$INSFORGE_USER_API_KEY" --json
 
 # Sandbox (e.g. ChatGPT app): device login, two steps — capture link, relay, resume
-timeout 15 npx @insforge/cli login --device --json 2>&1 || true
-npx @insforge/cli login --device --json
+timeout 15 npx -y @insforge/cli login --device --json 2>&1 || true
+npx -y @insforge/cli login --device --json
 
 # Email/password login
-npx @insforge/cli login --email
+npx -y @insforge/cli login --email
 
 # CI/CD non-interactive login via email/password
-INSFORGE_EMAIL=$EMAIL INSFORGE_PASSWORD=$PASSWORD npx @insforge/cli login --email --json
+INSFORGE_EMAIL=$EMAIL INSFORGE_PASSWORD=$PASSWORD npx -y @insforge/cli login --email --json
 ```

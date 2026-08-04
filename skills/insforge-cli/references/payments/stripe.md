@@ -1,4 +1,4 @@
-# npx @insforge/cli payments stripe
+# npx -y @insforge/cli payments stripe
 
 Use this reference when configuring or inspecting Stripe payment infrastructure. For app checkout code, load `skills/insforge/payments/stripe.md`.
 
@@ -7,20 +7,20 @@ Use this reference when configuring or inspecting Stripe payment infrastructure.
 Always start with status:
 
 ```bash
-npx @insforge/cli payments stripe status
+npx -y @insforge/cli payments stripe status
 ```
 
 If Stripe is unconfigured, add the environment key. `config set` validates the key and automatically syncs provider state when the key or account changes. Use `status` again after setup to verify key/account/sync/webhook health:
 
 ```bash
-npx @insforge/cli payments stripe config set --environment test sk_test_xxx
-npx @insforge/cli payments stripe status
+npx -y @insforge/cli payments stripe config set --environment test sk_test_xxx
+npx -y @insforge/cli payments stripe status
 ```
 
 Use `sync` later to manually refresh mirrored provider data or retry a failed sync:
 
 ```bash
-npx @insforge/cli payments stripe sync --environment test
+npx -y @insforge/cli payments stripe sync --environment test
 ```
 
 Use `--environment test` while building. Use `live` only after explicit production approval. Do not store Stripe secret keys with generic `secrets` commands.
@@ -30,7 +30,7 @@ Use `--environment test` while building. Use `live` only after explicit producti
 Stripe webhook registration is automated by InsForge when the backend has a public URL:
 
 ```bash
-npx @insforge/cli payments stripe webhooks configure --environment test
+npx -y @insforge/cli payments stripe webhooks configure --environment test
 ```
 
 InsForge configures these Stripe events:
@@ -69,17 +69,17 @@ Stripe catalog concepts:
 Commands:
 
 ```bash
-npx @insforge/cli payments stripe catalog --environment test
-npx @insforge/cli payments stripe products list --environment test
-npx @insforge/cli payments stripe products get prod_123 --environment test
-npx @insforge/cli payments stripe products create --environment test --name "Pro Plan"
-npx @insforge/cli payments stripe products update prod_123 --environment test --description "Updated"
-npx @insforge/cli payments stripe products delete prod_123 --environment test -y
-npx @insforge/cli payments stripe prices list --environment test
-npx @insforge/cli payments stripe prices create --environment test --product prod_123 --currency usd --unit-amount 2000
-npx @insforge/cli payments stripe prices create --environment test --product prod_123 --currency usd --unit-amount 2000 --interval month
-npx @insforge/cli payments stripe prices update price_123 --environment test --active false
-npx @insforge/cli payments stripe prices archive price_123 --environment test
+npx -y @insforge/cli payments stripe catalog --environment test
+npx -y @insforge/cli payments stripe products list --environment test
+npx -y @insforge/cli payments stripe products get prod_123 --environment test
+npx -y @insforge/cli payments stripe products create --environment test --name "Pro Plan"
+npx -y @insforge/cli payments stripe products update prod_123 --environment test --description "Updated"
+npx -y @insforge/cli payments stripe products delete prod_123 --environment test -y
+npx -y @insforge/cli payments stripe prices list --environment test
+npx -y @insforge/cli payments stripe prices create --environment test --product prod_123 --currency usd --unit-amount 2000
+npx -y @insforge/cli payments stripe prices create --environment test --product prod_123 --currency usd --unit-amount 2000 --interval month
+npx -y @insforge/cli payments stripe prices update price_123 --environment test --active false
+npx -y @insforge/cli payments stripe prices archive price_123 --environment test
 ```
 
 Stripe Price amount/currency/interval are immutable. Create a new Price and archive the old one instead of trying to mutate billing terms.
@@ -89,11 +89,11 @@ Stripe Price amount/currency/interval are immutable. Create a new Price and arch
 Use these for inspection and debugging:
 
 ```bash
-npx @insforge/cli payments stripe customers --environment test
-npx @insforge/cli payments stripe subscriptions --environment test
-npx @insforge/cli payments stripe subscriptions --environment test --subject-type team --subject-id team_123
-npx @insforge/cli payments stripe transactions --environment test
-npx @insforge/cli payments stripe transactions --environment test --limit 20 --json
+npx -y @insforge/cli payments stripe customers --environment test
+npx -y @insforge/cli payments stripe subscriptions --environment test
+npx -y @insforge/cli payments stripe subscriptions --environment test --subject-type team --subject-id team_123
+npx -y @insforge/cli payments stripe transactions --environment test
+npx -y @insforge/cli payments stripe transactions --environment test --limit 20 --json
 ```
 
 `--subject-type` and `--subject-id` are app billing subjects passed to InsForge, such as `team:team_123` or `user:user_123`. They are not Stripe customer, payment, price, or subscription IDs.

@@ -61,11 +61,11 @@ The status alone doesn't tell you which subsystem timed out. Route by the URL pa
 User pastes: `POST /api/database/records/posts returned { code: "PGRST204", message: "Column not found" }`.
 
 1. Read code: `PGRST*` → PostgREST source. `PGRST204` specifically means **column not found** — a `select` / `columns` / `order` / filter parameter references a column that doesn't exist on the table.
-2. Read `message` / `details` to identify the offending column name. Verify the table schema with `npx @insforge/cli db tables` or `npx @insforge/cli metadata --json`.
+2. Read `message` / `details` to identify the offending column name. Verify the table schema with `npx -y @insforge/cli db tables` or `npx -y @insforge/cli metadata --json`.
 3. Drop into `postgREST.logs` for the full error context if `details` is empty:
 
 ```bash
-npx @insforge/cli logs postgREST.logs --limit 50
+npx -y @insforge/cli logs postgREST.logs --limit 50
 ```
 
 ## Frequently paired with

@@ -1,8 +1,8 @@
-# npx @insforge/cli posthog setup
+# npx -y @insforge/cli posthog setup
 
 One-shot command that ensures the InsForge dashboard has a PostHog connection, then prints the official PostHog wizard command so the user can wire PostHog into their app code in their own terminal.
 
-> ⚠️ **For coding agents:** `npx @insforge/cli posthog setup` itself is safe to run from your shell — it just ensures the dashboard connection and exits. **`posthog setup` alone does NOT instrument the app: it writes no env vars and installs no SDK, so zero events flow until the wizard step below happens.** The **wizard command it prints at the end** (`npx -y @posthog/wizard@latest`) is interactive: it prompts on stdin (framework picker), opens a browser for OAuth, and waits for the user to pick a PostHog project. It will **not** work via the agent shell or the `!` prefix — it has to be run in the user's real terminal app (Terminal.app, iTerm, etc.). After `posthog setup` exits, ask the user to switch to their terminal and run:
+> ⚠️ **For coding agents:** `npx -y @insforge/cli posthog setup` itself is safe to run from your shell — it just ensures the dashboard connection and exits. **`posthog setup` alone does NOT instrument the app: it writes no env vars and installs no SDK, so zero events flow until the wizard step below happens.** The **wizard command it prints at the end** (`npx -y @posthog/wizard@latest`) is interactive: it prompts on stdin (framework picker), opens a browser for OAuth, and waits for the user to pick a PostHog project. It will **not** work via the agent shell or the `!` prefix — it has to be run in the user's real terminal app (Terminal.app, iTerm, etc.). After `posthog setup` exits, ask the user to switch to their terminal and run:
 >
 > ```bash
 > npx -y @posthog/wizard@latest
@@ -14,14 +14,14 @@ One-shot command that ensures the InsForge dashboard has a PostHog connection, t
 
 ## Availability
 
-InsForge Cloud projects only. Self-hosted backends don't expose `/integrations/posthog/v1/*` and this command won't work there; users on self-hosted should install PostHog directly per [PostHog's docs](https://posthog.com/docs/libraries). If the CLI fails with `PostHog connect flow unavailable (HTTP 404)`, the linked backend doesn't expose this integration — typically a self-hosted backend or the wrong project linked; check `npx @insforge/cli current`, or fall back to the direct PostHog install above. On cloud projects, do not substitute a `phc_` key from a separate PostHog account in the app's env — events will flow to PostHog but the InsForge Analytics page reads from a server-side OAuth-backed `posthog_connections` row that only `posthog setup` populates, so the page stays empty even though the integration "looks" wired. Use the key that `posthog setup` prints instead.
+InsForge Cloud projects only. Self-hosted backends don't expose `/integrations/posthog/v1/*` and this command won't work there; users on self-hosted should install PostHog directly per [PostHog's docs](https://posthog.com/docs/libraries). If the CLI fails with `PostHog connect flow unavailable (HTTP 404)`, the linked backend doesn't expose this integration — typically a self-hosted backend or the wrong project linked; check `npx -y @insforge/cli current`, or fall back to the direct PostHog install above. On cloud projects, do not substitute a `phc_` key from a separate PostHog account in the app's env — events will flow to PostHog but the InsForge Analytics page reads from a server-side OAuth-backed `posthog_connections` row that only `posthog setup` populates, so the page stays empty even though the integration "looks" wired. Use the key that `posthog setup` prints instead.
 
 ## Usage
 
 ```bash
 cd /path/to/your/app
-npx @insforge/cli link --project-id <insforge-project-id>   # if not already linked
-npx @insforge/cli posthog setup
+npx -y @insforge/cli link --project-id <insforge-project-id>   # if not already linked
+npx -y @insforge/cli posthog setup
 # CLI exits after the dashboard connection is ensured. Then run the wizard
 # command it prints (something like `npx -y @posthog/wizard@latest`) in your
 # own terminal.
@@ -52,7 +52,7 @@ The whole flow involves two OAuths in sequence, both targeting PostHog but for d
 
 | Step | What it sets up | Driver | What it writes |
 |------|-----------------|--------|----------------|
-| 2 — InsForge cli-start | Server-side connection so the InsForge dashboard Analytics page can query PostHog on the user's behalf | `npx @insforge/cli posthog setup` | `posthog_connections` row in cloud-backend |
+| 2 — InsForge cli-start | Server-side connection so the InsForge dashboard Analytics page can query PostHog on the user's behalf | `npx -y @insforge/cli posthog setup` | `posthog_connections` row in cloud-backend |
 | post-step 3 — `@posthog/wizard` | Client-side instrumentation so events flow from the app to PostHog | User runs `npx -y @posthog/wizard@latest` themselves | Env vars + SDK init in the app code |
 
 Practically the user signs in with the same PostHog account both times and ends up on the same PostHog project.
@@ -63,6 +63,6 @@ Practically the user signs in with the same PostHog account both times and ends 
 
 | Mistake | Solution |
 |---------|----------|
-| Running `npx @insforge/cli posthog setup` outside the linked project directory | The CLI reads `.insforge/project.json` from cwd. Run it from the project root after `npx @insforge/cli link --project-id <id>` |
+| Running `npx -y @insforge/cli posthog setup` outside the linked project directory | The CLI reads `.insforge/project.json` from cwd. Run it from the project root after `npx -y @insforge/cli link --project-id <id>` |
 | Headless environment, browser doesn't open for the InsForge OAuth step | Pass `--skip-browser` and copy the printed URL onto a machine with a browser |
 | Agent ran `posthog setup` and the wizard command printed at the end was never executed | The wizard is interactive (stdin prompts + browser OAuth) and won't run via agent shell or `!` prefix — the user has to run it in their real terminal app. The InsForge dashboard connection is already in place, but app-code instrumentation is not: no env vars, no SDK, no events. Either have the user run the wizard, or instrument manually with the `phc_` key/host that `posthog setup` printed. |

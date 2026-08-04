@@ -5,7 +5,7 @@ Declarative dump of the backend's configured state: auth provider config, databa
 ## Command
 
 ```bash
-npx @insforge/cli metadata [--json]
+npx -y @insforge/cli metadata [--json]
 ```
 
 `--json` for structured output (preferred when extracting fields for follow-up commands).
@@ -47,7 +47,7 @@ User reports: "OAuth login with Google redirects but then errors out."
 
 ```bash
 # 1. Pull current auth config
-npx @insforge/cli metadata --json
+npx -y @insforge/cli metadata --json
 
 # 2. In the auth section, confirm:
 #    - google provider enabled: true
@@ -55,7 +55,7 @@ npx @insforge/cli metadata --json
 #    (e.g., https://myapp.com/auth/callback — protocol + host + path must match)
 
 # 3. If config looks right, check insforge.logs for the OAuth error
-npx @insforge/cli logs insforge.logs --limit 50
+npx -y @insforge/cli logs insforge.logs --limit 50
 ```
 
 ## Frequently paired with

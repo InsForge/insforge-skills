@@ -5,7 +5,7 @@ Time-stream of events emitted by each backend service. The primary primitive for
 ## Command
 
 ```bash
-npx @insforge/cli logs <source> [--limit <n>]
+npx -y @insforge/cli logs <source> [--limit <n>]
 ```
 
 Default limit: 20. Source names are **case-insensitive** (`postgrest.logs` works the same as `postgREST.logs`).
@@ -23,7 +23,7 @@ Default limit: 20. Source names are **case-insensitive** (`postgrest.logs` works
 ## Cross-source aggregate
 
 ```bash
-npx @insforge/cli diagnose logs [--source <name>] [--limit <n>]
+npx -y @insforge/cli diagnose logs [--source <name>] [--limit <n>]
 ```
 
 Aggregates **error-level only** rows across all sources. Use first when you don't know which source the error lives in.
@@ -50,13 +50,13 @@ User reports: `POST /api/database/records/posts returned 500 around 14:32`.
 
 ```bash
 # Aggregate first to see if the error surfaces anywhere
-npx @insforge/cli diagnose logs --limit 100
+npx -y @insforge/cli diagnose logs --limit 100
 
 # If it's a CRUD path, postgREST is the likely source
-npx @insforge/cli logs postgREST.logs --limit 100
+npx -y @insforge/cli logs postgREST.logs --limit 100
 
 # If postgREST log shows "SQL error", drop into postgres
-npx @insforge/cli logs postgres.logs --limit 100
+npx -y @insforge/cli logs postgres.logs --limit 100
 ```
 
 ## Frequently paired with

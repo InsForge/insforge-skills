@@ -39,7 +39,7 @@ Each step below maps 1:1 to an agent prompt. Run them in order — each step pro
 
 ### InsForge project
 
-- Create via `npx @insforge/cli create` or link via `npx @insforge/cli link --project-id <id>`
+- Create via `npx -y @insforge/cli create` or link via `npx -y @insforge/cli link --project-id <id>`
 - Get **URL**, **Anon Key**, and **Service Role Key** from dashboard → Project Settings → API Keys
 
 ## Chain + Asset constants (X Layer)
@@ -156,19 +156,19 @@ create trigger x402_payment_realtime
 Apply:
 
 ```bash
-npx @insforge/cli db import migrations/db_init.sql
+npx -y @insforge/cli db import migrations/db_init.sql
 ```
 
 **✓ Verify**
 
 ```bash
-npx @insforge/cli db query "select count(*) from x402_payments" --json
+npx -y @insforge/cli db query "select count(*) from x402_payments" --json
 # → rowCount: 1, count: "0"
 
-npx @insforge/cli db query "select pattern, enabled from realtime.channels where pattern = 'x402_payments'" --json
+npx -y @insforge/cli db query "select pattern, enabled from realtime.channels where pattern = 'x402_payments'" --json
 # → enabled: true
 
-npx @insforge/cli db query "select tgname from pg_trigger where tgrelid = 'x402_payments'::regclass and not tgisinternal" --json
+npx -y @insforge/cli db query "select tgname from pg_trigger where tgrelid = 'x402_payments'::regclass and not tgisinternal" --json
 # → tgname: "x402_payment_realtime"
 ```
 

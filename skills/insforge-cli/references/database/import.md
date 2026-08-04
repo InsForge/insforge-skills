@@ -1,11 +1,11 @@
-# npx @insforge/cli db import
+# npx -y @insforge/cli db import
 
 Import database from a SQL file.
 
 ## Syntax
 
 ```bash
-npx @insforge/cli db import <file> [options]
+npx -y @insforge/cli db import <file> [options]
 ```
 
 ## Options
@@ -18,10 +18,10 @@ npx @insforge/cli db import <file> [options]
 
 ```bash
 # Import SQL file
-npx @insforge/cli db import backup.sql
+npx -y @insforge/cli db import backup.sql
 
 # Import with table truncation
-npx @insforge/cli db import backup.sql --truncate
+npx -y @insforge/cli db import backup.sql --truncate
 ```
 
 ## Output
@@ -30,5 +30,5 @@ Displays filename, number of tables processed, and rows imported.
 
 ## Notes
 
-- The file must be a valid SQL file (e.g., from `npx @insforge/cli db export`).
+- The file must be a valid SQL file (e.g., from `npx -y @insforge/cli db export`).
 - Use `--truncate` carefully — it removes all existing data from tables before importing.

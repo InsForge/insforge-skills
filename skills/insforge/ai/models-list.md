@@ -11,7 +11,7 @@ Official OpenRouter references:
 
 ## Setup
 
-Start with [overview.md](overview.md): run `npx @insforge/cli ai setup` so
+Start with [overview.md](overview.md): run `npx -y @insforge/cli ai setup` so
 `OPENROUTER_API_KEY` is available server-side.
 
 ## List Models

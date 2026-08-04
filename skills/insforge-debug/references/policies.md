@@ -5,7 +5,7 @@ Active RLS (Row-Level Security) rules pulled from Postgres's `pg_policies` syste
 ## Command
 
 ```bash
-npx @insforge/cli db policies
+npx -y @insforge/cli db policies
 ```
 
 Returns every policy: table, schema, policy name, command (`SELECT` / `INSERT` / `UPDATE` / `DELETE` / `ALL`), target role, `USING` expression, `WITH CHECK` expression.
@@ -56,16 +56,16 @@ User reports: "logged-in user gets 403 trying to `GET /api/database/records/post
 
 ```bash
 # 1. See the denial event
-npx @insforge/cli logs postgREST.logs --limit 50
+npx -y @insforge/cli logs postgREST.logs --limit 50
 
 # 2. List policies on the posts table
-npx @insforge/cli db policies
+npx -y @insforge/cli db policies
 
 # 3. If the project uses third-party auth, verify the helper
-npx @insforge/cli db query "SELECT requesting_user_id()"
+npx -y @insforge/cli db query "SELECT requesting_user_id()"
 
 # 4. Confirm the user's JWT contains the expected claim (auth config in metadata)
-npx @insforge/cli metadata --json
+npx -y @insforge/cli metadata --json
 ```
 
 ## Frequently paired with

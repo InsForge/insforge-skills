@@ -6,12 +6,12 @@ History and per-deploy metadata for both frontend deployments (Vercel) and edge 
 
 ```bash
 # Frontend (Vercel)
-npx @insforge/cli deployments list
-npx @insforge/cli deployments status <id> [--sync] [--json]
+npx -y @insforge/cli deployments list
+npx -y @insforge/cli deployments status <id> [--sync] [--json]
 
 # Edge function deploys
-npx @insforge/cli logs function-deploy.logs [--limit <n>]
-npx @insforge/cli functions list
+npx -y @insforge/cli logs function-deploy.logs [--limit <n>]
+npx -y @insforge/cli functions list
 ```
 
 ## Frontend deployments
@@ -45,14 +45,14 @@ For "frontend deploy failed":
 
 For "function deploy failed":
 
-1. `npx @insforge/cli logs function-deploy.logs --limit 50` — find the build/push error
-2. `npx @insforge/cli functions list` — confirm the function did or didn't make it into the active list
-3. Re-run `npx @insforge/cli functions deploy <slug>` if needed and capture stdout for the explicit error
+1. `npx -y @insforge/cli logs function-deploy.logs --limit 50` — find the build/push error
+2. `npx -y @insforge/cli functions list` — confirm the function did or didn't make it into the active list
+3. Re-run `npx -y @insforge/cli functions deploy <slug>` if needed and capture stdout for the explicit error
 
 ## Boundaries
 
 - **Doesn't surface Vercel build logs inline.** Detailed Vercel build output lives in the Vercel dashboard or via `vercel logs`; this primitive surfaces the deploy *event metadata*.
-- **Doesn't include compute service (Fly) deploy errors.** For compute services use `npx @insforge/cli compute events <id>` (machine lifecycle); container stdout/stderr is not yet exposed.
+- **Doesn't include compute service (Fly) deploy errors.** For compute services use `npx -y @insforge/cli compute events <id>` (machine lifecycle); container stdout/stderr is not yet exposed.
 - **Distinct from runtime errors.** A function with a successful deploy can still error at invoke time — that's [logs](logs.md) `function.logs`, not this primitive.
 
 ## Example
@@ -61,10 +61,10 @@ User reports: "I ran `deployments deploy` and got an error."
 
 ```bash
 # 1. Get the most recent deploy id and status
-npx @insforge/cli deployments list
+npx -y @insforge/cli deployments list
 
 # 2. Full metadata on the failed one
-npx @insforge/cli deployments status <id> --json
+npx -y @insforge/cli deployments status <id> --json
 
 # 3. Reproduce locally to see the actual build error
 npm run build
@@ -74,13 +74,13 @@ User reports: "`functions deploy my-handler` failed."
 
 ```bash
 # 1. Re-run to capture the explicit error
-npx @insforge/cli functions deploy my-handler
+npx -y @insforge/cli functions deploy my-handler
 
 # 2. Backend-side deploy log
-npx @insforge/cli logs function-deploy.logs --limit 50
+npx -y @insforge/cli logs function-deploy.logs --limit 50
 
 # 3. Confirm the function isn't half-deployed
-npx @insforge/cli functions list
+npx -y @insforge/cli functions list
 ```
 
 ## Frequently paired with

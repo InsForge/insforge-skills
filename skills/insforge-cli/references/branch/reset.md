@@ -1,11 +1,11 @@
-# npx @insforge/cli branch reset
+# npx -y @insforge/cli branch reset
 
 Reset a branch's database back to **T0** — the parent's snapshot at the moment the branch was created. Use when the branch is in a bad state and you'd rather start over than untangle it. Cheaper than `branch delete` + `branch create`: same EC2, same `appkey`, same `API_KEY` / `ANON_KEY` — only the database content is rewound.
 
 ## Syntax
 
 ```bash
-npx @insforge/cli branch reset <name> [-y]
+npx -y @insforge/cli branch reset <name> [-y]
 ```
 
 | Option      | Description                   |
@@ -60,7 +60,7 @@ Same `BUSY` set as merge: only one of `creating` / `merging` / `resetting` can b
 ## Example
 
 ```bash
-$ npx @insforge/cli branch reset feat-rls-fix
+$ npx -y @insforge/cli branch reset feat-rls-fix
 ? Reset branch 'feat-rls-fix' back to T0? This wipes all schema/data/policy/function/migration changes made on the branch since creation. › yes
 ✓ Reset enqueued for branch 'feat-rls-fix'. Restoring T0…
   state: resetting…
