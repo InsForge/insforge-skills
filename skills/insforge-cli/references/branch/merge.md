@@ -1,11 +1,11 @@
-# npx @insforge/cli branch merge
+# npx -y @insforge/cli branch merge
 
 Merge a branch's schema, config, and data-level changes back into the parent.
 
 ## Syntax
 
 ```bash
-npx @insforge/cli branch merge <name> [options]
+npx -y @insforge/cli branch merge <name> [options]
 ```
 
 ## Options
@@ -71,7 +71,7 @@ The CLI exits with code **2** (distinct from the generic error exit 1).
 
 ### Resolution steps
 
-1. Inspect parent's current state and branch's current state for the conflicted object (e.g. `npx @insforge/cli db tables` / `db policies`).
+1. Inspect parent's current state and branch's current state for the conflicted object (e.g. `npx -y @insforge/cli db tables` / `db policies`).
 2. Decide which version to keep:
    - **Keep parent**: revert the branch's change (drop the column on branch, etc.) and run `branch merge --dry-run` again.
    - **Keep branch**: forcibly apply the branch's version on parent (manually), then merge — auto-merge will see no conflict because parent_now will match branch_now.
@@ -108,7 +108,7 @@ The branch enters `merged` state — dormant, not destroyed. To layer further ch
 ## Example
 
 ```bash
-$ npx @insforge/cli branch merge feat-rls-fix --dry-run --save-sql /tmp/diff.sql
+$ npx -y @insforge/cli branch merge feat-rls-fix --dry-run --save-sql /tmp/diff.sql
 BEGIN;
 …
 COMMIT;
@@ -116,7 +116,7 @@ COMMIT;
 
 $ cat /tmp/diff.sql   # review the SQL with a human eye
 
-$ npx @insforge/cli branch merge feat-rls-fix
+$ npx -y @insforge/cli branch merge feat-rls-fix
 2 added, 1 modified, 0 conflict(s).
 ? Apply this merge to parent project 'my-app'? › yes
 ✓ Merged. Branch 'feat-rls-fix' is now in 'merged' state.

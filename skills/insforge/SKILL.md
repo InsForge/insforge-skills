@@ -24,12 +24,12 @@ Before using the SDK, create a `.env` file (or `.env.local` for Next.js) in your
 #### How to get your URL and anon key
 
 1. **Ensure the project is linked.** Check for `.insforge/project.json` in the project root.
-   - Generate it with `npx @insforge/cli link` for an existing project or `npx @insforge/cli create` for a new project.
+   - Generate it with `npx -y @insforge/cli link` for an existing project or `npx -y @insforge/cli create` for a new project.
 
 2. **Get the anon key** via the CLI:
 
    ```bash
-   npx @insforge/cli secrets get ANON_KEY
+   npx -y @insforge/cli secrets get ANON_KEY
    ```
 
 3. **Get the URL** from the `oss_host` field in `.insforge/project.json` (e.g., `https://myapp.us-east.insforge.app`).
@@ -158,8 +158,8 @@ First choose the provider. There is no generic app payments guide:
 Before writing app code, check provider setup with the **insforge-cli** payments references:
 
 ```bash
-npx @insforge/cli payments stripe status
-npx @insforge/cli payments razorpay status
+npx -y @insforge/cli payments stripe status
+npx -y @insforge/cli payments razorpay status
 ```
 
 If the chosen provider is unconfigured, ask the developer/admin to configure that provider first.
@@ -171,7 +171,7 @@ The real-time SDK is for frontend event handling and messaging. Configure channe
 ### Backend Configuration
 
 Supported project config knobs are managed via the CLI — use
-`npx @insforge/cli config export/plan/apply` for auth redirect URLs,
+`npx -y @insforge/cli config export/plan/apply` for auth redirect URLs,
 verification flags, password policy, auth SMTP settings, storage upload size,
 realtime/schedule retention, and cloud deployment subdomain. OAuth providers,
 external app setup, storage buckets, functions, secrets, and deployment env vars
@@ -185,11 +185,11 @@ When a code change in this skill depends on a **schema migration**, **new RLS po
 The full branching workflow lives in the **insforge-cli** skill — see [branch](../insforge-cli/references/branch/overview.md) for the decision guide and lifecycle commands. Typical loop:
 
 ```bash
-npx @insforge/cli branch create feat-x --mode schema-only
+npx -y @insforge/cli branch create feat-x --mode schema-only
 # ... apply migrations / change auth config / update RLS on the branch ...
 # ... test the SDK against the branch backend ...
-npx @insforge/cli branch merge feat-x --dry-run     # review SQL
-npx @insforge/cli branch merge feat-x               # apply to parent
+npx -y @insforge/cli branch merge feat-x --dry-run     # review SQL
+npx -y @insforge/cli branch merge feat-x               # apply to parent
 ```
 
 > ⚠ **After `branch create` or `branch switch`**, update the app's InsForge URL and anon-key env values, then **restart your dev server** (or re-source `.env`) so the SDK talks to the selected branch backend.
@@ -217,11 +217,11 @@ All SDK methods return `{ data, error }`.
 - **Storage**: Save both `url` AND `key` to database for download/delete operations
 - **Functions invoke URL**: Prefer `insforge.functions.invoke(slug)` — the SDK owns route construction. For raw HTTP: the project base URL serves the compat path `/functions/{slug}`, while the functions deployment host (e.g. `*.function2.insforge.app`) serves the slug at root `/{slug}`
 - **Email delivery**: Auth emails (signup verification, password reset, magic links, invites) ship on **every plan**. Custom email via `insforge.emails.send()` ships on **every paid plan**. Use the platform-managed delivery path; custom sender domain is dashboard config. See [email/sdk-integration.md](email/sdk-integration.md).
-- **Payments**: Configure provider keys/catalog with `npx @insforge/cli payments <provider> ...` first; frontend code uses provider-scoped SDK modules.
+- **Payments**: Configure provider keys/catalog with `npx -y @insforge/cli payments <provider> ...` first; frontend code uses provider-scoped SDK modules.
 - **Payment RLS**: Before payment UI, add app-specific RLS on provider runtime tables. Stripe uses `payments.stripe_checkout_sessions` and `payments.stripe_customer_portal_sessions`; Razorpay uses `payments.razorpay_orders` and `payments.razorpay_subscriptions`. Durable fulfillment triggers go on `payments.webhook_events`, not success URLs, Checkout callbacks, or `payments.transactions`.
 - **Use Tailwind CSS v3.4**
 - **Always local build before deploy**: Prevents wasted build resources and faster debugging
 - **SDK package**: Use `@insforge/sdk` directly for all features including authentication.
 - **Deployment**: Include a `vercel.json` in the project root for SPA routing (React, React Router apps). The `download-template` tool includes this automatically.
-- **Branching for risky backend changes**: If your SDK code depends on a new schema, RLS policy, or auth config change, create a branch via `npx @insforge/cli branch create` first — see the **insforge-cli** skill's [branch](../insforge-cli/references/branch/overview.md) reference. After `branch create` / `branch switch`, update the app's InsForge URL and anon-key env values, then **restart the dev server**.
-- **Hit an InsForge-side hurdle?** When the SDK, backend, docs, or a skill misbehaves — an API that should work but errors (`--type bug`), a capability you need that isn't supported (`--type feature-request`), docs that contradict actual behavior (`--type bug --component docs` with `--doc`/`--expected`) — report it and continue with a workaround: `npx @insforge/cli feedback --json --type <bug|feature-request|friction> --component <backend|sdk|cli|skills|docs> --title "..." --detail "..."`, adding `--language <lang>` for SDK issues (no login required; PII is redacted locally). See the **insforge-cli** skill's Feedback section for the full flag set and situation→type mapping. Never file feedback for problems in the app code you are writing.
+- **Branching for risky backend changes**: If your SDK code depends on a new schema, RLS policy, or auth config change, create a branch via `npx -y @insforge/cli branch create` first — see the **insforge-cli** skill's [branch](../insforge-cli/references/branch/overview.md) reference. After `branch create` / `branch switch`, update the app's InsForge URL and anon-key env values, then **restart the dev server**.
+- **Hit an InsForge-side hurdle?** When the SDK, backend, docs, or a skill misbehaves — an API that should work but errors (`--type bug`), a capability you need that isn't supported (`--type feature-request`), docs that contradict actual behavior (`--type bug --component docs` with `--doc`/`--expected`) — report it and continue with a workaround: `npx -y @insforge/cli feedback --json --type <bug|feature-request|friction> --component <backend|sdk|cli|skills|docs> --title "..." --detail "..."`, adding `--language <lang>` for SDK issues (no login required; PII is redacted locally). See the **insforge-cli** skill's Feedback section for the full flag set and situation→type mapping. Never file feedback for problems in the app code you are writing.

@@ -19,7 +19,7 @@ an InsForge CLI database migration; see
 Run the AI key setup from the linked app directory:
 
 ```bash
-npx @insforge/cli ai setup
+npx -y @insforge/cli ai setup
 ```
 
 Initialize the OpenAI SDK with OpenRouter as shown in [overview.md](overview.md).

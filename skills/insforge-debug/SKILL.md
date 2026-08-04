@@ -18,14 +18,14 @@ Diagnose problems in InsForge projects by combining the backend's observability 
 1. A reference per **debug primitive** (one observability surface each — under `references/`)
 2. **Symptom Recipes** (below) that name the primitive sequence for known reactive symptoms and proactive audits
 
-**Always use `npx @insforge/cli`** — never install the CLI globally.
+**Always use `npx -y @insforge/cli`** — never install the CLI globally.
 
 ## Fastest Path: AI-Assisted Triage
 
 When the user gives a concrete description (error message, failing URL, HTTP status), hand it to the InsForge debug agent. Unlike the other primitives, this one returns suggestions, not just observations — verify the diagnosis against the primitives it cites before acting on it.
 
 ```bash
-npx @insforge/cli diagnose --ai "<issue description>"
+npx -y @insforge/cli diagnose --ai "<issue description>"
 ```
 
 See [references/ai-assisted.md](references/ai-assisted.md) for when to use this first vs when to skip, and how to verify the output.
@@ -34,7 +34,7 @@ See [references/ai-assisted.md](references/ai-assisted.md) for when to use this 
 
 Each primitive is one independently-queryable observability surface backed by a distinct underlying data source. Real diagnoses are compositions of primitives.
 
-All commands run via `npx @insforge/cli ...`. The `(command)` shown next to each primitive is the actual CLI command — primitive names are concept labels, **not** CLI subcommand names (e.g., "DB health" is `diagnose db`, not `diagnose db-health`; "Policies" is `db policies`, not `diagnose policies`).
+All commands run via `npx -y @insforge/cli ...`. The `(command)` shown next to each primitive is the actual CLI command — primitive names are concept labels, **not** CLI subcommand names (e.g., "DB health" is `diagnose db`, not `diagnose db-health`; "Policies" is `db policies`, not `diagnose policies`).
 
 | Primitive (command) | What you see | Reference |
 |---------------------|-------------|-----------|
@@ -71,7 +71,7 @@ Each recipe is a primitive call sequence with one-line "look for X" at each step
 1. **logs** (`postgREST.logs`) — *403 variant only*: find the policy violation event with table and role context. *Empty-result variant*: skip — no error is logged for silently-filtered rows.
 2. **policies** — list policies for that table; walk USING / WITH CHECK against the actual request and the JWT claim used.
 3. **metadata** — verify auth config (which claim feeds `auth.uid()` / `requesting_user_id()`; for third-party auth like Clerk/Auth0, is the provider registered as a JWT issuer?).
-4. **db query** (`db query "<sql>"`) — *empty-result variant only*: confirm rows that *should* be visible actually exist by querying as service role (not as the user): `npx @insforge/cli db query "SELECT id, user_id FROM <table>"`. Distinguishes "RLS filtered everything" from "no matching data exists".
+4. **db query** (`db query "<sql>"`) — *empty-result variant only*: confirm rows that *should* be visible actually exist by querying as service role (not as the user): `npx -y @insforge/cli db query "SELECT id, user_id FROM <table>"`. Distinguishes "RLS filtered everything" from "no matching data exists".
 
 ### Recipe: Login fails / OAuth callback errors / token expired
 
@@ -82,7 +82,7 @@ Each recipe is a primitive call sequence with one-line "look for X" at each step
 
 1. **logs** (`function.logs`) — get the error stack and execution context.
 2. **metadata** — confirm the function exists and `status: "active"`.
-3. (If needed) `npx @insforge/cli functions code <slug>` — inspect the source for obvious issues.
+3. (If needed) `npx -y @insforge/cli functions code <slug>` — inspect the source for obvious issues.
 
 ### Recipe: `functions deploy` failed
 
@@ -132,7 +132,7 @@ Route by URL subsystem before drilling:
 
 ### Recipe: Pre-launch / proactive audit
 
-> Requires Platform login (`npx @insforge/cli login`). **Not available when the project is linked via `--api-key`** — fall back to `db-health` + `policies` + `metadata` for a manual audit in that case.
+> Requires Platform login (`npx -y @insforge/cli login`). **Not available when the project is linked via `--api-key`** — fall back to `db-health` + `policies` + `metadata` for a manual audit in that case.
 
 1. **advisor** — full scan, then `--severity critical` first, then warnings.
 2. **advisor** (`--category security`) — focus on security issues; cross-verify with **policies** (RLS coverage) and **metadata** (auth config, public buckets, secret presence).
@@ -150,7 +150,7 @@ Route by URL subsystem before drilling:
 Some diagnoses end at an InsForge-side defect, not a project misconfiguration: a platform bug or regression, an SDK call that misbehaves, docs or a skill that contradict observed behavior, or a missing capability. A debug session is exactly where these get confirmed — report them while the evidence is in hand:
 
 ```bash
-npx @insforge/cli feedback --json \
+npx -y @insforge/cli feedback --json \
   --type bug --component backend --area db \
   --title "<one-line summary>" \
   --detail "<what happened vs expected, minimal repro>" \

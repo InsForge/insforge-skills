@@ -1,15 +1,15 @@
 # InsForge CLI Schedules
 
-Use `npx @insforge/cli schedules` to create and manage cron-style backend jobs.
+Use `npx -y @insforge/cli schedules` to create and manage cron-style backend jobs.
 
 ## Commands
 
-- `npx @insforge/cli schedules list` - list all scheduled tasks, including ID, name, cron, URL, method, active state, and next run.
-- `npx @insforge/cli schedules get <id>` - get schedule details.
-- `npx @insforge/cli schedules create --name --cron --url --method [--headers <json>] [--body <json>]` - create a scheduled job.
-- `npx @insforge/cli schedules update <id> [--name] [--cron] [--url] [--method] [--headers] [--body] [--active]` - update a scheduled job.
-- `npx @insforge/cli schedules delete <id>` - delete a scheduled job.
-- `npx @insforge/cli schedules logs <id> [--limit] [--offset]` - view execution logs.
+- `npx -y @insforge/cli schedules list` - list all scheduled tasks, including ID, name, cron, URL, method, active state, and next run.
+- `npx -y @insforge/cli schedules get <id>` - get schedule details.
+- `npx -y @insforge/cli schedules create --name --cron --url --method [--headers <json>] [--body <json>]` - create a scheduled job.
+- `npx -y @insforge/cli schedules update <id> [--name] [--cron] [--url] [--method] [--headers] [--body] [--active]` - update a scheduled job.
+- `npx -y @insforge/cli schedules delete <id>` - delete a scheduled job.
+- `npx -y @insforge/cli schedules logs <id> [--limit] [--offset]` - view execution logs.
 
 Confirm destructive intent before deleting schedules.
 
@@ -17,7 +17,7 @@ Confirm destructive intent before deleting schedules.
 
 ```bash
 # Wall-clock cadence: every 5 minutes (5-field cron)
-npx @insforge/cli schedules create \
+npx -y @insforge/cli schedules create \
   --name "Cleanup Expired" \
   --cron "*/5 * * * *" \
   --url "https://my-app.us-east.insforge.app/functions/cleanup" \
@@ -25,14 +25,14 @@ npx @insforge/cli schedules create \
   --headers '{"Authorization": "Bearer ${{secrets.API_TOKEN}}"}'
 
 # Sub-minute cadence: every 30 seconds (pg_cron interval syntax)
-npx @insforge/cli schedules create \
+npx -y @insforge/cli schedules create \
   --name "Health Probe" \
   --cron "30 seconds" \
   --url "https://my-app.us-east.insforge.app/functions/probe" \
   --method GET
 
 # Check execution history
-npx @insforge/cli schedules logs <id>
+npx -y @insforge/cli schedules logs <id>
 ```
 
 ## Cron Expression Format
@@ -86,11 +86,11 @@ Secrets are resolved at schedule creation/update time. If a referenced secret do
 
 ## Recommended Workflow
 
-1. Create secrets if needed with `npx @insforge/cli secrets add KEY VALUE`.
-2. Create or verify the target function with `npx @insforge/cli functions list`.
-3. Create the schedule with `npx @insforge/cli schedules create`.
-4. Verify the schedule is active with `npx @insforge/cli schedules get <id>`.
-5. Monitor execution logs with `npx @insforge/cli schedules logs <id>`.
+1. Create secrets if needed with `npx -y @insforge/cli secrets add KEY VALUE`.
+2. Create or verify the target function with `npx -y @insforge/cli functions list`.
+3. Create the schedule with `npx -y @insforge/cli schedules create`.
+4. Verify the schedule is active with `npx -y @insforge/cli schedules get <id>`.
+5. Monitor execution logs with `npx -y @insforge/cli schedules logs <id>`.
 
 ## Best Practices
 
@@ -105,7 +105,7 @@ Secrets are resolved at schedule creation/update time. If a referenced secret do
 | Mistake                                                 | Solution                                                                                              |
 | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
 | Using 6-field cron such as `*/2 * * * * *`              | Use pg_cron interval form such as `2 seconds` for sub-minute cadence, or 5-field cron for everything. |
-| Referencing a non-existent secret                       | Create the secret first with `npx @insforge/cli secrets add`.                                         |
+| Referencing a non-existent secret                       | Create the secret first with `npx -y @insforge/cli secrets add`.                                         |
 | Targeting a non-existent function                       | Verify the function exists and is active before scheduling.                                           |
 | Assuming a schedule is running after create/update only | Check `isActive`, next run, and execution logs with `schedules get` and `schedules logs`.             |
 | Embedding raw secret values in schedule headers         | Store the value as an InsForge secret and use `${{secrets.KEY_NAME}}` in the schedule header JSON.    |

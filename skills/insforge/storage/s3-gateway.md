@@ -189,7 +189,7 @@ curl -H "x-api-key: $ACCESS_API_KEY" \
 # { "data": [{ "key": "photo.jpg", ... }] }
 ```
 
-This means buckets created via `npx @insforge/cli storage create-bucket` are reachable over S3, and objects uploaded with `aws s3 cp` can be served via the SDK's `download()` using the same key.
+This means buckets created via `npx -y @insforge/cli storage create-bucket` are reachable over S3, and objects uploaded with `aws s3 cp` can be served via the SDK's `download()` using the same key.
 
 ## Best Practices
 

@@ -22,7 +22,7 @@ The auth/bridge primitives are framework-agnostic — `lib/auth.ts`, the schema 
 For Next.js apps, the InsForge CLI scaffolds every file in this guide in one command:
 
 ```bash
-npx @insforge/cli link --auth better-auth   # or create --auth better-auth for a fresh dir
+npx -y @insforge/cli link --auth better-auth   # or create --auth better-auth for a fresh dir
 npm install
 npm run setup    # creates better_auth schema, runs BA migrate, sets up notes + RLS
 npm run dev
@@ -32,14 +32,14 @@ The scaffold is overlay-safe — existing files are preserved, `package.json` is
 
 The rest of this guide is the **reference layer**: what each scaffolded file looks like, why it's shaped that way, how to extend it (plugins, custom claims, magic-link, two-factor), and how to run on non-Next stacks. Read the section that matches what you're customizing — you don't need to read top-to-bottom unless you're integrating manually.
 
-> **Integrating manually** (no CLI, or non-Next stack)? Sequence: (1) `npx @insforge/cli create` or `link`, (2) `npx @insforge/cli secrets get JWT_SECRET`, (3) install deps and fill `.env.local`, (4) write `lib/auth.ts` with `search_path` set to `better_auth, public` (so BA's tables go in the dedicated schema), (5) `CREATE SCHEMA better_auth`, (6) `npx @better-auth/cli migrate`, (7) BA route handler, (8) bridge route, (9) `requesting_user_id()` + RLS + `notes` table FK'd to `better_auth.user(id)`, (10) `useInsforgeClient` (or server-side `createInsForgeClient`), (11) feature pages. Each numbered step has its own section below.
+> **Integrating manually** (no CLI, or non-Next stack)? Sequence: (1) `npx -y @insforge/cli create` or `link`, (2) `npx -y @insforge/cli secrets get JWT_SECRET`, (3) install deps and fill `.env.local`, (4) write `lib/auth.ts` with `search_path` set to `better_auth, public` (so BA's tables go in the dedicated schema), (5) `CREATE SCHEMA better_auth`, (6) `npx -y @better-auth/cli migrate`, (7) BA route handler, (8) bridge route, (9) `requesting_user_id()` + RLS + `notes` table FK'd to `better_auth.user(id)`, (10) `useInsforgeClient` (or server-side `createInsForgeClient`), (11) feature pages. Each numbered step has its own section below.
 
-Starting point: `npx @insforge/cli link --auth better-auth` (or `create`) scaffolds a working Next 15 + BA project. The `--auth` flag is canonical; the rest of this guide explains the pieces it generates. For Vite/React or other non-Next stacks, see [Vite / React-only setups](#vite--react-only-setups) below — the proxy config and bridge route map directly.
+Starting point: `npx -y @insforge/cli link --auth better-auth` (or `create`) scaffolds a working Next 15 + BA project. The `--auth` flag is canonical; the rest of this guide explains the pieces it generates. For Vite/React or other non-Next stacks, see [Vite / React-only setups](#vite--react-only-setups) below — the proxy config and bridge route map directly.
 
 ## Key packages
 
 - `better-auth` — Better Auth core
-- `@better-auth/cli` — for `npx @better-auth/cli migrate`
+- `@better-auth/cli` — for `npx -y @better-auth/cli migrate`
 - `pg` — Postgres driver (Better Auth wraps this)
 - `jsonwebtoken` + `@types/jsonwebtoken` — server-side JWT signing for the bridge
 - `@insforge/sdk` — InsForge client
@@ -47,8 +47,8 @@ Starting point: `npx @insforge/cli link --auth better-auth` (or `create`) scaffo
 ## Dashboard setup (manual, cannot be automated)
 
 ### InsForge Project
-- Create via `npx @insforge/cli create` or link via `npx @insforge/cli link --project-id <id>`
-- Get the JWT secret: `npx @insforge/cli secrets get JWT_SECRET` — used to sign the bridge JWT
+- Create via `npx -y @insforge/cli create` or link via `npx -y @insforge/cli link --project-id <id>`
+- Get the JWT secret: `npx -y @insforge/cli secrets get JWT_SECRET` — used to sign the bridge JWT
 - Get the Postgres connection string for Better Auth's pool — for self-hosted InsForge, the docker-compose exposes `POSTGRES_PORT` (default `5432`) with the project's `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB`
 - Note **Base URL** and **Anon Key** from the InsForge dashboard
 
@@ -112,7 +112,7 @@ CREATE SCHEMA IF NOT EXISTS better_auth;
 ```
 
 ```bash
-npx @better-auth/cli migrate --config ./lib/auth.ts -y
+npx -y @better-auth/cli migrate --config ./lib/auth.ts -y
 ```
 
 Creates `better_auth.user`, `better_auth.session`, `better_auth.account`, `better_auth.verification`. Idempotent — re-run any time you add `additionalFields`.
@@ -382,7 +382,7 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON public.notes TO authenticated;
 NOTIFY pgrst, 'reload schema';
 ```
 
-Prefer running this through the InsForge CLI (`npx @insforge/cli db migrations new ... && npx @insforge/cli db migrations up`) — the CLI emits the `NOTIFY` automatically. Raw `psql` works but you must send the notify yourself or PostgREST returns `404 {}` until next reload.
+Prefer running this through the InsForge CLI (`npx -y @insforge/cli db migrations new ... && npx -y @insforge/cli db migrations up`) — the CLI emits the `NOTIFY` automatically. Raw `psql` works but you must send the notify yourself or PostgREST returns `404 {}` until next reload.
 
 ## Realtime (optional)
 
@@ -497,7 +497,7 @@ export const auth = betterAuth({
 });
 ```
 
-Re-run `npx @better-auth/cli migrate -y` — that's it. The new tables land in `better_auth.organization`, `better_auth.team`, `better_auth.member`, `better_auth.teamMember`, `better_auth.invitation`. Verify with `curl http://<insforge>/organization?select=id` (anon) — should return `404 relation "public.organization" does not exist` because PostgREST never sees the schema.
+Re-run `npx -y @better-auth/cli migrate -y` — that's it. The new tables land in `better_auth.organization`, `better_auth.team`, `better_auth.member`, `better_auth.teamMember`, `better_auth.invitation`. Verify with `curl http://<insforge>/organization?select=id` (anon) — should return `404 relation "public.organization" does not exist` because PostgREST never sees the schema.
 
 For multi-tenant RLS on app tables, add `org_id` as a custom JWT claim by reading `session.activeOrganizationId` in the bridge route:
 
@@ -643,7 +643,7 @@ Server-only vars (read via `process.env` in the BA process) are the same across 
 | `DATABASE_URL` | InsForge Postgres connection string | Server (BA's `Pool`) |
 | `BETTER_AUTH_SECRET` | random — `openssl rand -base64 32` | Server (BA session signing) |
 | `BETTER_AUTH_URL` | your BA server URL | Server (`baseURL` in `betterAuth()`) |
-| `INSFORGE_JWT_SECRET` | `npx @insforge/cli secrets get JWT_SECRET` | Server (bridge route HS256 signing) |
+| `INSFORGE_JWT_SECRET` | `npx -y @insforge/cli secrets get JWT_SECRET` | Server (bridge route HS256 signing) |
 | `NEXT_PUBLIC_BETTER_AUTH_URL` *(Next.js)* / `VITE_BETTER_AUTH_URL` *(Vite)* | same as `BETTER_AUTH_URL` (or the SPA origin if proxying) | Browser (`authClient` baseURL) |
 | `NEXT_PUBLIC_INSFORGE_BASE_URL` / `VITE_INSFORGE_BASE_URL` | InsForge dashboard | Browser (SDK baseUrl) |
 | `NEXT_PUBLIC_INSFORGE_ANON_KEY` / `VITE_INSFORGE_ANON_KEY` | InsForge dashboard | Browser (SDK anonKey) |

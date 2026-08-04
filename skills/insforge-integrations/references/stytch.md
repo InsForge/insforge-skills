@@ -14,7 +14,7 @@ Stytch handles authentication via email magic links on the client side. On the s
 
 ```text
 1. Configure Stytch project        → Stytch Dashboard (manual)
-2. Create/link InsForge project    → npx @insforge/cli create or link
+2. Create/link InsForge project    → npx -y @insforge/cli create or link
 3. Install deps + configure env    → npm install, .env.local
 4. Create Stytch provider          → app/stytch-provider.tsx (client component)
 5. Create login page               → app/login/page.tsx with magic links
@@ -32,8 +32,8 @@ Stytch handles authentication via email magic links on the client side. On the s
 - Note down **Project ID**, **Public Token**, **Secret** from Project overview > API keys
 
 ### InsForge Project
-- Create via `npx @insforge/cli create` or link via `npx @insforge/cli link --project-id <id>`
-- Get the JWT secret via CLI: `npx @insforge/cli secrets get JWT_SECRET`
+- Create via `npx -y @insforge/cli create` or link via `npx -y @insforge/cli link --project-id <id>`
+- Get the JWT secret via CLI: `npx -y @insforge/cli secrets get JWT_SECRET`
 - Note down **URL** and **Anon Key** from InsForge, then export the CLI value as `INSFORGE_JWT_SECRET`
 
 ## Stytch provider
@@ -198,7 +198,7 @@ $$;
 | `STYTCH_SECRET` | Stytch Dashboard |
 | `NEXT_PUBLIC_INSFORGE_URL` | InsForge Dashboard |
 | `NEXT_PUBLIC_INSFORGE_ANON_KEY` | InsForge Dashboard |
-| `INSFORGE_JWT_SECRET` | InsForge CLI (`npx @insforge/cli secrets get JWT_SECRET`) |
+| `INSFORGE_JWT_SECRET` | InsForge CLI (`npx -y @insforge/cli secrets get JWT_SECRET`) |
 
 ## Common Mistakes
 

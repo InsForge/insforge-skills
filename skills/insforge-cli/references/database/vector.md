@@ -11,8 +11,8 @@ schema is in place.
 ## Migration Pattern
 
 DDL belongs in a migration. Create a migration file with
-`npx @insforge/cli db migrations new <name>`, put SQL like the example below in
-that file, then apply it with `npx @insforge/cli db migrations up --all`.
+`npx -y @insforge/cli db migrations new <name>`, put SQL like the example below in
+that file, then apply it with `npx -y @insforge/cli db migrations up --all`.
 
 ```sql
 CREATE EXTENSION IF NOT EXISTS vector;

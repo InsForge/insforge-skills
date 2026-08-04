@@ -18,7 +18,7 @@ After installing, start a new Codex thread and ask Codex to use InsForge or one 
 ### Using the skills registry
 
 ```bash
-npx skills add insforge/insforge-skills
+npx -y skills add insforge/insforge-skills
 ```
 
 ### Claude Code
@@ -43,7 +43,7 @@ Build full-stack applications with InsForge. This skill provides comprehensive g
 - **Payments**: Stripe Checkout/Billing Portal and Razorpay Orders/Subscriptions
 - **Deployments**: Frontend app deployment to InsForge hosting
 
-**Key distinction**: Backend infrastructure uses the CLI skill. Most client integration uses `@insforge/sdk`; new AI features use OpenRouter APIs with an API key set up by `npx @insforge/cli ai setup`.
+**Key distinction**: Backend infrastructure uses the CLI skill. Most client integration uses `@insforge/sdk`; new AI features use OpenRouter APIs with an API key set up by `npx -y @insforge/cli ai setup`.
 
 </details>
 
@@ -58,7 +58,7 @@ Create and manage InsForge projects from the command line. This skill provides c
 - **Edge Functions**: Deploy, invoke, and view function source
 - **Storage**: Bucket and object management (upload, download, list)
 - **Deployments**: Frontend app deployment and status tracking
-- **AI**: OpenRouter key setup with `npx @insforge/cli ai setup`
+- **AI**: OpenRouter key setup with `npx -y @insforge/cli ai setup`
 - **Payments**: Stripe/Razorpay key setup, catalog sync, provider webhooks
 - **Secrets**: Create, update, and manage project secrets
 - **CI/CD**: Non-interactive workflows using environment variables
@@ -212,7 +212,7 @@ skills/
 
 To create or improve skills, first install the skill-creator tool:
 ```bash
-npx skills add anthropics/skills -s skill-creator
+npx -y skills add anthropics/skills -s skill-creator
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on adding or improving skills.

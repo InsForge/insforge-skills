@@ -1,11 +1,11 @@
-# npx @insforge/cli db query
+# npx -y @insforge/cli db query
 
 Execute a raw SQL query against the project database for targeted inspection and row-level data changes.
 
 ## Syntax
 
 ```bash
-npx @insforge/cli db query <sql> [options]
+npx -y @insforge/cli db query <sql> [options]
 ```
 
 ## Options
@@ -18,25 +18,25 @@ npx @insforge/cli db query <sql> [options]
 
 ```bash
 # Basic query
-npx @insforge/cli db query "SELECT * FROM posts LIMIT 10"
+npx -y @insforge/cli db query "SELECT * FROM posts LIMIT 10"
 
 # Update rows
-npx @insforge/cli db query "UPDATE posts SET status = 'published' WHERE id = 'post_123'"
+npx -y @insforge/cli db query "UPDATE posts SET status = 'published' WHERE id = 'post_123'"
 
 # Insert rows
-npx @insforge/cli db query "INSERT INTO posts (title, status) VALUES ('Hello', 'draft')"
+npx -y @insforge/cli db query "INSERT INTO posts (title, status) VALUES ('Hello', 'draft')"
 
 # Delete rows
-npx @insforge/cli db query "DELETE FROM posts WHERE archived = true"
+npx -y @insforge/cli db query "DELETE FROM posts WHERE archived = true"
 
 # Inspect Postgres system catalog
-npx @insforge/cli db query "SELECT table_schema, table_name FROM information_schema.tables WHERE table_schema = 'public'"
+npx -y @insforge/cli db query "SELECT table_schema, table_name FROM information_schema.tables WHERE table_schema = 'public'"
 
 # Inspect InsForge-managed schema data
-npx @insforge/cli db query "SELECT * FROM auth.users LIMIT 10"
+npx -y @insforge/cli db query "SELECT * FROM auth.users LIMIT 10"
 
 # JSON output for scripting
-npx @insforge/cli db query "SELECT count(*) FROM posts" --json
+npx -y @insforge/cli db query "SELECT count(*) FROM posts" --json
 ```
 
 ## Output
@@ -55,7 +55,7 @@ npx @insforge/cli db query "SELECT count(*) FROM posts" --json
 To rehearse a guarded data change without committing it, run one `DO` block that performs the mutation, validates the result, and ends with `RAISE EXCEPTION` so PostgreSQL rolls the whole statement back:
 
 ```bash
-npx @insforge/cli db query "DO \$\$
+npx -y @insforge/cli db query "DO \$\$
 DECLARE
   updated_count integer;
 BEGIN
@@ -91,7 +91,7 @@ Once the rehearsal reports `rehearsal ok:`, rerun the mutation as a plain `db qu
 - Postgres system catalogs such as `pg_catalog` and `information_schema`: read-only inspection is allowed.
 - InsForge-managed/system schemas such as `auth`, `storage`, `realtime`, `payments`, `graphql`, `extensions`, `pg_catalog`, `information_schema`, or `system`: do not write or run DDL unless you are working on that specific feature module and its docs explicitly allow the operation.
 
-Use `npx @insforge/cli db migrations new ...` and `npx @insforge/cli db migrations up ...` for schema changes on `public` application objects.
+Use `npx -y @insforge/cli db migrations new ...` and `npx -y @insforge/cli db migrations up ...` for schema changes on `public` application objects.
 
 Use `db query` for:
 
@@ -117,10 +117,10 @@ When writing SQL for InsForge, use these built-in references:
 
 ```bash
 # Inspect the current rows
-npx @insforge/cli db query "SELECT id, status FROM posts WHERE status IS NULL"
+npx -y @insforge/cli db query "SELECT id, status FROM posts WHERE status IS NULL"
 
 # Backfill missing row values
-npx @insforge/cli db query "UPDATE posts SET status = 'draft' WHERE status IS NULL"
+npx -y @insforge/cli db query "UPDATE posts SET status = 'draft' WHERE status IS NULL"
 ```
 
 ## Notes

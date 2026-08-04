@@ -17,8 +17,8 @@ Do not use Razorpay Orders, Items, Plans, or Checkout.js concepts in a Stripe fl
 Before writing app code:
 
 ```bash
-npx @insforge/cli payments stripe status
-npx @insforge/cli payments stripe catalog --environment test
+npx -y @insforge/cli payments stripe status
+npx -y @insforge/cli payments stripe catalog --environment test
 ```
 
 If Stripe is unconfigured, ask the developer/admin to configure a Stripe key and sync catalog first. Default to `test`; use `live` only after explicit approval.
@@ -156,7 +156,7 @@ Portal creation requires an authenticated user and an existing `payments.custome
 Stripe webhooks are managed by InsForge when the backend has a public URL:
 
 ```bash
-npx @insforge/cli payments stripe webhooks configure --environment test
+npx -y @insforge/cli payments stripe webhooks configure --environment test
 ```
 
 InsForge's Stripe managed event set:

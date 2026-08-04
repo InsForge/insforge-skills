@@ -5,7 +5,7 @@
 ## 1. Connect (one-time)
 
 ```bash
-npx @insforge/cli webscraper apify connect
+npx -y @insforge/cli webscraper apify connect
 ```
 
 Opens the Apify OAuth flow and stores a refreshable token in InsForge. After a successful connect the CLI automatically runs the auth bridge (step 2) so the local agent is immediately usable.
@@ -13,7 +13,7 @@ Opens the Apify OAuth flow and stores a refreshable token in InsForge. After a s
 ## 2. Auth bridge (per machine)
 
 ```bash
-npx @insforge/cli webscraper apify login
+npx -y @insforge/cli webscraper apify login
 ```
 
 Fetches the InsForge-managed token, installs the Apify CLI via npm if it is missing, runs `apify login --token <token>` (no browser), and installs Apify's official agent skills (including `apify-ultimate-scraper`, the scraping playbook used in step 3). Verify with `apify info`.
@@ -33,8 +33,8 @@ Choose the landing strategy by result size. The target is whatever satisfies the
 | Size / shape | Strategy |
 |---|---|
 | Small / one-shot | Keep the data in context and satisfy the use case directly (answer inline, return CSV, etc.). No persistence needed. |
-| Persist short/medium | Write an InsForge edge function that fetches the Apify dataset and upserts rows into a table. Deploy with `npx @insforge/cli functions deploy`. |
-| Long-running or large dataset | Use InsForge Fly compute (`npx @insforge/cli compute deploy`). Paginate the dataset and upsert in batches to stay within memory limits. |
+| Persist short/medium | Write an InsForge edge function that fetches the Apify dataset and upserts rows into a table. Deploy with `npx -y @insforge/cli functions deploy`. |
+| Long-running or large dataset | Use InsForge Fly compute (`npx -y @insforge/cli compute deploy`). Paginate the dataset and upsert in batches to stay within memory limits. |
 
 **Getting the Apify token inside the handler.** The handler fetches a fresh Apify token at runtime:
 
@@ -57,4 +57,4 @@ Use that `accessToken` for Apify API calls. The token is short-lived, so **do no
 
 **Short / fast actor run:** an InsForge schedule triggers an edge function that calls Apify `run-sync-get-dataset-items`, gets the result in one HTTP call, and lands it immediately. No webhook.
 
-Set up schedules with `npx @insforge/cli schedules create`. See `references/schedules.md` for cron format and secret header references.
+Set up schedules with `npx -y @insforge/cli schedules create`. See `references/schedules.md` for cron format and secret header references.

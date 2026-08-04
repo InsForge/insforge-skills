@@ -14,7 +14,7 @@ WorkOS AuthKit handles authentication via middleware. On the server, `withAuth()
 ```text
 1. Create WorkOS application       → WorkOS Dashboard (manual)
 2. Configure JWT template          → WorkOS Dashboard (manual)
-3. Create/link InsForge project    → npx @insforge/cli create or link
+3. Create/link InsForge project    → npx -y @insforge/cli create or link
 4. Install deps + configure env    → npm install, .env.local
 5. Set up callback + login routes  → app/callback/route.ts, app/login/route.ts
 6. Set up middleware + layout      → middleware.ts, app/layout.tsx
@@ -36,8 +36,8 @@ WorkOS AuthKit handles authentication via middleware. On the server, `withAuth()
 - `sub` is reserved — auto-included, do not add manually
 
 ### InsForge Project
-- Create via `npx @insforge/cli create` or link via `npx @insforge/cli link --project-id <id>`
-- Get the JWT secret via CLI: `npx @insforge/cli secrets get JWT_SECRET`
+- Create via `npx -y @insforge/cli create` or link via `npx -y @insforge/cli link --project-id <id>`
+- Get the JWT secret via CLI: `npx -y @insforge/cli secrets get JWT_SECRET`
 - Note down **URL** and **Anon Key** from InsForge, then export the CLI value as `INSFORGE_JWT_SECRET`
 
 ## App structure
@@ -134,7 +134,7 @@ $$;
 | `NEXT_PUBLIC_WORKOS_REDIRECT_URI` | `http://localhost:3000/callback` |
 | `NEXT_PUBLIC_INSFORGE_URL` | InsForge Dashboard |
 | `NEXT_PUBLIC_INSFORGE_ANON_KEY` | InsForge Dashboard |
-| `INSFORGE_JWT_SECRET` | InsForge CLI (`npx @insforge/cli secrets get JWT_SECRET`) |
+| `INSFORGE_JWT_SECRET` | InsForge CLI (`npx -y @insforge/cli secrets get JWT_SECRET`) |
 
 ## Common Mistakes
 

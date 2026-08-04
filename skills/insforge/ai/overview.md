@@ -18,7 +18,7 @@ Official OpenRouter references:
 Run this from the linked app directory before adding AI code:
 
 ```bash
-npx @insforge/cli ai setup
+npx -y @insforge/cli ai setup
 ```
 
 This fetches the active OpenRouter key from the linked InsForge backend and
@@ -76,7 +76,7 @@ endpoint that calls OpenRouter. Have the browser call your server endpoint.
 
 ## InsForge Patterns
 
-1. Run `npx @insforge/cli ai setup` before writing OpenRouter code.
+1. Run `npx -y @insforge/cli ai setup` before writing OpenRouter code.
 2. Store generated files in InsForge Storage; save both `url` and `key` in the
    database.
 3. Store embeddings in Postgres `vector(N)` columns; `N` must match the model's

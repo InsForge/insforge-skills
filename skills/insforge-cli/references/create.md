@@ -1,11 +1,11 @@
-# npx @insforge/cli create
+# npx -y @insforge/cli create
 
 Create a new InsForge project.
 
 ## Syntax
 
 ```bash
-npx @insforge/cli create [options]
+npx -y @insforge/cli create [options]
 ```
 
 ## Options
@@ -27,7 +27,7 @@ Without flags, the command prompts for organization, project name, region, and t
 For CI/CD or agent use, pass `--json` along with all required flags:
 
 ```bash
-npx @insforge/cli create --json --name my-app --org-id org_123 --region us-east --template react
+npx -y @insforge/cli create --json --name my-app --org-id org_123 --region us-east --template react
 ```
 
 `--json` skips value-collection prompts (text inputs like `Directory name:`, pickers like organization / region) and errors out if any required flag is missing. The `-y` flag is a different feature — it only auto-accepts Y/N confirmations and does NOT suppress value-collection prompts. For `create` specifically, `--json` alone is sufficient (there are no Y/N confirmations); for destructive commands like `delete`, agents should pass both `--json` and `-y`. Agents sandboxed from stdin (e.g., Codex) hang on any unsuppressed prompt — always pass `--json` for programmatic create.
@@ -49,17 +49,17 @@ Project details: ID, name, appkey, region, and OSS host URL.
 
 ```bash
 # Interactive — prompts for everything
-npx @insforge/cli create
+npx -y @insforge/cli create
 
 # Non-interactive with all options (agents, CI)
-npx @insforge/cli create --json --name blog-app --org-id org_abc --region us-east --template react
+npx -y @insforge/cli create --json --name blog-app --org-id org_abc --region us-east --template react
 
 # Create with empty template (no frontend scaffolding)
-npx @insforge/cli create --json --name api-only --org-id org_abc --region eu-central --template empty
+npx -y @insforge/cli create --json --name api-only --org-id org_abc --region eu-central --template empty
 ```
 
 ## Notes
 
-- Requires authentication (`npx @insforge/cli login` first).
+- Requires authentication (`npx -y @insforge/cli login` first).
 - Creates `.insforge/project.json` which links the directory to the project.
 - Agent skills are auto-installed into `.agents/skills/insforge/`.

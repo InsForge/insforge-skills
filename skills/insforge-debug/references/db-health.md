@@ -5,7 +5,7 @@ Postgres system views (`pg_stat_*`, `pg_locks`, `pg_class`) exposed as named che
 ## Command
 
 ```bash
-npx @insforge/cli diagnose db [--check <checks>]
+npx -y @insforge/cli diagnose db [--check <checks>]
 ```
 
 `--check` accepts comma-separated names. Default `all`. Run no-arg first when triaging unknown DB issues.
@@ -45,14 +45,14 @@ User reports: "this one query is slow — `SELECT * FROM orders WHERE user_id = 
 
 ```bash
 # 1. Check whether the query is running >5s right now (point-in-time), plus index usage on the table
-npx @insforge/cli diagnose db --check slow-queries,index-usage
+npx -y @insforge/cli diagnose db --check slow-queries,index-usage
 
 # 2. Verify no lock contention from a concurrent writer
-npx @insforge/cli diagnose db --check locks
+npx -y @insforge/cli diagnose db --check locks
 
 # 3. Cross-reference postgres.logs for past runs of the query, plans, and errors
 #    (slow-queries won't show queries that already finished)
-npx @insforge/cli logs postgres.logs --limit 100
+npx -y @insforge/cli logs postgres.logs --limit 100
 ```
 
 ## Frequently paired with

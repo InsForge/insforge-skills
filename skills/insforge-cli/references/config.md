@@ -1,4 +1,4 @@
-# npx @insforge/cli config
+# npx -y @insforge/cli config
 
 Deep reference for `config export | plan | apply`. The SKILL.md Configuration section has the principles and rules; this file has output shapes and the error table.
 
@@ -7,9 +7,9 @@ Deep reference for `config export | plan | apply`. The SKILL.md Configuration se
 ## Commands
 
 ```bash
-npx @insforge/cli config export [--out insforge.toml] [--force]
-npx @insforge/cli config plan   [--file insforge.toml]
-npx @insforge/cli config apply  [--file insforge.toml] [--dry-run] [--auto-approve]
+npx -y @insforge/cli config export [--out insforge.toml] [--force]
+npx -y @insforge/cli config plan   [--file insforge.toml]
+npx -y @insforge/cli config apply  [--file insforge.toml] [--dry-run] [--auto-approve]
 ```
 
 ## File location
@@ -105,5 +105,5 @@ npx @insforge/cli config apply  [--file insforge.toml] [--dry-run] [--auto-appro
 
 ## Related
 
-- `npx @insforge/cli metadata` — read-only view of all backend config slices
+- `npx -y @insforge/cli metadata` — read-only view of all backend config slices
 - **insforge** app-integration skill `auth/sdk-integration.md` — how SDK code reads auth config at runtime

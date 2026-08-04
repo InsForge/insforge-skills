@@ -1,16 +1,16 @@
-# npx @insforge/cli deployments deploy — frontend hosting (Vercel)
+# npx -y @insforge/cli deployments deploy — frontend hosting (Vercel)
 
 Deploy a frontend project (static site / SPA / Next.js / etc.) to InsForge
 hosting (via Vercel) from its source directory.
 
 > Looking to deploy a **backend** Docker container (API, worker)? Use
-> `npx @insforge/cli compute deploy` instead — see
+> `npx -y @insforge/cli compute deploy` instead — see
 > [compute-deploy.md](../compute-deploy.md).
 
 ## Syntax
 
 ```bash
-npx @insforge/cli deployments deploy [source-directory] [options]
+npx -y @insforge/cli deployments deploy [source-directory] [options]
 ```
 
 ## Options
@@ -65,20 +65,20 @@ Frontend apps need env vars (API URL, anon key, etc.) to connect to InsForge. De
 
 ```bash
 # Check what's already configured
-npx @insforge/cli deployments env list
+npx -y @insforge/cli deployments env list
 
 # Set env vars — these persist across all future deployments
-npx @insforge/cli deployments env set VITE_INSFORGE_URL https://my-app.us-east.insforge.app
-npx @insforge/cli deployments env set VITE_INSFORGE_ANON_KEY ik_xxx
+npx -y @insforge/cli deployments env set VITE_INSFORGE_URL https://my-app.us-east.insforge.app
+npx -y @insforge/cli deployments env set VITE_INSFORGE_ANON_KEY ik_xxx
 
 # Deploy the project source — persistent vars are applied automatically
-npx @insforge/cli deployments deploy .
+npx -y @insforge/cli deployments deploy .
 ```
 
 **Option B — Inline `--env` flag (one-off or override):**
 
 ```bash
-npx @insforge/cli deployments deploy . --env '{"VITE_INSFORGE_URL": "https://my-app.us-east.insforge.app", "VITE_INSFORGE_ANON_KEY": "ik_xxx"}'
+npx -y @insforge/cli deployments deploy . --env '{"VITE_INSFORGE_URL": "https://my-app.us-east.insforge.app", "VITE_INSFORGE_ANON_KEY": "ik_xxx"}'
 ```
 
 Before deploying, always confirm env vars are in place: either check `deployments env list` shows the required vars, or pass `--env` on the command.
@@ -87,13 +87,13 @@ Before deploying, always confirm env vars are in place: either check `deployment
 
 ```bash
 # Deploy with persistent env vars already set
-npx @insforge/cli deployments deploy .
+npx -y @insforge/cli deployments deploy .
 
 # Deploy with inline env vars
-npx @insforge/cli deployments deploy . --env '{"VITE_API_URL": "https://my-app.us-east.insforge.app", "VITE_ANON_KEY": "ik_xxx"}'
+npx -y @insforge/cli deployments deploy . --env '{"VITE_API_URL": "https://my-app.us-east.insforge.app", "VITE_ANON_KEY": "ik_xxx"}'
 
 # JSON output
-npx @insforge/cli deployments deploy . --json
+npx -y @insforge/cli deployments deploy . --json
 ```
 
 ## Typical Workflow
@@ -155,19 +155,19 @@ If your project has edge functions in a separate directory (commonly `functions/
 
 ```bash
 # 4. Ensure env vars are set (check existing, add any missing)
-npx @insforge/cli deployments env list
-npx @insforge/cli deployments env set VITE_INSFORGE_URL https://my-app.us-east.insforge.app
-npx @insforge/cli deployments env set VITE_INSFORGE_ANON_KEY ik_xxx
+npx -y @insforge/cli deployments env list
+npx -y @insforge/cli deployments env set VITE_INSFORGE_URL https://my-app.us-east.insforge.app
+npx -y @insforge/cli deployments env set VITE_INSFORGE_ANON_KEY ik_xxx
 
 # 5. Deploy the project source (persistent env vars are applied automatically)
-npx @insforge/cli deployments deploy .
+npx -y @insforge/cli deployments deploy .
 ```
 
-Alternatively, pass env vars inline: `npx @insforge/cli deployments deploy . --env '{"VITE_INSFORGE_URL": "...", "VITE_INSFORGE_ANON_KEY": "..."}'`
+Alternatively, pass env vars inline: `npx -y @insforge/cli deployments deploy . --env '{"VITE_INSFORGE_URL": "...", "VITE_INSFORGE_ANON_KEY": "..."}'`
 
 ### Check Deployment Status
 
-Wait 30 seconds to 1 minute, then check status with `npx @insforge/cli deployments status <id>`.
+Wait 30 seconds to 1 minute, then check status with `npx -y @insforge/cli deployments status <id>`.
 
 #### Status Values
 

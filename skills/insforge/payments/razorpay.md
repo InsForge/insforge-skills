@@ -18,8 +18,8 @@ Do not use Stripe Checkout, Stripe Prices, or Billing Portal concepts in a Razor
 Before writing app code:
 
 ```bash
-npx @insforge/cli payments razorpay status
-npx @insforge/cli payments razorpay catalog --environment test
+npx -y @insforge/cli payments razorpay status
+npx -y @insforge/cli payments razorpay catalog --environment test
 ```
 
 If Razorpay is unconfigured, ask the developer/admin to configure Key ID and Key Secret first. Default to `test`; use `live` only after explicit approval.

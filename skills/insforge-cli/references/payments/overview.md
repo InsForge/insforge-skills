@@ -1,4 +1,4 @@
-# npx @insforge/cli payments
+# npx -y @insforge/cli payments
 
 Use this reference for shared Payments CLI rules and routing. Load the provider-specific reference before running setup commands:
 
@@ -17,8 +17,8 @@ Payments require a backend that exposes `/api/payments`.
 Always start with the provider status command:
 
 ```bash
-npx @insforge/cli payments stripe status
-npx @insforge/cli payments razorpay status
+npx -y @insforge/cli payments stripe status
+npx -y @insforge/cli payments razorpay status
 ```
 
 If the CLI says `Payments are not available on this backend`, stop and ask the developer/admin to enable payments or upgrade the self-hosted backend. Do not work around this by storing provider keys with generic `secrets` commands or embedding secret keys in app code.

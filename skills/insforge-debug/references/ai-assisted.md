@@ -7,7 +7,7 @@ The meta-primitive: hand a natural-language problem description to a backend-sid
 ## Command
 
 ```bash
-npx @insforge/cli diagnose --ai "<issue description>"
+npx -y @insforge/cli diagnose --ai "<issue description>"
 ```
 
 The description should include: the error / failing URL / HTTP status / function slug — whatever concrete signal the user has.
@@ -49,17 +49,17 @@ If the verification disagrees with the diagnosis, **trust the primitive observat
 User pastes: "I invoked `https://kttprzh4.functions.insforge.app/newton` and got `508: Loop Detected (LOOP_DETECTED). Recursive requests to the same deployment cannot be processed.`"
 
 ```bash
-npx @insforge/cli diagnose --ai "I invoked edge function https://kttprzh4.functions.insforge.app/newton, got error: 508: Loop Detected (LOOP_DETECTED)\n\nRecursive requests to the same deployment cannot be processed."
+npx -y @insforge/cli diagnose --ai "I invoked edge function https://kttprzh4.functions.insforge.app/newton, got error: 508: Loop Detected (LOOP_DETECTED)\n\nRecursive requests to the same deployment cannot be processed."
 ```
 
 Read the diagnosis and suggestions, then verify with:
 
 ```bash
 # Verify with function logs
-npx @insforge/cli logs function.logs --limit 50
+npx -y @insforge/cli logs function.logs --limit 50
 
 # Verify the function code doesn't actually call itself
-npx @insforge/cli functions code newton
+npx -y @insforge/cli functions code newton
 ```
 
 ## Frequently paired with
