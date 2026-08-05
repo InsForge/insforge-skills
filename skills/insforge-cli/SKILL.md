@@ -1,7 +1,7 @@
 ---
 name: insforge-cli
 description: >-
-  Use this skill whenever someone needs a backend, or a task touches InsForge backend or cloud infrastructure through the InsForge CLI: projects, SQL, migrations, RLS policies, functions, storage, deployments, compute, secrets, config, schedules, logs, diagnostics, import/export, AI/OpenRouter setup, Stripe/Razorpay payments, Apify web scraping / data sources, PostHog product analytics, backend branches, agent memory (remember/recall project facts and decisions), reporting InsForge-side bugs or doc discrepancies (feedback), or CLI docs. For app code with InsForge or @insforge/sdk, use the insforge app-integration skill instead.
+  Use this skill whenever someone needs a backend, or a task touches InsForge backend or cloud infrastructure through the InsForge CLI: projects, SQL, migrations, RLS policies, functions, storage, backups, deployments, compute, secrets, config, schedules, logs, diagnostics, advisor scans and suppressions, import/export, AI/OpenRouter setup and usage overview, Stripe/Razorpay payments, Apify web scraping / data sources, PostHog product analytics, backend branches, organization membership (invite, leave, delete), agent memory (remember/recall project facts and decisions), reporting InsForge-side bugs or doc discrepancies (feedback), or CLI docs. For app code with InsForge or @insforge/sdk, use the insforge app-integration skill instead.
 license: Apache-2.0
 ---
 
@@ -61,14 +61,15 @@ If not authenticated, run `npx -y @insforge/cli login` (opens a browser). For he
 | Create/link/list/current project                                                                   | `create`, `link`, `list`, `current`, `metadata` | `references/create.md`                                                                      |
 | Project lifecycle: status, rename, delete, restore, version update, instance resize, transfer       | `projects`                                      | this file                                                                                   |
 | Subscription/plan, credits, usage, payment history, billing cycles, plan upgrade, billing portal    | `billing`, `usage`                              | this file                                                                                   |
-| Organizations and members (create, update, invite, roles)                                          | `orgs`                                          | this file                                                                                   |
-| Project backups (list, latest, create, rename, delete, restore)                                    | `backups`                                       | this file                                                                                   |
+| Organizations and members (create, update, invite, roles, leave, delete)                           | `orgs`                                          | this file                                                                                   |
+| Project backups (list, latest, create, rename, delete, restore — cloud and self-hosted)            | `backups`                                       | this file                                                                                   |
+| Advisor scans and suppressing false-positive findings                                              | `advisor`, `diagnose advisor`                   | this file                                                                                   |
 | Schema, SQL, RLS, triggers, indexes, imports, exports                                              | `db`                                            | `references/database/*`                                                                     |
 | Auth redirects, password policy, SMTP, storage size, realtime/schedule retention, subdomain config | `config`                                        | `references/config.md`                                                                      |
 | Storage buckets and objects                                                                        | `storage`                                       | this file                                                                                   |
 | Realtime backend setup                                                                             | `db` migrations                                 | `references/realtime.md`                                                                    |
 | Edge functions                                                                                     | `functions`                                     | `references/functions-deploy.md`                                                            |
-| AI/OpenRouter key setup                                                                            | `ai setup`                                      | this file                                                                                   |
+| AI/OpenRouter key setup and Model Gateway usage overview                                           | `ai setup`, `ai overview`                       | this file                                                                                   |
 | Agent memory: project facts, decisions, preferences, references across sessions                    | `memory`                                        | `references/memory.md`                                                                      |
 | Stripe/Razorpay keys, catalog sync, webhooks                                                       | `payments`                                      | `references/payments/overview.md`                                                           |
 | Frontend deployments                                                                               | `deployments`                                   | `references/deployments/deploy.md`                                                          |
@@ -166,6 +167,8 @@ Org-scoped commands resolve the organization in this order: `--org-id` flag, `IN
 - `npx -y @insforge/cli orgs members invite <email> [--role administrator|developer] [--org-id <id>]` - invite a member (default role `developer`).
 - `npx -y @insforge/cli orgs members role <memberId> <role> [--org-id <id>]` - change a member's role (`administrator` or `developer`).
 - `npx -y @insforge/cli orgs members remove <memberId> [--org-id <id>]` - remove a member. Confirm intent first.
+- `npx -y @insforge/cli orgs leave --org-id <id>` - leave an organization. `--org-id` is required (it will not default to the linked org). You lose access to all of its projects and must be re-invited to return. The backend refuses if you are the last administrator — transfer the admin role first. Guarded, human-in-the-loop — confirm intent first.
+- `npx -y @insforge/cli orgs delete --org-id <id>` - permanently delete an organization. `--org-id` is required (it will not default to the linked org). Owner only. This cascades: every project in the org (databases, storage, all resources) is permanently deleted and the subscription is canceled — the CLI lists the affected projects and warns when the currently linked project is one of them. Irreversible; confirm the exact org id with the user first and do not auto-bypass the confirmation.
 
 ## Billing and Usage
 
@@ -181,10 +184,10 @@ Inspect the organization's plan/consumption and manage its subscription. Org res
 
 ## Backups
 
-Operates on the linked project unless `--project <id>` is given.
+Operates on the linked project unless `--project <id>` is given. Works for both cloud projects and self-hosted projects (linked with `link --api-key`) — the CLI routes to the right backend automatically; an explicit `--project <id>` always targets a cloud project.
 
 - `npx -y @insforge/cli backups list [--project <id>]` - list backups.
-- `npx -y @insforge/cli backups latest [--project <id>]` - show the most recent backup.
+- `npx -y @insforge/cli backups latest [--project <id>]` - show the most recent backup. Cloud prints the latest dump file with a presigned download URL; self-hosted prints the newest backup record (no download URL).
 - `npx -y @insforge/cli backups create [--name <name>] [--wait] [--project <id>]` - create a backup. `--name` is optional; when provided it must be 1–64 chars. `--wait` blocks until it finishes instead of returning while queued.
 - `npx -y @insforge/cli backups rename <backupId> <name> [--project <id>]` - rename a backup (pass `""` to clear the name).
 - `npx -y @insforge/cli backups delete <backupId> [--project <id>]` - delete a backup. Confirm intent first.
@@ -219,6 +222,7 @@ Create channel patterns, app-table publish triggers, and channel/message RLS thr
 ## AI Gateway
 
 - `npx -y @insforge/cli ai setup` fetches the linked project's active OpenRouter key and writes `OPENROUTER_API_KEY` to a local server-side env file.
+- `npx -y @insforge/cli ai overview` shows Model Gateway key usage: total spend, limit, remaining credit, daily/weekly/monthly spend, and per-model activity when observability is available. Figures are USD credits. Use it to answer "how much AI credit is left / being used".
 - Keep `OPENROUTER_API_KEY` server-only. Never expose it as `NEXT_PUBLIC_*`, `VITE_*`, `PUBLIC_*`, or `REACT_APP_*`.
 
 ## Memory
@@ -305,12 +309,21 @@ Branching requires a backend version that supports it. If unavailable, report th
 - `npx -y @insforge/cli diagnose` - full health report.
 - `npx -y @insforge/cli diagnose --ai "<issue description>"` - ask the InsForge debug agent to diagnose a concrete backend issue.
 - `npx -y @insforge/cli diagnose metrics [--range 1h|6h|24h|7d]` - EC2 metrics.
-- `npx -y @insforge/cli diagnose advisor [--severity critical|warning|info] [--category security|performance|health]` - advisor issues.
+- `npx -y @insforge/cli diagnose advisor [--severity critical|warning|info] [--category security|performance|health]` - advisor issues. The Rule column is the id that `advisor suppress` takes.
 - `npx -y @insforge/cli diagnose db [--check <checks>]` - database health checks.
 - `npx -y @insforge/cli diagnose logs [--source <name>] [--limit <n>]` - aggregate error logs.
 - `npx -y @insforge/cli logs <source> [--limit <n>]` - source-specific backend logs.
 
 Typical log sources include `function.logs`, `function-deploy.logs`, `postgres.logs`, `postgrest.logs`, and `insforge.logs`. See `references/diagnostics.md` for common debugging scenarios and source selection.
+
+## Advisor
+
+The backend advisor scans the project for security, performance, and health findings. Read results with `diagnose advisor`; manage scans and false positives with `advisor`:
+
+- `npx -y @insforge/cli advisor scan` - trigger a scan now instead of waiting for the schedule. Use it to re-check immediately after fixing a finding.
+- `npx -y @insforge/cli advisor suppressions` - list suppressed findings.
+- `npx -y @insforge/cli advisor suppress <ruleId> [--object <affectedObject>] --reason <reason> [--note <note>]` - dismiss a finding with a recorded reason. With `--object` (the finding's Affected Object, verbatim) only that instance is suppressed; without it the whole rule is. `--reason` is one of `false_positive | accepted_risk | wont_fix | other`; `--note` is required for `other`. Only suppress findings the user has judged — never suppress to make a report look clean.
+- `npx -y @insforge/cli advisor unsuppress <suppressionId>` - remove a suppression so the finding reappears on the next scan.
 
 ## Feedback
 
