@@ -63,7 +63,7 @@ If not authenticated, run `npx -y @insforge/cli login` (opens a browser). For he
 | Subscription/plan, credits, usage, payment history, billing cycles, plan upgrade, billing portal    | `billing`, `usage`                              | this file                                                                                   |
 | Organizations and members (create, update, invite, roles, leave, delete)                           | `orgs`                                          | this file                                                                                   |
 | Project backups (list, latest, create, rename, delete, restore — cloud and self-hosted)            | `backups`                                       | this file                                                                                   |
-| Advisor scans and suppressing false-positive findings                                              | `advisor`, `diagnose advisor`                   | this file                                                                                   |
+| Advisor scans and suppressing findings (false positives, accepted risks)                           | `advisor`, `diagnose advisor`                   | this file                                                                                   |
 | Schema, SQL, RLS, triggers, indexes, imports, exports                                              | `db`                                            | `references/database/*`                                                                     |
 | Auth redirects, password policy, SMTP, storage size, realtime/schedule retention, subdomain config | `config`                                        | `references/config.md`                                                                      |
 | Storage buckets and objects                                                                        | `storage`                                       | this file                                                                                   |
@@ -137,6 +137,7 @@ Project commands:
 
 - `npx -y @insforge/cli create` - create a new project. Use `--json` with required flags for non-interactive agent runs. See `references/create.md`.
 - `npx -y @insforge/cli link` - link the current directory to an existing project.
+- `npx -y @insforge/cli link --api-base-url <url> --api-key <admin key>` - link a self-hosted (OSS) backend directly by its URL and admin API key; no platform login required.
 - `npx -y @insforge/cli current` - show current linked project.
 - `npx -y @insforge/cli metadata --json` - inspect backend metadata when discovery is needed.
 
@@ -184,14 +185,14 @@ Inspect the organization's plan/consumption and manage its subscription. Org res
 
 ## Backups
 
-Operates on the linked project unless `--project <id>` is given. Works for both cloud projects and self-hosted projects (linked with `link --api-key`) — the CLI routes to the right backend automatically; an explicit `--project <id>` always targets a cloud project.
+Operates on the linked project unless `--project <id>` is given. Works for both cloud projects and self-hosted projects (linked with `link --api-base-url <url> --api-key <key>`) — the CLI routes to the right backend automatically; an explicit `--project <id>` always targets a cloud project.
 
 - `npx -y @insforge/cli backups list [--project <id>]` - list backups.
 - `npx -y @insforge/cli backups latest [--project <id>]` - show the most recent backup. Cloud prints the latest dump file with a presigned download URL; self-hosted prints the newest backup record (no download URL).
 - `npx -y @insforge/cli backups create [--name <name>] [--wait] [--project <id>]` - create a backup. `--name` is optional; when provided it must be 1–64 chars. `--wait` blocks until it finishes instead of returning while queued.
 - `npx -y @insforge/cli backups rename <backupId> <name> [--project <id>]` - rename a backup (pass `""` to clear the name).
 - `npx -y @insforge/cli backups delete <backupId> [--project <id>]` - delete a backup. Confirm intent first.
-- `npx -y @insforge/cli backups restore <backupId> [--project <id>]` - restore the project from a backup. This OVERWRITES the project's current database and storage; data written since that backup is lost. Confirm intent first. Self-hosted nuance: OSS restore is database-only `pg_restore --clean` — it rewinds tables that exist in the backup, but tables created after the backup are NOT dropped.
+- `npx -y @insforge/cli backups restore <backupId> [--project <id>]` - restore the project from a backup; data written since that backup is lost. Confirm intent first. Cloud: OVERWRITES the project's current database and storage. Self-hosted: database-only `pg_restore --clean` — rewinds tables that exist in the backup, but tables created after the backup are NOT dropped.
 
 ## Storage
 
@@ -320,7 +321,7 @@ Typical log sources include `function.logs`, `function-deploy.logs`, `postgres.l
 
 The backend advisor scans the project for security, performance, and health findings. Read results with `diagnose advisor`; manage scans and false positives with `advisor`:
 
-- `npx -y @insforge/cli advisor scan` - trigger a scan now instead of waiting for the schedule. Use it to re-check immediately after fixing a finding. The scan runs asynchronously (typically well under a minute) — poll `diagnose advisor --json` until the new scan's status is `completed` before reading results.
+- `npx -y @insforge/cli advisor scan` - trigger a scan now instead of waiting for the schedule. Use it to re-check immediately after fixing a finding. The scan runs asynchronously (typically well under a minute) — poll `diagnose advisor --json` until the response's `scan.status` is `completed` (match `scan.scanId` to the id `scan` returned) before reading results.
 - `npx -y @insforge/cli advisor suppressions` - list suppressed findings.
 - `npx -y @insforge/cli advisor suppress <ruleId> [--object <affectedObject>] --reason <reason> [--note <note>]` - dismiss a finding with a recorded reason. With `--object` (the finding's Affected Object, verbatim) only that instance is suppressed; without it the whole rule is. `--reason` is one of `false_positive | accepted_risk | wont_fix | other`; `--note` is required for `other`. A suppression takes effect from the next scan (run `advisor scan` to see it applied). Only suppress findings the user has judged — never suppress to make a report look clean.
 - `npx -y @insforge/cli advisor unsuppress <suppressionId>` - remove a suppression so the finding reappears on the next scan.
