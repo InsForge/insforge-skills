@@ -191,7 +191,7 @@ Operates on the linked project unless `--project <id>` is given. Works for both 
 - `npx -y @insforge/cli backups create [--name <name>] [--wait] [--project <id>]` - create a backup. `--name` is optional; when provided it must be 1–64 chars. `--wait` blocks until it finishes instead of returning while queued.
 - `npx -y @insforge/cli backups rename <backupId> <name> [--project <id>]` - rename a backup (pass `""` to clear the name).
 - `npx -y @insforge/cli backups delete <backupId> [--project <id>]` - delete a backup. Confirm intent first.
-- `npx -y @insforge/cli backups restore <backupId> [--project <id>]` - restore the project from a backup. This OVERWRITES the project's current database and storage; data written since that backup is lost. Confirm intent first.
+- `npx -y @insforge/cli backups restore <backupId> [--project <id>]` - restore the project from a backup. This OVERWRITES the project's current database and storage; data written since that backup is lost. Confirm intent first. Self-hosted nuance: OSS restore is database-only `pg_restore --clean` — it rewinds tables that exist in the backup, but tables created after the backup are NOT dropped.
 
 ## Storage
 
