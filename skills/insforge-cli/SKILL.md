@@ -192,7 +192,7 @@ Operates on the linked project unless `--project <id>` is given. Works for both 
 - `npx -y @insforge/cli backups create [--name <name>] [--wait] [--project <id>]` - create a backup. `--name` is optional; when provided it must be 1–64 chars. `--wait` blocks until it finishes instead of returning while queued.
 - `npx -y @insforge/cli backups rename <backupId> <name> [--project <id>]` - rename a backup (pass `""` to clear the name).
 - `npx -y @insforge/cli backups delete <backupId> [--project <id>]` - delete a backup. Confirm intent first.
-- `npx -y @insforge/cli backups restore <backupId> [--project <id>]` - restore the project from a backup; data written since that backup is lost. Confirm intent first. Cloud: OVERWRITES the project's current database and storage. Self-hosted: database-only `pg_restore --clean` — rewinds tables that exist in the backup, but tables created after the backup are NOT dropped.
+- `npx -y @insforge/cli backups restore <backupId> [--project <id>]` - restore the project from a backup. Confirm intent first. Cloud: OVERWRITES the project's current database and storage — all data written since the backup is lost. Self-hosted: database-only `pg_restore --clean` — data in backed-up tables is rewound, but tables created after the backup are NOT dropped and storage is untouched.
 
 ## Storage
 
@@ -321,7 +321,7 @@ Typical log sources include `function.logs`, `function-deploy.logs`, `postgres.l
 
 The backend advisor scans the project for security, performance, and health findings. Read results with `diagnose advisor`; manage scans and false positives with `advisor`:
 
-- `npx -y @insforge/cli advisor scan` - trigger a scan now instead of waiting for the schedule. Use it to re-check immediately after fixing a finding. The scan runs asynchronously (typically well under a minute) — poll `diagnose advisor --json` until the response's `scan.status` is `completed` (match `scan.scanId` to the id `scan` returned) before reading results.
+- `npx -y @insforge/cli advisor scan` - trigger a scan now instead of waiting for the schedule. Use it to re-check immediately after fixing a finding. The scan runs asynchronously (typically well under a minute) — poll `diagnose advisor --json` until `scan.status` is `completed` and `scan.scanId` equals the id that `advisor scan` returned, then read the results.
 - `npx -y @insforge/cli advisor suppressions` - list suppressed findings.
 - `npx -y @insforge/cli advisor suppress <ruleId> [--object <affectedObject>] --reason <reason> [--note <note>]` - dismiss a finding with a recorded reason. With `--object` (the finding's Affected Object, verbatim) only that instance is suppressed; without it the whole rule is. `--reason` is one of `false_positive | accepted_risk | wont_fix | other`; `--note` is required for `other`. A suppression takes effect from the next scan (run `advisor scan` to see it applied). Only suppress findings the user has judged — never suppress to make a report look clean.
 - `npx -y @insforge/cli advisor unsuppress <suppressionId>` - remove a suppression so the finding reappears on the next scan.
