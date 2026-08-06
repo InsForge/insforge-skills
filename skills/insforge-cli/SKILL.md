@@ -320,9 +320,9 @@ Typical log sources include `function.logs`, `function-deploy.logs`, `postgres.l
 
 The backend advisor scans the project for security, performance, and health findings. Read results with `diagnose advisor`; manage scans and false positives with `advisor`:
 
-- `npx -y @insforge/cli advisor scan` - trigger a scan now instead of waiting for the schedule. Use it to re-check immediately after fixing a finding.
+- `npx -y @insforge/cli advisor scan` - trigger a scan now instead of waiting for the schedule. Use it to re-check immediately after fixing a finding. The scan runs asynchronously (typically well under a minute) — poll `diagnose advisor --json` until the new scan's status is `completed` before reading results.
 - `npx -y @insforge/cli advisor suppressions` - list suppressed findings.
-- `npx -y @insforge/cli advisor suppress <ruleId> [--object <affectedObject>] --reason <reason> [--note <note>]` - dismiss a finding with a recorded reason. With `--object` (the finding's Affected Object, verbatim) only that instance is suppressed; without it the whole rule is. `--reason` is one of `false_positive | accepted_risk | wont_fix | other`; `--note` is required for `other`. Only suppress findings the user has judged — never suppress to make a report look clean.
+- `npx -y @insforge/cli advisor suppress <ruleId> [--object <affectedObject>] --reason <reason> [--note <note>]` - dismiss a finding with a recorded reason. With `--object` (the finding's Affected Object, verbatim) only that instance is suppressed; without it the whole rule is. `--reason` is one of `false_positive | accepted_risk | wont_fix | other`; `--note` is required for `other`. A suppression takes effect from the next scan (run `advisor scan` to see it applied). Only suppress findings the user has judged — never suppress to make a report look clean.
 - `npx -y @insforge/cli advisor unsuppress <suppressionId>` - remove a suppression so the finding reappears on the next scan.
 
 ## Feedback
