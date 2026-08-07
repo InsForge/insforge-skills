@@ -49,7 +49,7 @@ Escalate from "normal" to "needs headroom" only on real pressure evidence:
   crash-recovery aftermath in `postgres.logs`: "terminating connection because of crash of another
   server process" or "database system was not properly shut down; automatic recovery in progress".
   There is no dedicated OOM log source, so look for that aftermath, not an OOM line.
-- **Rising trend** across `24h`/`7d` (a leak climbs; a cache plateaus)
+- **Rising trend** across `24h`/`7d` (a leak climbs; the buffer cache is ~flat from startup)
 - Performance actually degrading alongside it (pair with [db-health](db-health.md))
 
 When that evidence exists, the fix is headroom, and on smaller instances OOM under real load is
