@@ -39,6 +39,7 @@ const { data } = await insforge.database
   .from('posts')
   .select()
   .order('created_at', { ascending: false })
+  .order('id', { ascending: false })   // tie-breaker keeps page membership stable
   .limit(50)
 
 // With relationships
