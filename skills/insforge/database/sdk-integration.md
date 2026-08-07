@@ -31,15 +31,22 @@ const admin = createAdminClient({
 ### Select
 
 ```javascript
-// All records
-const { data, error } = await insforge.database.from('posts').select()
+// Specific columns (default choice — smaller responses, less bandwidth)
+const { data, error } = await insforge.database.from('posts').select('id, title')
 
-// Specific columns
-const { data } = await insforge.database.from('posts').select('id, title')
+// All columns — reserve for single-record detail views; bound list reads with .limit()
+const { data } = await insforge.database
+  .from('posts')
+  .select()
+  .order('created_at', { ascending: false })
+  .order('id', { ascending: false })   // tie-breaker keeps page membership stable
+  .limit(50)
 
 // With relationships
 const { data } = await insforge.database.from('posts').select('*, comments(id, content)')
 ```
+
+Default to naming columns and bounding list reads. An unbounded `select()` re-downloads the whole table on every call — see [Bandwidth-efficient reads](#bandwidth-efficient-reads).
 
 ### Insert
 
@@ -166,6 +173,16 @@ const { data, count } = await insforge.database
   .range(from, to)
   .order('created_at', { ascending: false })
 ```
+
+## Bandwidth-efficient reads
+
+Every byte a query returns counts against the project's monthly egress allowance. The most common way projects exhaust it is not traffic volume — it is a small number of wasteful query shapes, usually written once and left running:
+
+- **Never poll with unbounded selects.** A dashboard or hook that re-runs `select()` (all columns, no limit) on an interval re-downloads the entire table every cycle. A table with a few hundred rows of JSONB polled every 30 seconds costs ~1 GB/day with a single viewer. To watch for changes, subscribe with [realtime](../realtime/sdk-integration.md) instead of polling — realtime is channel pub/sub, so pair the subscription with a database trigger that calls `realtime.publish(...)` on writes (backend setup: [insforge-cli realtime reference](../../insforge-cli/references/realtime.md)); table changes do not stream automatically. If you must poll, poll something cheap — `select('updated_at', { count: 'exact' }).order('updated_at', { ascending: false }).limit(1)` — and fetch full rows only when the count or newest `updated_at` moves: the count catches inserts and deletes, the timestamp catches edits (keep a `system.update_updated_at()` trigger on the table so edits advance it).
+- **Bound every list read.** Always chain `.limit(n)` or `.range(from, to)` on queries that can return multiple rows. Render lists with [pagination](#pagination).
+- **Name your columns.** `select('id, title')` instead of `select()` whenever the table has text/JSONB columns the view doesn't render. Fetch heavy columns (`draft_data`-style JSONB blobs, long text) only on the detail screen that needs them.
+- **Pause refresh loops when idle.** If the UI auto-refreshes, stop the timer when the tab is hidden (`document.visibilityState`) — an admin page left open overnight is the classic silent egress burner.
+- **Let storage objects cache.** Serve files with stable URLs so browsers and the CDN cache them, rather than re-downloading per render (cache-busting query params on every request defeat this).
 
 ## Important Notes
 
