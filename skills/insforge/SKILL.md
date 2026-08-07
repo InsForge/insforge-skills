@@ -213,6 +213,7 @@ All SDK methods return `{ data, error }`.
 ## Important Notes
 
 - **Database inserts require array format**: `insert([{...}])`
+- **Bandwidth-efficient reads**: Name columns and `.limit()` list reads; never poll unbounded `select()` on an interval — subscribe with realtime or poll a `select('id, updated_at').limit(1)` probe instead. Wasteful query shapes are the top cause of projects exhausting their monthly egress allowance. See [database/sdk-integration.md](database/sdk-integration.md#bandwidth-efficient-reads).
 - **Next.js / SSR auth**: Use `@insforge/sdk/ssr` helpers (`createBrowserClient`, `createServerClient`, `createAuthActions`, `createRefreshAuthRouter`) and import `updateSession` from `@insforge/sdk/ssr/middleware` in Proxy/Middleware. Keep the refresh token httpOnly, run auth mutations through `createAuthActions()` on the server, return only safe app data from Server Actions, and let the browser read the short-lived access token for Storage/Realtime. See [auth/ssr-integration.md](auth/ssr-integration.md)
 - **Storage**: Save both `url` AND `key` to database for download/delete operations
 - **Functions invoke URL**: Prefer `insforge.functions.invoke(slug)` — the SDK owns route construction. For raw HTTP: the project base URL serves the compat path `/functions/{slug}`, while the functions deployment host (e.g. `*.function2.insforge.app`) serves the slug at root `/{slug}`
