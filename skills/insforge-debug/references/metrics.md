@@ -15,7 +15,7 @@ Default range: `1h`.
 | Metric family | Indicates |
 |---------------|-----------|
 | **CPU** | Compute saturation (sustained >80% = trouble; spike & recover = normal) |
-| **Memory** | Memory pressure (rising over time → leak; near limit + OOM kills → resize) |
+| **Memory** | Memory pressure — but read it with the [high-is-normal rule](#memory-high-is-normal): flat-high = healthy cache; *rising* over time → leak; OOM kills → resize |
 | **Disk** | Storage fill rate, IO saturation (read/write throughput, queue depth) |
 | **Network** | Inbound/outbound bandwidth, packet rate (sudden spike = traffic surge or attack) |
 
@@ -35,6 +35,27 @@ Default range: `1h`.
 3. **Distinguish saturation vs spike**:
    - Sustained high = saturation → scale up or fix the load source
    - Brief spike + recovery = normal burst → not actionable on its own
+
+### Memory: high is normal
+
+A dedicated Postgres instance is *expected* to sit high on memory — often 70–90% — even with zero
+traffic: Postgres turns idle RAM into shared buffers and page cache and holds it. "Memory averages
+78% with no active queries" describes the healthy steady state, not a leak. **Say that first**,
+before proposing any action.
+
+Escalate from "normal" to "needs headroom" only on real pressure evidence:
+
+- **OOM kills / container restarts** — after an OOM kill the concrete signature is the Postgres
+  crash-recovery aftermath in `postgres.logs`: "terminating connection because of crash of another
+  server process" or "database system was not properly shut down; automatic recovery in progress".
+  There is no dedicated OOM log source, so look for that aftermath, not an OOM line.
+- **Rising trend** across `24h`/`7d` (a leak climbs; the buffer cache is ~flat from startup)
+- Performance actually degrading alongside it (pair with [db-health](db-health.md))
+
+When that evidence exists, the fix is headroom, and on smaller instances OOM under real load is
+common — not a bug: upgrade to a paid plan, then pick a larger instance size (dashboard →
+Project Settings → Compute & Disk). Never propose restarting to "free" memory: the cache refills by design and
+the restart just costs downtime.
 
 ## Boundaries
 

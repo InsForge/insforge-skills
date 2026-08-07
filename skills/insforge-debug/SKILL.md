@@ -100,6 +100,18 @@ Each recipe is a primitive call sequence with one-line "look for X" at each step
 2. **db-health** (`slow-queries`, `index-usage`) — `slow-queries` only catches it while still running (>5s snapshot); check `index-usage` for a missing index. Already finished? **advisor** (`--category performance --json`) has the `pg_stat_statements` text + mean time; step 1 has the timestamp.
 3. **policies** — if it's an RLS-gated table, verify the policy isn't adding hidden joins.
 
+### Recipe: "Memory is at ~80% but nothing is slow"
+
+1. **Expected — say so first.** A dedicated Postgres instance turns idle RAM into shared buffers
+   and page cache; steady high memory with little traffic is its healthy state, not a leak
+   ([references/metrics.md](references/metrics.md), "Memory: high is normal").
+2. **metrics** (`--range 24h`) — only a *rising* trend or OOM kills/restarts change the answer.
+   OOM evidence lives in `postgres.logs` as the crash-recovery aftermath ("terminating connection
+   because of crash of another server process" / "automatic recovery in progress").
+3. With OOM evidence, the fix is headroom: upgrade to a paid plan and pick a larger instance size
+   (dashboard → Project Settings → Compute & Disk). OOM on the smallest instances under real load is common and
+   expected — never "restart to free memory".
+
 ### Recipe: All responses slow / high CPU/memory (active incident)
 
 1. **metrics** (`--range 1h`) — confirm system-wide pressure (CPU / memory / disk).
