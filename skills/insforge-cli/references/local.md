@@ -6,13 +6,13 @@ machine — Postgres, PostgREST, the backend, and the edge-functions runtime.
 ## When to use this
 
 Only when the user explicitly asks for a backend on their own machine: "run
-InsForge locally", "I want it in Docker", "no account", "offline".
+InsForge locally", "I want it in Docker", "no account".
 
-A cloud project is the default for everything else. Do not reach for `local` when
-`login` fails, when a browser is unavailable, or when `create` seems slower — use
-`login --user-api-key`, `login --device`, or `create` instead. A local instance is
-a different backend with different data, so starting one to work around an auth
-problem silently moves the user off the project they meant to use.
+Not for offline work on its own. The first start in a directory fetches the setup
+script and pulls images, so it needs network; only later starts of an instance
+that already exists run offline.
+
+A cloud project is the default for everything else.
 
 ## Commands
 
@@ -24,9 +24,22 @@ problem silently moves the user off the project they meant to use.
   backend version, per-container state. Keys are masked unless `--show-keys`.
 - `npx -y @insforge/cli local stop [--delete-data] [--unlink]` - stop the stack.
 
+`--json` is a global option, not one of these commands' flags — it works on all
+three.
+
 After `local start` the directory is linked, so every other CLI command targets
-the local backend with no login. `local status --json` is the way to read its
-state; `local start --json` returns the keys for scripting.
+the local backend with no login.
+
+## Credentials
+
+`.env.local` gets the API URL and the **anon** key only — safe to hand to browser
+code, and what the app should read.
+
+`local start --json` is different: it returns the API key, the admin password, and
+a `databaseUrl` carrying the Postgres password. Live credentials for a running
+backend. Read them into variables when scripting; do not echo the payload into CI
+output, logs, or a file under version control. `local status --json` withholds all
+of it unless `--show-keys` is passed, so that one is safe to paste.
 
 ## Destructive
 
@@ -60,6 +73,19 @@ port passed with `--port-*`, or one the directory already used, never moves.
 Docker with Compose 2.24.4 or newer, and roughly 1.5 GB available to the daemon.
 Any Docker-compatible runtime works. Without Docker, `create` gives the user a
 hosted project instead — offer it, but do not switch to it on your own.
+
+## Common Mistakes
+
+**Using `local` as a fallback when authentication is inconvenient.** A local
+instance is a different backend with different data, so starting one to work
+around a login problem silently moves the user off the project they meant to use.
+When `login` fails or no browser is available, use `login --user-api-key`,
+`login --device`, or `create`.
+
+**Pointing a server deployment at `local start`.** See below.
+
+**Assuming a fresh start works offline.** The first start fetches the setup script
+and pulls images.
 
 ## Self-hosting is not this
 
