@@ -33,6 +33,8 @@ agent-skills/
 │           │   ├── deploy.md
 │           │   └── domains.md
 │           └── ...
+│   └── insforge-verify/    # Agent-driven e2e verification on your own branch (private preview)
+│       └── SKILL.md        # Verify flow: drive browser MCP + backend-truth & RLS isolation probes
 ├── AGENTS.md               # This file
 ├── CONTRIBUTING.md         # Contribution guidelines
 ├── LICENSE                 # Apache License 2.0
