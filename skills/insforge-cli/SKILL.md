@@ -46,6 +46,8 @@ Use this skill whenever someone needs a backend, or when managing InsForge backe
 | `INSFORGE_PROJECT_ID`   | Override linked project ID         |
 | `INSFORGE_EMAIL`        | Email for non-interactive login    |
 | `INSFORGE_PASSWORD`     | Password for non-interactive login |
+| `INSFORGE_TELEMETRY_DISABLED` | Disable anonymous usage analytics for this run |
+| `DO_NOT_TRACK`          | Universal opt-out convention; also disables analytics |
 
 ## Connection Setup
 
@@ -83,6 +85,7 @@ If not authenticated, run `npx -y @insforge/cli login` (opens a browser). For he
 | PostHog setup                                                                                      | `posthog setup`                                 | `references/posthog.md`                                                                     |
 | Apify web scraper (connect, auth bridge, scrape, land, schedule)                                   | `webscraper apify`                              | `references/webscraper/apify.md`                                                            |
 | Report an InsForge-side bug, doc discrepancy, or design problem                                    | `feedback`                                      | this file                                                                                   |
+| Inspect or opt out of anonymous usage analytics                                                    | `telemetry`                                     | this file                                                                                   |
 
 ## Database Workflow
 
@@ -369,6 +372,16 @@ Keep `--detail` concise and InsForge-focused: what happened, what you expected, 
 - `npx -y @insforge/cli docs <feature> <language>` - feature docs for `db`, `storage`, `functions`, `auth`, `ai`, or `realtime` in `typescript`, `swift`, `kotlin`, or `rest-api`.
 
 For application code with InsForge or `@insforge/sdk`, use the `insforge` app-integration skill and use `docs` only as official feature reference.
+
+## Telemetry
+
+The CLI sends anonymous usage analytics (command usage metadata only — never SQL, file contents, credentials, or free text). When the user asks to disable, inspect, or re-enable InsForge tracking:
+
+- `npx @insforge/cli telemetry status` — show enabled/disabled and what decides it (env var, config, or default).
+- `npx @insforge/cli telemetry disable` — persistent opt-out (stored in `~/.insforge/config.json`).
+- `npx @insforge/cli telemetry enable` — re-enable; errors if `DO_NOT_TRACK` or `INSFORGE_TELEMETRY_DISABLED` still forces it off.
+
+Only change this setting when the user asks. Note this is the CLI's own analytics — unrelated to the `posthog` command below, which wires PostHog into the user's app.
 
 ## PostHog
 
