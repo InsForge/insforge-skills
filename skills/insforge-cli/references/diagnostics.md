@@ -11,10 +11,12 @@ npx -y @insforge/cli diagnose metrics --range 24h
 npx -y @insforge/cli diagnose advisor --severity critical
 npx -y @insforge/cli diagnose db --check bloat,slow-queries
 npx -y @insforge/cli diagnose logs --limit 100
+npx -y @insforge/cli diagnose incident
 ```
 
 - `diagnose` - full health report across all checks.
 - `diagnose --ai "<issue>"` - natural-language debugging for a concrete error, failing URL, status, or symptom.
+- `diagnose incident` - why the project is down or returning gateway timeouts (504): verdict + evidence + what to do. Built entirely from cloud-side sources, so it works while the instance itself is unreachable. Requires Platform login; not available via `--api-key` link mode.
 - `diagnose metrics [--range 1h|6h|24h|7d] [--metrics <list>]` - EC2 instance metrics such as CPU, memory, disk, and network.
 - `diagnose advisor [--severity critical|warning|info] [--category security|performance|health] [--limit <n>]` - latest advisor scan results.
 - `diagnose db [--check <checks>]` - database checks such as `connections`, `slow-queries`, `bloat`, `size`, `index-usage`, `locks`, and `cache-hit`.

@@ -55,8 +55,8 @@ The status alone doesn't tell you which subsystem timed out. Route by the URL pa
 | `/api/auth/...` | Auth backend | [logs](logs.md) `insforge.logs` |
 | `/api/storage/...` | Storage | [logs](logs.md) `insforge.logs` |
 | Any path during a system-wide spike | EC2 saturation | [metrics](metrics.md) `--range 1h` |
-| Intermittent, across *unrelated* paths, small instance | Likely OOM | `diagnose incident` (cloud-side verdict, works while the box is down); fallback: the gateway-timeout recipe's OOM branch — crash-recovery aftermath in `postgres.logs`, then upgrade the instance |
-| Instance entirely unreachable (logs/metrics dead) | Box down | `diagnose incident` — built from platform-side sources, so it answers when every per-project endpoint is dead |
+| Intermittent, across *unrelated* paths, small instance | Likely OOM | `diagnose incident` (cloud-side verdict, works while the box is down; Platform login required — unavailable on older CLI/backend or `--api-key` link mode); fallback: the gateway-timeout recipe's OOM branch — crash-recovery aftermath in `postgres.logs`, then upgrade the instance |
+| Instance entirely unreachable (logs/metrics dead) | Box down | `diagnose incident` — built from platform-side sources, so it answers when every per-project endpoint is dead (same availability caveat; without it, escalate to support) |
 
 ## Example
 
