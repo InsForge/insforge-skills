@@ -145,11 +145,21 @@ Route by URL subsystem before drilling:
 **504s across *unrelated* paths on a small instance: suspect OOM first.** Intermittent gateway
 timeouts hitting database, auth, and functions alike are the classic out-of-memory signature on
 the smallest instance sizes: the kernel kills Postgres, every in-flight request times out at the
-gateway while crash recovery runs, and it repeats on the next load spike. Confirm in **logs**
-(`postgres.logs`) via the crash-recovery aftermath — "terminating connection because of crash of
-another server process" / "automatic recovery in progress" — **time-correlated with the 5xx
-burst**: recovery evidence alone only proves an unclean Postgres restart, so the timestamps must
-line up before OOM becomes the leading diagnosis
+gateway while crash recovery runs, and it repeats on the next load spike.
+
+**Fast path: `npx -y @insforge/cli diagnose incident`** (Platform login required). The report is
+built entirely on the cloud side — Prometheus scrape history, platform records, an outbound
+database probe — so it works **even while the instance is down or wedged**, exactly when
+`diagnose logs` stops answering. It returns a verdict (`oom_likely`,
+`platform_operation_in_progress`, `paused_or_suspended`, `metrics_stopped`, `down_unknown`,
+`no_incident_detected`) with the evidence and the recommended action; `oom_likely` already means
+the restart/memory correlation checks below passed on the platform side.
+
+If the command is unavailable (older CLI/backend, `--api-key` link mode), confirm manually in
+**logs** (`postgres.logs`) via the crash-recovery aftermath — "terminating connection because of
+crash of another server process" / "automatic recovery in progress" — **time-correlated with the
+5xx burst**: recovery evidence alone only proves an unclean Postgres restart, so the timestamps
+must line up before OOM becomes the leading diagnosis
 ([references/metrics.md](references/metrics.md)). With that evidence the fix is headroom, not a
 retry loop:
 
