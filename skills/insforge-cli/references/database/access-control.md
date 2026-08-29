@@ -433,6 +433,12 @@ Before completing an RLS implementation:
 - [ ] No overly permissive `USING (true)` on sensitive tables
 - [ ] Runtime behavior is not inferred from `project_admin`-only queries
 
+These checks confirm the policy is **well-formed**; they can't confirm it **isolates at
+runtime**. A policy that looks correct can still leak another user's rows, or silently
+return an empty result (no error) to the real owner. If you have **insforge-verify** set
+up, confirm cross-user isolation actually holds with `npx @insforge/cli verify rls --table <t>
+--owner <col>` after applying.
+
 ## References
 
 - [PostgreSQL RLS Documentation](https://www.postgresql.org/docs/current/ddl-rowsecurity.html)
