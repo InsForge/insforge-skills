@@ -231,6 +231,18 @@ JSON mode (`--json`):
 }
 ```
 
+## Reading logs after deploy
+
+```bash
+npx -y @insforge/cli compute logs <id>                 # last 100 lines of container stdout/stderr
+npx -y @insforge/cli compute logs <id> --limit 1000    # more history (provider retention ~7 days)
+npx -y @insforge/cli compute logs <id> --follow        # tail; polls every 2s, Ctrl+C to stop
+npx -y @insforge/cli --json compute logs <id>          # { lines: [{timestamp, message, instance, region}], nextToken }
+npx -y @insforge/cli compute events <id>               # machine start/stop/exit/restart events (not app output)
+```
+
+`compute logs` is the CLI equivalent of the dashboard's compute Logs panel. Do not use `flyctl logs` — the user's flyctl account has no access to InsForge-managed apps. Never tell a user compute logs are only available in the dashboard UI.
+
 ## Common errors
 
 | Error | Cause | Solution |

@@ -54,5 +54,6 @@ Source names are case-insensitive; `postgrest.logs` and `postgREST.logs` are equ
 | Database bloat or slow queries    | `diagnose db`                                                                          |
 | Security or config issue          | `diagnose advisor --category security`                                                 |
 | Compute service not starting      | `compute events <id>`                                                                  |
+| Compute app crashing or 500s      | `compute logs <id>` (container stdout/stderr; `--follow` to tail, `--limit` up to 1000)  |
 | Compute source-mode deploy failed | Check that `flyctl` is on PATH, then rerun if the short-lived deploy token expired     |
 | Compute image-mode deploy failed  | Confirm the image is publicly pullable, or configure registry credentials if supported |

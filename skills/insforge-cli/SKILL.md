@@ -272,6 +272,7 @@ Backend compute services:
 - Use `npx -y @insforge/cli compute ...`; do not manage InsForge compute services directly with the user's own `flyctl` account.
 - Use source mode for a directory with a Dockerfile, or image mode with `--image <url>` for a pre-built image.
 - Use `--env-file` or repeatable env-set/update commands for secrets instead of large inline JSON.
+- Debug a running service with `compute logs <id>` (container stdout/stderr, `--follow` to tail) and `compute events <id>` (machine lifecycle).
 - See `references/compute-deploy.md`.
 
 ## Secrets
@@ -317,6 +318,7 @@ Branching requires a backend version that supports it. If unavailable, report th
 - `npx -y @insforge/cli logs <source> [--limit <n>]` - source-specific backend logs.
 
 Typical log sources include `function.logs`, `function-deploy.logs`, `postgres.logs`, `postgrest.logs`, and `insforge.logs`. See `references/diagnostics.md` for common debugging scenarios and source selection.
+- `npx -y @insforge/cli compute logs <id> [--limit <n>] [--follow]` - container stdout/stderr of a compute service (not a `logs` source; compute logs live under `compute`). `compute events <id>` gives machine start/stop/exit events.
 
 ## Advisor
 
