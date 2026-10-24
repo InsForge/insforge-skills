@@ -144,11 +144,11 @@ Project commands:
 
 Project lifecycle (operates on the linked project unless `--project <id>` is given):
 
-- `npx -y @insforge/cli projects get [--project <id>]` - show a project's current status, in-flight `operation_status`, region, instance type, and version. Use this to poll after an async operation (restore, version update, instance type change) until `operation_status` clears.
-- `npx -y @insforge/cli projects update [--name <name>] [--domain <domain>] [--project <id>]` - rename the project or set its custom domain.
+- `npx -y @insforge/cli projects get [--project <id>]` - show a project's current status, in-flight `operation_status`, region, instance type, and version. Use this to poll after an async operation (restore, version update, instance resize) until `operation_status` clears.
+- `npx -y @insforge/cli projects update [--name <name>] [--domain <domain>] [--project <id>]` - rename the project or set its custom domain. Disk size changes go through InsForge support.
 - `npx -y @insforge/cli projects restore [--project <id>]` - bring a paused project back online. Only paused projects can be restored.
 - `npx -y @insforge/cli projects update-version [--wait] [--project <id>]` - update the backend to the latest InsForge version (resolved automatically; no-op if already current). Causes a brief restart. Add `--wait` to block until it finishes instead of returning while queued.
-- `npx -y @insforge/cli projects upgrade-instance [type] [--volume-size <gib>] [--project <id>]` - change the instance class and/or grow the disk (pass at least one). Valid types: `nano`, `micro`, `small`, `medium`, `large`, `xl` (`xl` is the ceiling); a type change restarts the project. `--volume-size` grows the disk online without a restart; disks can only grow. A disk resize sets no `operation_status`: poll `projects get --json` until `storage_disk_size` equals the new size. Both change the bill.
+- `npx -y @insforge/cli projects upgrade-instance <type> [--project <id>]` - change the instance class. Valid: `nano`, `micro`, `small`, `medium`, `large`, `xl` (`xl` is the ceiling). Restarts the project and changes the bill.
 - `npx -y @insforge/cli projects delete --project <id>` - permanently delete a project and all of its resources. `--project` is required (it will not default to the linked project). Irreversible — confirm the exact project id with the user first; this is a guarded, human-in-the-loop operation, so do not auto-bypass the confirmation.
 - `npx -y @insforge/cli projects transfer <targetOrgId> --project <id>` - move a project to another organization (billing and access move with it). `--project` is required (it will not default to the linked project). Guarded, human-in-the-loop — confirm the source project and target org first.
 
