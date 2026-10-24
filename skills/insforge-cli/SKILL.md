@@ -145,7 +145,7 @@ Project commands:
 Project lifecycle (operates on the linked project unless `--project <id>` is given):
 
 - `npx -y @insforge/cli projects get [--project <id>]` - show a project's current status, in-flight `operation_status`, region, instance type, and version. Use this to poll after an async operation (restore, version update, instance resize) until `operation_status` clears.
-- `npx -y @insforge/cli projects update [--name <name>] [--domain <domain>] [--storage-size <gib>] [--project <id>]` - rename or change project settings.
+- `npx -y @insforge/cli projects update [--name <name>] [--domain <domain>] [--project <id>]` - rename the project or set its custom domain. Disk size changes go through InsForge support.
 - `npx -y @insforge/cli projects restore [--project <id>]` - bring a paused project back online. Only paused projects can be restored.
 - `npx -y @insforge/cli projects update-version [--wait] [--project <id>]` - update the backend to the latest InsForge version (resolved automatically; no-op if already current). Causes a brief restart. Add `--wait` to block until it finishes instead of returning while queued.
 - `npx -y @insforge/cli projects upgrade-instance <type> [--project <id>]` - change the instance class. Valid: `nano`, `micro`, `small`, `medium`, `large`, `xl` (`xl` is the ceiling). Restarts the project and changes the bill.
